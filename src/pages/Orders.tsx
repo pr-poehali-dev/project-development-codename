@@ -19,6 +19,16 @@ const categoryColors: Record<string, string> = {
   "Перевозки": "bg-red-600/15 text-red-400 border-red-500/20",
   "Няня": "bg-emerald-600/15 text-emerald-400 border-emerald-500/20",
   "Клининг": "bg-teal-600/15 text-teal-400 border-teal-500/20",
+  "Озеленение": "bg-green-600/15 text-green-400 border-green-500/20",
+  "Зоопомощь": "bg-lime-600/15 text-lime-400 border-lime-500/20",
+  "Сборка мебели": "bg-orange-600/15 text-orange-400 border-orange-500/20",
+  "Дизайн интерьера": "bg-fuchsia-600/15 text-fuchsia-400 border-fuchsia-500/20",
+  "Фото/Видео": "bg-sky-600/15 text-sky-400 border-sky-500/20",
+  "Уборка снега": "bg-blue-600/15 text-blue-400 border-blue-500/20",
+  "Мойка окон": "bg-cyan-600/15 text-cyan-400 border-cyan-500/20",
+  "Репетиторство": "bg-indigo-600/15 text-indigo-400 border-indigo-500/20",
+  "Массаж": "bg-rose-600/15 text-rose-400 border-rose-500/20",
+  "Повар на мероприятие": "bg-amber-600/15 text-amber-400 border-amber-500/20",
   "Прочее": "bg-gray-600/15 text-gray-400 border-gray-500/20",
 };
 
