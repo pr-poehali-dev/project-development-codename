@@ -58,6 +58,7 @@ def handler(event: dict, context) -> dict:
         where = ' AND '.join(conditions)
         cur.execute(
             f"SELECT ms.id, ms.title, ms.description, ms.category, ms.city, ms.price, ms.created_at, "
+            f"ms.sort_order, ms.boosted_until, "
             f"m.id as master_id, m.name as master_name, m.avatar_color, "
             f"ROUND(AVG(r.rating)::numeric, 1) as rating, COUNT(r.id) as reviews_count "
             f"FROM master_services ms "
@@ -65,8 +66,8 @@ def handler(event: dict, context) -> dict:
             f"LEFT JOIN reviews r ON r.master_id = m.id "
             f"WHERE {where} "
             f"GROUP BY ms.id, ms.title, ms.description, ms.category, ms.city, ms.price, ms.created_at, "
-            f"m.id, m.name, m.avatar_color "
-            f"ORDER BY ms.created_at DESC LIMIT 50",
+            f"ms.sort_order, ms.boosted_until, m.id, m.name, m.avatar_color "
+            f"ORDER BY ms.sort_order DESC, ms.created_at DESC LIMIT 50",
             args
         )
         services = cur.fetchall()
@@ -115,6 +116,24 @@ def handler(event: dict, context) -> dict:
             cur.close(); conn.close()
             return {'statusCode': 200, 'headers': HEADERS, 'body': json.dumps({'success': True})}
 
+        # PUT: поднятие услуги в топ
+        if body.get('action') == 'boost_service':
+            service_id = body.get('service_id')
+            master_id = body.get('master_id')
+            if not service_id or not master_id:
+                return {'statusCode': 400, 'headers': HEADERS, 'body': json.dumps({'error': 'Неверные данные'})}
+            conn = get_conn()
+            cur = conn.cursor()
+            import time as _time
+            new_sort = int(_time.time() * 1000)
+            cur.execute(
+                "UPDATE master_services SET sort_order = %s, boost_count = boost_count + 1, boosted_until = NOW() + INTERVAL '7 days' WHERE id = %s AND master_id = %s",
+                (new_sort, int(service_id), int(master_id))
+            )
+            conn.commit()
+            cur.close(); conn.close()
+            return {'statusCode': 200, 'headers': HEADERS, 'body': json.dumps({'success': True})}
+
         # PUT: публикация новой услуги мастером
         if body.get('action') == 'add_service':
             master_id = body.get('master_id')
@@ -127,9 +146,11 @@ def handler(event: dict, context) -> dict:
                 return {'statusCode': 400, 'headers': HEADERS, 'body': json.dumps({'error': 'Заполните все обязательные поля'})}
             conn = get_conn()
             cur = conn.cursor()
+            import time as _time
+            sort_order = int(_time.time() * 1000)
             cur.execute(
-                "INSERT INTO master_services (master_id, title, description, category, city, price) VALUES (%s, %s, %s, %s, %s, %s) RETURNING id",
-                (int(master_id), title, description, category, city, int(price) if price else None)
+                "INSERT INTO master_services (master_id, title, description, category, city, price, sort_order) VALUES (%s, %s, %s, %s, %s, %s, %s) RETURNING id",
+                (int(master_id), title, description, category, city, int(price) if price else None, sort_order)
             )
             new_id = cur.fetchone()['id']
             conn.commit()
@@ -233,7 +254,7 @@ def handler(event: dict, context) -> dict:
         )
         my_responses = cur.fetchall()
         cur.execute(
-            "SELECT id, title, description, category, city, price, is_active, created_at FROM master_services WHERE master_id = %s ORDER BY created_at DESC",
+            "SELECT id, title, description, category, city, price, is_active, paid_until, boosted_until, boost_count, created_at FROM master_services WHERE master_id = %s ORDER BY sort_order DESC, created_at DESC",
             (master['id'],)
         )
         my_services = cur.fetchall()
@@ -269,6 +290,9 @@ def handler(event: dict, context) -> dict:
                     'city': s['city'],
                     'price': s['price'],
                     'is_active': s['is_active'],
+                    'paid_until': s['paid_until'].isoformat() if s['paid_until'] else None,
+                    'boosted_until': s['boosted_until'].isoformat() if s['boosted_until'] else None,
+                    'boost_count': s['boost_count'] or 0,
                     'created_at': s['created_at'].isoformat() if s['created_at'] else None,
                 } for s in my_services],
             }, ensure_ascii=False)
@@ -321,6 +345,11 @@ def handler(event: dict, context) -> dict:
             (master['id'],)
         )
         my_responses = cur.fetchall()
+        cur.execute(
+            "SELECT id, title, description, category, city, price, is_active, paid_until, boosted_until, boost_count, created_at FROM master_services WHERE master_id = %s ORDER BY sort_order DESC, created_at DESC",
+            (master['id'],)
+        )
+        my_services_post = cur.fetchall()
         cur.close(); conn.close()
 
         return {
@@ -344,7 +373,16 @@ def handler(event: dict, context) -> dict:
                     'order_city': r['order_city'],
                     'message': r['message'],
                     'created_at': r['created_at'].isoformat() if r['created_at'] else None,
-                } for r in my_responses]
+                } for r in my_responses],
+                'my_services': [{
+                    'id': s['id'], 'title': s['title'], 'description': s['description'],
+                    'category': s['category'], 'city': s['city'], 'price': s['price'],
+                    'is_active': s['is_active'],
+                    'paid_until': s['paid_until'].isoformat() if s['paid_until'] else None,
+                    'boosted_until': s['boosted_until'].isoformat() if s['boosted_until'] else None,
+                    'boost_count': s['boost_count'] or 0,
+                    'created_at': s['created_at'].isoformat() if s['created_at'] else None,
+                } for s in my_services_post],
             }, ensure_ascii=False)
         }
 
