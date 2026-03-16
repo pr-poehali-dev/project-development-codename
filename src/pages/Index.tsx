@@ -413,6 +413,39 @@ const Index = () => {
 
 
 
+      {/* Блок пакетов */}
+      <section className="py-16 px-4 bg-gradient-to-br from-violet-900/20 to-indigo-900/10 border-y border-white/5">
+        <div className="max-w-5xl mx-auto">
+          <h2 className="text-2xl font-bold text-center mb-3">Простая и честная система доступа</h2>
+          <p className="text-gray-400 text-center mb-10">Покупайте пакет откликов и отвечайте на заявки — один отклик списывается за каждый контакт с заказчиком</p>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 mb-8">
+            {[
+              { name: "Старт", count: 5, price: 199, color: "violet" },
+              { name: "Стандарт", count: 15, price: 499, color: "indigo" },
+              { name: "Профи", count: 30, price: 799, color: "purple" },
+            ].map((pkg) => (
+              <div key={pkg.name} className={`bg-${pkg.color}-600/10 border border-${pkg.color}-500/20 rounded-2xl p-6 flex flex-col gap-3`}>
+                <p className="text-white font-semibold text-lg">{pkg.name}</p>
+                <p className="text-4xl font-extrabold text-white">{pkg.price} <span className="text-lg font-normal text-gray-400">₽</span></p>
+                <p className="text-gray-400 text-sm">{pkg.count} откликов на заявки</p>
+                <ul className="space-y-1.5 mt-1">
+                  {["Без срока действия", "Мгновенное зачисление", "Доступ ко всем заявкам"].map((f) => (
+                    <li key={f} className="flex items-center gap-2 text-sm text-gray-300">
+                      <Icon name="Check" size={13} className={`text-${pkg.color}-400 flex-shrink-0`} />
+                      {f}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </div>
+          <p className="text-center text-gray-500 text-sm">
+            Управление балансом и покупка пакетов — в{" "}
+            <a href="/master" className="text-violet-400 hover:text-violet-300 transition-colors">кабинете мастера</a>
+          </p>
+        </div>
+      </section>
+
       {/* CTA */}
       <section className="py-20 px-4 text-center">
         <div className="max-w-2xl mx-auto">
