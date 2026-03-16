@@ -87,6 +87,8 @@ def handler(event: dict, context) -> dict:
         master_category = body.get('master_category', '').strip()
         message = body.get('message', '').strip()
 
+        master_id = body.get('master_id')
+
         if not all([order_id, master_name, master_phone]):
             return {
                 'statusCode': 400,
@@ -97,6 +99,18 @@ def handler(event: dict, context) -> dict:
         conn = get_conn()
         cur = conn.cursor()
 
+        if master_id:
+            cur.execute("SELECT balance FROM masters WHERE id = %s", (int(master_id),))
+            master = cur.fetchone()
+            if not master or master['balance'] < 1:
+                cur.close()
+                conn.close()
+                return {
+                    'statusCode': 402,
+                    'headers': HEADERS,
+                    'body': json.dumps({'error': 'Недостаточно откликов. Пополните баланс.', 'no_balance': True})
+                }
+
         cur.execute(
             "SELECT title, contact_email FROM orders WHERE id = %s",
             (int(order_id),)
@@ -104,11 +118,19 @@ def handler(event: dict, context) -> dict:
         order = cur.fetchone()
 
         cur.execute(
-            "INSERT INTO responses (order_id, master_name, master_phone, master_category, message) "
-            "VALUES (%s, %s, %s, %s, %s) RETURNING id",
-            (int(order_id), master_name, master_phone, master_category, message)
+            "INSERT INTO responses (order_id, master_name, master_phone, master_category, message, master_id) "
+            "VALUES (%s, %s, %s, %s, %s, %s) RETURNING id",
+            (int(order_id), master_name, master_phone, master_category, message, int(master_id) if master_id else None)
         )
         response_id = cur.fetchone()['id']
+
+        if master_id:
+            cur.execute("UPDATE masters SET balance = balance - 1 WHERE id = %s", (int(master_id),))
+            cur.execute(
+                "INSERT INTO master_transactions (master_id, type, amount, description, order_id) VALUES (%s, 'spend', 1, %s, %s)",
+                (int(master_id), f"Отклик на заявку #{order_id}", response_id)
+            )
+
         conn.commit()
         cur.close()
         conn.close()

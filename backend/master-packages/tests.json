@@ -1,0 +1,12 @@
+{
+  "tests": [
+    {
+      "name": "Список пакетов",
+      "method": "GET",
+      "path": "/",
+      "expectedStatus": 200,
+      "expectedBody": {"packages": []},
+      "bodyMatcher": "partial"
+    }
+  ]
+}

@@ -34,6 +34,8 @@ interface Order {
   created_at: string;
 }
 
+const PROFILE_URL = "https://functions.poehali.dev/de274bd5-3f08-42d8-9aac-b373bb34b900";
+
 const Orders = () => {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
@@ -44,6 +46,24 @@ const Orders = () => {
   const [responseSent, setResponseSent] = useState(false);
   const [responseLoading, setResponseLoading] = useState(false);
   const [responseError, setResponseError] = useState("");
+  const [masterBalance, setMasterBalance] = useState<number | null>(null);
+  const [masterId, setMasterId] = useState<number | null>(null);
+
+  useEffect(() => {
+    const savedPhone = localStorage.getItem("master_phone");
+    if (savedPhone) {
+      fetch(`${PROFILE_URL}?phone=${encodeURIComponent(savedPhone)}`)
+        .then((r) => r.json())
+        .then((data) => {
+          const parsed = typeof data === "string" ? JSON.parse(data) : data;
+          if (parsed.master) {
+            setMasterBalance(parsed.master.balance);
+            setMasterId(parsed.master.id);
+            setResponseForm((f) => ({ ...f, master_name: parsed.master.name, master_phone: parsed.master.phone, master_category: parsed.master.category }));
+          }
+        });
+    }
+  }, []);
 
   useEffect(() => {
     const url = selectedCity ? `${ORDERS_URL}?city=${encodeURIComponent(selectedCity)}` : ORDERS_URL;
@@ -72,7 +92,7 @@ const Orders = () => {
       const res = await fetch(RESPONSES_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...responseForm, order_id: selectedOrder.id }),
+        body: JSON.stringify({ ...responseForm, order_id: selectedOrder.id, master_id: masterId }),
       });
       const data = await res.json();
       const parsed = typeof data === "string" ? JSON.parse(data) : data;
@@ -274,6 +294,23 @@ const Orders = () => {
                   {selectedOrder.contact_name} · {formatDate(selectedOrder.created_at)}
                 </div>
               </div>
+
+              {/* Баланс мастера */}
+              {masterId !== null && (
+                <div className={`flex items-center justify-between rounded-xl px-4 py-3 ${masterBalance && masterBalance > 0 ? "bg-violet-600/10 border border-violet-500/20" : "bg-red-600/10 border border-red-500/20"}`}>
+                  <div className="flex items-center gap-2">
+                    <Icon name="Zap" size={15} className={masterBalance && masterBalance > 0 ? "text-violet-400" : "text-red-400"} />
+                    <span className="text-sm text-gray-300">Откликов на балансе: <strong className={masterBalance && masterBalance > 0 ? "text-violet-300" : "text-red-400"}>{masterBalance}</strong></span>
+                  </div>
+                  <a href="/master" className="text-xs text-violet-400 hover:text-violet-300 transition-colors">Пополнить →</a>
+                </div>
+              )}
+              {masterId === null && (
+                <div className="bg-amber-600/10 border border-amber-500/20 rounded-xl px-4 py-3 flex items-center justify-between">
+                  <span className="text-amber-300/80 text-sm">Войдите в кабинет мастера для отклика</span>
+                  <a href="/master" className="text-xs text-violet-400 hover:text-violet-300 transition-colors">Войти →</a>
+                </div>
+              )}
 
               {/* Форма отклика */}
               <form onSubmit={handleRespond} className="space-y-3">
