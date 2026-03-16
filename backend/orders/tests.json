@@ -1,0 +1,29 @@
+{
+  "tests": [
+    {
+      "name": "GET orders list",
+      "method": "GET",
+      "path": "/",
+      "expectedStatus": 200,
+      "expectedBody": {"orders": []},
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "POST create order",
+      "method": "POST",
+      "path": "/",
+      "body": {
+        "title": "Нужен сантехник",
+        "description": "Течёт кран на кухне",
+        "category": "Сантехника",
+        "budget": 2000,
+        "contact_name": "Иван",
+        "contact_phone": "+79001234567",
+        "contact_email": "ivan@test.ru"
+      },
+      "expectedStatus": 200,
+      "expectedBody": {"success": true},
+      "bodyMatcher": "partial"
+    }
+  ]
+}

@@ -106,16 +106,48 @@ const stats = [
   { label: "Категорий услуг", value: "40+", icon: "Grid3x3" },
 ];
 
+const ORDERS_URL = "https://functions.poehali.dev/34db9bab-e58a-479e-b1cc-c27fb8e0b728";
+
 const Index = () => {
   const [activeCategory, setActiveCategory] = useState("Все");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
   const [masterModalOpen, setMasterModalOpen] = useState(false);
   const [masterForm, setMasterForm] = useState({ name: "", phone: "", category: "", about: "", status: "Самозанятый / ИП / Компания" });
   const [masterSent, setMasterSent] = useState(false);
 
+  const [orderModalOpen, setOrderModalOpen] = useState(false);
+  const [orderForm, setOrderForm] = useState({ title: "", description: "", category: "", budget: "", contact_name: "", contact_phone: "", contact_email: "" });
+  const [orderSent, setOrderSent] = useState(false);
+  const [orderLoading, setOrderLoading] = useState(false);
+  const [orderError, setOrderError] = useState("");
+
   const handleMasterSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setMasterSent(true);
+  };
+
+  const handleOrderSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setOrderLoading(true);
+    setOrderError("");
+    try {
+      const res = await fetch(ORDERS_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...orderForm, budget: orderForm.budget ? parseInt(orderForm.budget) : null }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setOrderSent(true);
+      } else {
+        setOrderError(data.error || "Ошибка при отправке");
+      }
+    } catch {
+      setOrderError("Не удалось отправить заявку. Попробуйте позже.");
+    } finally {
+      setOrderLoading(false);
+    }
   };
 
   const filtered =
@@ -420,7 +452,7 @@ const Index = () => {
               Стать мастером
               <Icon name="ArrowRight" size={18} className="ml-2" />
             </Button>
-            <Button variant="outline" className="border-white/15 text-gray-300 hover:text-white hover:bg-white/8 px-8 py-3 text-base rounded-xl">
+            <Button onClick={() => setOrderModalOpen(true)} variant="outline" className="border-white/15 text-gray-300 hover:text-white hover:bg-white/8 px-8 py-3 text-base rounded-xl">
               Найти мастера
             </Button>
           </div>
@@ -542,6 +574,126 @@ const Index = () => {
               >
                 Отправить заявку
                 <Icon name="ArrowRight" size={16} className="ml-2" />
+              </Button>
+            </form>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Модальное окно создания заявки */}
+      <Dialog open={orderModalOpen} onOpenChange={(v) => { setOrderModalOpen(v); if (!v) { setOrderSent(false); setOrderError(""); } }}>
+        <DialogContent className="bg-[#1a1d27] border border-white/10 text-white max-w-md w-full">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-bold text-white">
+              {orderSent ? "Заявка опубликована!" : "Создать заявку"}
+            </DialogTitle>
+          </DialogHeader>
+
+          {orderSent ? (
+            <div className="py-6 text-center">
+              <div className="w-16 h-16 rounded-full bg-emerald-500/15 flex items-center justify-center mx-auto mb-4">
+                <Icon name="CheckCircle" size={32} className="text-emerald-400" />
+              </div>
+              <p className="text-gray-300 mb-2">Заявка опубликована, <span className="text-white font-semibold">{orderForm.contact_name}</span>!</p>
+              <p className="text-gray-500 text-sm">Мастера увидят вашу заявку и начнут откликаться. Мы сообщим вам об откликах.</p>
+              <Button
+                className="mt-6 w-full bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white"
+                onClick={() => { setOrderModalOpen(false); setOrderSent(false); }}
+              >
+                Отлично!
+              </Button>
+            </div>
+          ) : (
+            <form onSubmit={handleOrderSubmit} className="space-y-4 mt-2">
+              <div>
+                <label className="text-sm text-gray-400 mb-1.5 block">Что нужно сделать? *</label>
+                <input
+                  required
+                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-violet-500 transition-colors"
+                  placeholder="Например: починить кран на кухне"
+                  value={orderForm.title}
+                  onChange={(e) => setOrderForm({ ...orderForm, title: e.target.value })}
+                />
+              </div>
+              <div>
+                <label className="text-sm text-gray-400 mb-1.5 block">Категория *</label>
+                <select
+                  required
+                  className="w-full bg-[#0f1117] border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-violet-500 transition-colors"
+                  value={orderForm.category}
+                  onChange={(e) => setOrderForm({ ...orderForm, category: e.target.value })}
+                >
+                  <option value="" disabled>Выберите категорию</option>
+                  {categories.map((c) => (
+                    <option key={c.name} value={c.name}>{c.name}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="text-sm text-gray-400 mb-1.5 block">Подробное описание *</label>
+                <textarea
+                  required
+                  rows={3}
+                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-violet-500 transition-colors resize-none"
+                  placeholder="Опишите задачу подробнее: объём работ, адрес, особые пожелания..."
+                  value={orderForm.description}
+                  onChange={(e) => setOrderForm({ ...orderForm, description: e.target.value })}
+                />
+              </div>
+              <div>
+                <label className="text-sm text-gray-400 mb-1.5 block">Бюджет, ₽</label>
+                <input
+                  type="number"
+                  min="0"
+                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-violet-500 transition-colors"
+                  placeholder="Оставьте пустым, если не знаете"
+                  value={orderForm.budget}
+                  onChange={(e) => setOrderForm({ ...orderForm, budget: e.target.value })}
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-sm text-gray-400 mb-1.5 block">Ваше имя *</label>
+                  <input
+                    required
+                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-violet-500 transition-colors"
+                    placeholder="Иван"
+                    value={orderForm.contact_name}
+                    onChange={(e) => setOrderForm({ ...orderForm, contact_name: e.target.value })}
+                  />
+                </div>
+                <div>
+                  <label className="text-sm text-gray-400 mb-1.5 block">Телефон *</label>
+                  <input
+                    required
+                    type="tel"
+                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-violet-500 transition-colors"
+                    placeholder="+7 (999) 000-00-00"
+                    value={orderForm.contact_phone}
+                    onChange={(e) => setOrderForm({ ...orderForm, contact_phone: e.target.value })}
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="text-sm text-gray-400 mb-1.5 block">Email</label>
+                <input
+                  type="email"
+                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-violet-500 transition-colors"
+                  placeholder="для уведомлений об откликах"
+                  value={orderForm.contact_email}
+                  onChange={(e) => setOrderForm({ ...orderForm, contact_email: e.target.value })}
+                />
+              </div>
+              {orderError && (
+                <p className="text-red-400 text-sm">{orderError}</p>
+              )}
+              <Button
+                type="submit"
+                disabled={orderLoading}
+                className="w-full bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white py-2.5 rounded-xl text-sm font-medium disabled:opacity-60"
+              >
+                {orderLoading ? "Публикуем..." : "Опубликовать заявку"}
+                {!orderLoading && <Icon name="ArrowRight" size={16} className="ml-2" />}
               </Button>
             </form>
           )}
