@@ -27,7 +27,7 @@ const services = [
     rating: 4.9,
     reviews: 112,
     name: "Алексей Морозов",
-    status: "Самозанятый",
+    status: "Самозанятый / ИП",
     commission: 5,
     avatar: "А",
     color: "#6366f1",
@@ -40,7 +40,7 @@ const services = [
     rating: 4.8,
     reviews: 67,
     name: "СтройМастер",
-    status: "Компания",
+    status: "Без статуса",
     commission: 10,
     avatar: "С",
     color: "#f59e0b",
@@ -53,7 +53,7 @@ const services = [
     rating: 4.9,
     reviews: 203,
     name: "Анна Белова",
-    status: "Самозанятый",
+    status: "Самозанятый / ИП",
     commission: 5,
     avatar: "А",
     color: "#ec4899",
@@ -66,7 +66,7 @@ const services = [
     rating: 4.7,
     reviews: 89,
     name: "Виктор Дроздов",
-    status: "Самозанятый",
+    status: "Самозанятый / ИП",
     commission: 5,
     avatar: "В",
     color: "#10b981",
@@ -79,7 +79,7 @@ const services = [
     rating: 4.8,
     reviews: 54,
     name: "Кирилл Захаров",
-    status: "Самозанятый",
+    status: "Самозанятый / ИП",
     commission: 5,
     avatar: "К",
     color: "#8b5cf6",
@@ -92,7 +92,7 @@ const services = [
     rating: 4.7,
     reviews: 78,
     name: "ГрузЭкспресс",
-    status: "Компания",
+    status: "Без статуса",
     commission: 10,
     avatar: "Г",
     color: "#ef4444",
@@ -110,7 +110,7 @@ const Index = () => {
   const [activeCategory, setActiveCategory] = useState("Все");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [masterModalOpen, setMasterModalOpen] = useState(false);
-  const [masterForm, setMasterForm] = useState({ name: "", phone: "", category: "", about: "", status: "Самозанятый" });
+  const [masterForm, setMasterForm] = useState({ name: "", phone: "", category: "", about: "", status: "Самозанятый / ИП" });
   const [masterSent, setMasterSent] = useState(false);
 
   const handleMasterSubmit = (e: React.FormEvent) => {
@@ -313,9 +313,9 @@ const Index = () => {
                     <div className="flex items-center gap-1.5 mt-0.5">
                       <span
                         className={`text-[11px] px-2 py-0.5 rounded-full ${
-                          service.status === "Самозанятый"
+                          service.status === "Самозанятый / ИП"
                             ? "bg-emerald-600/15 text-emerald-400"
-                            : "bg-blue-600/15 text-blue-400"
+                            : "bg-orange-600/15 text-orange-400"
                         }`}
                       >
                         {service.status}
@@ -507,7 +507,7 @@ const Index = () => {
               <div>
                 <label className="text-sm text-gray-400 mb-1.5 block">Статус</label>
                 <div className="flex gap-3">
-                  {["Самозанятый", "ИП / Компания"].map((s) => (
+                  {["Самозанятый / ИП", "Без статуса"].map((s) => (
                     <button
                       key={s}
                       type="button"
@@ -523,7 +523,7 @@ const Index = () => {
                   ))}
                 </div>
                 <p className="text-[11px] text-gray-600 mt-1.5">
-                  {masterForm.status === "Самозанятый" ? "Комиссия платформы — 5%" : "Комиссия платформы — 10%"}
+                  {masterForm.status === "Самозанятый / ИП" ? "Комиссия платформы — 5%" : "Комиссия платформы — 10%"}
                 </p>
               </div>
               <div>
