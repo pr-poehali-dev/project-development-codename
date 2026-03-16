@@ -411,54 +411,7 @@ const Index = () => {
         </div>
       </section>
 
-      {/* Блок комиссии */}
-      <section className="py-16 px-4 bg-gradient-to-br from-violet-900/20 to-indigo-900/10 border-y border-white/5">
-        <div className="max-w-5xl mx-auto">
-          <h2 className="text-2xl font-bold text-center mb-3">Прозрачная комиссионная система</h2>
-          <p className="text-gray-400 text-center mb-10">Честные условия для всех участников платформы</p>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="bg-emerald-500/8 border border-emerald-500/20 rounded-2xl p-7">
-              <div className="w-12 h-12 rounded-xl bg-emerald-500/15 flex items-center justify-center mb-4">
-                <Icon name="UserCheck" size={22} className="text-emerald-400" />
-              </div>
-              <div className="text-4xl font-extrabold text-emerald-400 mb-2">5%</div>
-              <div className="text-white font-semibold text-lg mb-2">Самозанятые, ИП и компании</div>
-              <p className="text-gray-400 text-sm leading-relaxed">
-                Минимальная комиссия для всех, кто имеет официальный статус:
-                самозанятый, ИП или юридическое лицо.
-              </p>
-              <ul className="mt-4 space-y-2">
-                {["Самозанятые физлица", "Индивидуальные предприниматели", "ООО и другие юрлица"].map((item) => (
-                  <li key={item} className="flex items-center gap-2 text-sm text-gray-300">
-                    <Icon name="Check" size={14} className="text-emerald-400 flex-shrink-0" />
-                    {item}
-                  </li>
-                ))}
-              </ul>
-            </div>
 
-            <div className="bg-orange-500/8 border border-orange-500/20 rounded-2xl p-7">
-              <div className="w-12 h-12 rounded-xl bg-orange-500/15 flex items-center justify-center mb-4">
-                <Icon name="User" size={22} className="text-orange-400" />
-              </div>
-              <div className="text-4xl font-extrabold text-orange-400 mb-2">10%</div>
-              <div className="text-white font-semibold text-lg mb-2">Без официального статуса</div>
-              <p className="text-gray-400 text-sm leading-relaxed">
-                Стандартная комиссия для физических лиц без статуса
-                самозанятого или ИП.
-              </p>
-              <ul className="mt-4 space-y-2">
-                {["Быстрый старт без оформления", "Полный доступ к заказам", "Вывод средств без ограничений"].map((item) => (
-                  <li key={item} className="flex items-center gap-2 text-sm text-gray-300">
-                    <Icon name="Check" size={14} className="text-orange-400 flex-shrink-0" />
-                    {item}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          </div>
-        </div>
-      </section>
 
       {/* CTA */}
       <section className="py-20 px-4 text-center">
