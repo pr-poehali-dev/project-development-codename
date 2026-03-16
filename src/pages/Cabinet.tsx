@@ -85,7 +85,7 @@ const Cabinet = () => {
               <Icon name="Zap" size={18} className="text-white" />
             </div>
             <span className="text-xl font-bold bg-gradient-to-r from-violet-400 to-indigo-400 bg-clip-text text-transparent">
-              ЦифровойХаб
+              HandyMan
             </span>
           </a>
           <a href="/">
