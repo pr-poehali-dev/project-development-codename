@@ -24,6 +24,17 @@ interface Transaction {
   created_at: string;
 }
 
+interface MyResponse {
+  id: number;
+  order_id: number;
+  order_title: string;
+  order_category: string;
+  order_status: string;
+  order_city: string;
+  message: string;
+  created_at: string;
+}
+
 interface Package {
   id: number;
   name: string;
@@ -46,12 +57,13 @@ export default function MasterCabinet() {
   const [inputPhone, setInputPhone] = useState("");
   const [master, setMaster] = useState<Master | null>(null);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [myResponses, setMyResponses] = useState<MyResponse[]>([]);
   const [packages, setPackages] = useState<Package[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [buyingId, setBuyingId] = useState<number | null>(null);
   const [buySuccess, setBuySuccess] = useState("");
-  const [tab, setTab] = useState<"balance" | "history">("balance");
+  const [tab, setTab] = useState<"balance" | "history" | "responses">("balance");
 
   useEffect(() => {
     const saved = localStorage.getItem("master_phone");
@@ -81,6 +93,7 @@ export default function MasterCabinet() {
       } else {
         setMaster(data.master);
         setTransactions(data.transactions || []);
+        setMyResponses(data.my_responses || []);
         localStorage.setItem("master_phone", p);
       }
     } finally {
@@ -236,6 +249,13 @@ export default function MasterCabinet() {
             Пополнить баланс
           </button>
           <button
+            onClick={() => setTab("responses")}
+            className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all flex items-center justify-center gap-1.5 ${tab === "responses" ? "bg-violet-600 text-white" : "text-gray-400 hover:text-white"}`}
+          >
+            Мои отклики
+            {myResponses.length > 0 && <span className={`text-xs px-1.5 py-0.5 rounded-md ${tab === "responses" ? "bg-white/20" : "bg-white/10"}`}>{myResponses.length}</span>}
+          </button>
+          <button
             onClick={() => setTab("history")}
             className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all ${tab === "history" ? "bg-violet-600 text-white" : "text-gray-400 hover:text-white"}`}
           >
@@ -281,6 +301,44 @@ export default function MasterCabinet() {
               . Исполнитель: Харисов Э.И., ИНН 860234992431.
             </p>
           </>
+        )}
+
+        {tab === "responses" && (
+          <div className="flex flex-col gap-3">
+            {myResponses.length === 0 ? (
+              <div className="text-center py-12 text-gray-500">
+                <Icon name="MessageCircle" size={32} className="mx-auto mb-3 opacity-40" />
+                <p>Вы ещё не откликались на заявки</p>
+                <a href="/orders"><Button className="mt-4 bg-gradient-to-r from-violet-600 to-indigo-600 text-white text-sm">Смотреть заявки</Button></a>
+              </div>
+            ) : (
+              myResponses.map((r) => {
+                const statusMap: Record<string, { label: string; color: string }> = {
+                  new: { label: "Новая", color: "text-blue-400 bg-blue-600/15 border-blue-500/20" },
+                  in_progress: { label: "В работе", color: "text-amber-400 bg-amber-600/15 border-amber-500/20" },
+                  done: { label: "Выполнена", color: "text-emerald-400 bg-emerald-600/15 border-emerald-500/20" },
+                  cancelled: { label: "Отменена", color: "text-gray-400 bg-gray-600/15 border-gray-500/20" },
+                };
+                const st = statusMap[r.order_status] || statusMap.new;
+                return (
+                  <div key={r.id} className="bg-white/4 border border-white/8 rounded-xl p-4">
+                    <div className="flex items-start justify-between gap-3 mb-2">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-white font-medium text-sm truncate">{r.order_title}</p>
+                        <div className="flex items-center gap-2 mt-1 flex-wrap">
+                          {r.order_category && <span className="text-gray-500 text-xs">{r.order_category}</span>}
+                          {r.order_city && <span className="text-gray-600 text-xs flex items-center gap-1"><Icon name="MapPin" size={10} />{r.order_city}</span>}
+                          <span className="text-gray-600 text-xs">{formatDate(r.created_at)}</span>
+                        </div>
+                      </div>
+                      <span className={`text-xs px-2 py-1 rounded-lg border flex-shrink-0 ${st.color}`}>{st.label}</span>
+                    </div>
+                    {r.message && <p className="text-gray-400 text-sm border-t border-white/6 pt-2 mt-2">{r.message}</p>}
+                  </div>
+                );
+              })
+            )}
+          </div>
         )}
 
         {tab === "history" && (

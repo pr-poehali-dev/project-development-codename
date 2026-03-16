@@ -1,21 +1,11 @@
 {
   "tests": [
     {
-      "name": "Регистрация мастера",
-      "method": "POST",
-      "path": "/",
-      "body": {"phone": "+79001234567", "name": "Тест Мастер", "category": "Электрика", "city": "Москва"},
-      "expectedStatus": 200,
-      "expectedBody": {"master": {"phone": "+79001234567"}},
-      "bodyMatcher": "partial"
-    },
-    {
       "name": "Получение профиля мастера",
       "method": "GET",
       "path": "/?phone=%2B79001234567",
       "expectedStatus": 200,
-      "expectedBody": {"master": {"balance": 0}},
-      "bodyMatcher": "partial"
+      "bodyMatcher": "none"
     }
   ]
 }

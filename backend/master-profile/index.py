@@ -130,6 +130,13 @@ def handler(event: dict, context) -> dict:
         transactions = cur.fetchall()
         cur.execute("SELECT ROUND(AVG(rating)::numeric,1) as avg, COUNT(*) as cnt FROM reviews WHERE master_id = %s", (master['id'],))
         stats = cur.fetchone()
+        cur.execute(
+            "SELECT r.id, r.order_id, r.message, r.created_at, o.title as order_title, o.category as order_category, o.status as order_status, o.city as order_city "
+            "FROM responses r JOIN orders o ON o.id = r.order_id "
+            "WHERE r.master_id = %s ORDER BY r.created_at DESC LIMIT 50",
+            (master['id'],)
+        )
+        my_responses = cur.fetchall()
         cur.close(); conn.close()
 
         return {
@@ -143,7 +150,17 @@ def handler(event: dict, context) -> dict:
                     'id': t['id'], 'type': t['type'], 'amount': t['amount'],
                     'description': t['description'],
                     'created_at': t['created_at'].isoformat() if t['created_at'] else None,
-                } for t in transactions]
+                } for t in transactions],
+                'my_responses': [{
+                    'id': r['id'],
+                    'order_id': r['order_id'],
+                    'order_title': r['order_title'],
+                    'order_category': r['order_category'],
+                    'order_status': r['order_status'],
+                    'order_city': r['order_city'],
+                    'message': r['message'],
+                    'created_at': r['created_at'].isoformat() if r['created_at'] else None,
+                } for r in my_responses]
             }, ensure_ascii=False)
         }
 
@@ -187,6 +204,13 @@ def handler(event: dict, context) -> dict:
         transactions = cur.fetchall()
         cur.execute("SELECT ROUND(AVG(rating)::numeric,1) as avg, COUNT(*) as cnt FROM reviews WHERE master_id = %s", (master['id'],))
         stats = cur.fetchone()
+        cur.execute(
+            "SELECT r.id, r.order_id, r.message, r.created_at, o.title as order_title, o.category as order_category, o.status as order_status, o.city as order_city "
+            "FROM responses r JOIN orders o ON o.id = r.order_id "
+            "WHERE r.master_id = %s ORDER BY r.created_at DESC LIMIT 50",
+            (master['id'],)
+        )
+        my_responses = cur.fetchall()
         cur.close(); conn.close()
 
         return {
@@ -200,7 +224,17 @@ def handler(event: dict, context) -> dict:
                     'id': t['id'], 'type': t['type'], 'amount': t['amount'],
                     'description': t['description'],
                     'created_at': t['created_at'].isoformat() if t['created_at'] else None,
-                } for t in transactions]
+                } for t in transactions],
+                'my_responses': [{
+                    'id': r['id'],
+                    'order_id': r['order_id'],
+                    'order_title': r['order_title'],
+                    'order_category': r['order_category'],
+                    'order_status': r['order_status'],
+                    'order_city': r['order_city'],
+                    'message': r['message'],
+                    'created_at': r['created_at'].isoformat() if r['created_at'] else None,
+                } for r in my_responses]
             }, ensure_ascii=False)
         }
 
