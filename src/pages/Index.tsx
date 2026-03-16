@@ -139,7 +139,7 @@ const Index = () => {
               Войти
             </Button>
             <Button className="bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white text-sm px-5">
-              Разместить услугу
+              Я мастер
             </Button>
           </div>
 
@@ -157,7 +157,7 @@ const Index = () => {
             <a href="#" className="block text-gray-400 hover:text-white text-sm">Категории</a>
             <a href="#" className="block text-gray-400 hover:text-white text-sm">Как работает</a>
             <Button className="w-full bg-gradient-to-r from-violet-600 to-indigo-600 text-white text-sm mt-2">
-              Разместить услугу
+              Я мастер
             </Button>
           </div>
         )}
