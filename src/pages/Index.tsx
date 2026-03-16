@@ -584,9 +584,7 @@ const Index = () => {
                     </button>
                   ))}
                 </div>
-                <p className="text-[11px] text-gray-600 mt-1.5">
-                  {masterForm.status === "Самозанятый / ИП / Компания" ? "Комиссия платформы — 5%" : "Комиссия платформы — 10%"}
-                </p>
+
               </div>
               <div>
                 <label className="text-sm text-gray-400 mb-1.5 block">О себе</label>
