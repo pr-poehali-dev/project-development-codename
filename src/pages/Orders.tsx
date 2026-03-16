@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import Icon from "@/components/ui/icon";
+import CitySelect from "@/components/ui/city-select";
 
 const ORDERS_URL = "https://functions.poehali.dev/34db9bab-e58a-479e-b1cc-c27fb8e0b728";
 const RESPONSES_URL = "https://functions.poehali.dev/889ae9dd-c29e-4b5b-b05e-1110dc8e5eaa";
@@ -128,17 +129,13 @@ const Orders = () => {
 
           {/* Фильтр по городу */}
           <div className="flex items-center gap-3 mb-5 flex-wrap">
-            <div className="relative">
-              <Icon name="MapPin" size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" />
-              <select
-                className="bg-white/5 border border-white/10 rounded-xl pl-8 pr-8 py-2 text-sm text-gray-300 focus:outline-none focus:border-violet-500 transition-colors appearance-none cursor-pointer hover:border-white/20"
-                value={selectedCity}
-                onChange={(e) => setSelectedCity(e.target.value)}
-              >
-                <option value="">Все города</option>
-                {cities.filter(c => c !== "Все").map((c) => <option key={c} value={c}>{c}</option>)}
-              </select>
-            </div>
+            <CitySelect
+              value={selectedCity}
+              onChange={setSelectedCity}
+              allCitiesLabel="Все города"
+              variant="glass"
+              cities={cities.filter(c => c !== "Все")}
+            />
             {selectedCity && (
               <button onClick={() => setSelectedCity("")} className="text-gray-500 hover:text-gray-300 text-sm flex items-center gap-1 transition-colors">
                 <Icon name="X" size={14} />
