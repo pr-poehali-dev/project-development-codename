@@ -32,7 +32,7 @@ def send_email(to_email: str, order_title: str, master_name: str, master_phone: 
     html = f"""
     <div style="font-family: Arial, sans-serif; max-width: 560px; margin: 0 auto; background: #0f1117; color: #ffffff; border-radius: 16px; overflow: hidden;">
       <div style="background: linear-gradient(135deg, #7c3aed, #4f46e5); padding: 32px 32px 24px;">
-        <h1 style="margin: 0; font-size: 22px; color: #ffffff;">⚡ HandyMan</h1>
+        <h1 style="margin: 0; font-size: 22px; color: #ffffff;">⚡ ХэндиМэн</h1>
         <p style="margin: 8px 0 0; color: #c4b5fd; font-size: 14px;">Маркетплейс бытовых услуг</p>
       </div>
       <div style="padding: 32px;">
