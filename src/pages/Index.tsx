@@ -479,12 +479,12 @@ const Index = () => {
             <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center">
               <Icon name="Zap" size={14} className="text-white" />
             </div>
-            <span className="font-bold text-white">HandyMan</span>
+            <span className="font-bold text-white">ХэндиСэн</span>
           </div>
-          <p className="text-gray-600 text-sm">© 2026 HandyMan. Все права защищены.</p>
+          <p className="text-gray-600 text-sm">© 2026 ХэндиСэн. Харисов Э.И., ИНН 860234992431</p>
           <div className="flex gap-4">
-            <a href="#" className="text-gray-600 hover:text-gray-400 text-sm">Условия</a>
-            <a href="#" className="text-gray-600 hover:text-gray-400 text-sm">Конфиденциальность</a>
+            <a href="/offer" className="text-gray-600 hover:text-gray-400 text-sm">Оферта</a>
+            <a href="/offer#7" className="text-gray-600 hover:text-gray-400 text-sm">Конфиденциальность</a>
           </div>
         </div>
       </footer>

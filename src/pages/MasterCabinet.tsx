@@ -265,6 +265,13 @@ export default function MasterCabinet() {
                 Оплата через ЮKassa будет подключена в ближайшее время. Сейчас пакеты зачисляются без списания средств для тестирования.
               </p>
             </div>
+            <p className="mt-4 text-gray-600 text-xs text-center">
+              Нажимая «Выбрать», вы соглашаетесь с{" "}
+              <a href="/offer" target="_blank" className="text-violet-500 hover:text-violet-400 underline transition-colors">
+                публичной офертой
+              </a>
+              . Исполнитель: Харисов Э.И., ИНН 860234992431.
+            </p>
           </>
         )}
 
