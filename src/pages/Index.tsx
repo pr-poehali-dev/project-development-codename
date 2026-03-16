@@ -117,14 +117,17 @@ const stats = [
 ];
 
 const ORDERS_URL = "https://functions.poehali.dev/34db9bab-e58a-479e-b1cc-c27fb8e0b728";
+const MASTER_URL = "https://functions.poehali.dev/de274bd5-3f08-42d8-9aac-b373bb34b900";
 
 const Index = () => {
   const [activeCategory, setActiveCategory] = useState("Все");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const [masterModalOpen, setMasterModalOpen] = useState(false);
-  const [masterForm, setMasterForm] = useState({ name: "", phone: "", category: "", about: "", status: "Самозанятый / ИП / Компания" });
+  const [masterForm, setMasterForm] = useState({ name: "", phone: "", category: "", city: "", about: "", status: "Самозанятый / ИП / Компания" });
   const [masterSent, setMasterSent] = useState(false);
+  const [masterLoading, setMasterLoading] = useState(false);
+  const [masterError, setMasterError] = useState("");
 
   const [orderModalOpen, setOrderModalOpen] = useState(false);
   const [selectedCity, setSelectedCity] = useState("");
@@ -133,9 +136,35 @@ const Index = () => {
   const [orderLoading, setOrderLoading] = useState(false);
   const [orderError, setOrderError] = useState("");
 
-  const handleMasterSubmit = (e: React.FormEvent) => {
+  const handleMasterSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setMasterSent(true);
+    setMasterLoading(true);
+    setMasterError("");
+    try {
+      const res = await fetch(MASTER_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: masterForm.name,
+          phone: masterForm.phone,
+          category: masterForm.category,
+          city: masterForm.city,
+          about: masterForm.about,
+        }),
+      });
+      const data = await res.json();
+      const parsed = typeof data === "string" ? JSON.parse(data) : data;
+      if (parsed.master) {
+        localStorage.setItem("master_phone", masterForm.phone);
+        setMasterSent(true);
+      } else {
+        setMasterError(parsed.error || "Ошибка регистрации");
+      }
+    } catch {
+      setMasterError("Не удалось подключиться. Попробуйте позже.");
+    } finally {
+      setMasterLoading(false);
+    }
   };
 
   const handleOrderSubmit = async (e: React.FormEvent) => {
@@ -489,14 +518,21 @@ const Index = () => {
               <div className="w-16 h-16 rounded-full bg-emerald-500/15 flex items-center justify-center mx-auto mb-4">
                 <Icon name="CheckCircle" size={32} className="text-emerald-400" />
               </div>
-              <p className="text-gray-300 mb-2">Мы получили вашу заявку, <span className="text-white font-semibold">{masterForm.name}</span>!</p>
-              <p className="text-gray-500 text-sm">Свяжемся с вами по номеру <span className="text-gray-300">{masterForm.phone}</span> в течение 24 часов.</p>
-              <Button
-                className="mt-6 w-full bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white"
-                onClick={() => { setMasterModalOpen(false); setMasterSent(false); }}
-              >
-                Закрыть
-              </Button>
+              <p className="text-gray-300 mb-2">Добро пожаловать, <span className="text-white font-semibold">{masterForm.name}</span>!</p>
+              <p className="text-gray-500 text-sm mb-6">Аккаунт создан. Теперь вы можете откликаться на заявки заказчиков.</p>
+              <div className="flex flex-col gap-3">
+                <a href="/master" onClick={() => { setMasterModalOpen(false); setMasterSent(false); }}>
+                  <Button className="w-full bg-gradient-to-r from-violet-600 to-indigo-600 text-white">
+                    Перейти в кабинет мастера
+                    <Icon name="ArrowRight" size={16} className="ml-2" />
+                  </Button>
+                </a>
+                <a href="/orders" onClick={() => { setMasterModalOpen(false); setMasterSent(false); }}>
+                  <Button variant="ghost" className="w-full text-gray-400 hover:text-white">
+                    Смотреть заявки
+                  </Button>
+                </a>
+              </div>
             </div>
           ) : (
             <form onSubmit={handleMasterSubmit} className="space-y-4 mt-2">
@@ -573,12 +609,14 @@ const Index = () => {
                   onChange={(e) => setMasterForm({ ...masterForm, about: e.target.value })}
                 />
               </div>
+              {masterError && <p className="text-red-400 text-sm">{masterError}</p>}
               <Button
                 type="submit"
-                className="w-full bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white py-2.5 rounded-xl text-sm font-medium"
+                disabled={masterLoading}
+                className="w-full bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white py-2.5 rounded-xl text-sm font-medium disabled:opacity-60"
               >
-                Отправить заявку
-                <Icon name="ArrowRight" size={16} className="ml-2" />
+                {masterLoading ? "Регистрация..." : "Зарегистрироваться"}
+                {!masterLoading && <Icon name="ArrowRight" size={16} className="ml-2" />}
               </Button>
             </form>
           )}
