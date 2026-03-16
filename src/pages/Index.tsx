@@ -341,10 +341,12 @@ const Index = () => {
               {activeCategory === "Все" ? "Все услуги" : activeCategory}
               <span className="text-gray-600 text-lg font-normal ml-3">{filtered.length}</span>
             </h2>
-            <Button variant="ghost" className="text-gray-400 hover:text-white text-sm gap-2">
-              <Icon name="SlidersHorizontal" size={16} />
-              Фильтры
-            </Button>
+            <a href={activeCategory === "Все" ? "/orders" : `/orders?category=${encodeURIComponent(activeCategory)}`}>
+              <Button variant="ghost" className="text-gray-400 hover:text-white text-sm gap-2">
+                <Icon name="SlidersHorizontal" size={16} />
+                Все заявки →
+              </Button>
+            </a>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
