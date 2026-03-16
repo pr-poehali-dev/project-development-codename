@@ -1,470 +1,436 @@
 import { useState } from "react";
-import {
-  Download,
-  Shield,
-  Zap,
-  Eye,
-  Clock,
-  Github,
-  ArrowRight,
-  Hash,
-  Users,
-  Mic,
-  Settings,
-  Bell,
-  Search,
-  Menu,
-  X,
-  Monitor,
-} from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import Icon from "@/components/ui/icon";
+
+const categories = [
+  { name: "Дизайн", icon: "Palette", count: 234 },
+  { name: "Разработка", icon: "Code2", count: 187 },
+  { name: "Маркетинг", icon: "TrendingUp", count: 156 },
+  { name: "Копирайтинг", icon: "PenLine", count: 98 },
+  { name: "SEO", icon: "Search", count: 74 },
+  { name: "Видео", icon: "Video", count: 61 },
+  { name: "Аналитика", icon: "BarChart2", count: 45 },
+  { name: "Консалтинг", icon: "Briefcase", count: 39 },
+];
+
+const services = [
+  {
+    id: 1,
+    title: "Разработка Landing Page под ключ",
+    category: "Разработка",
+    price: 12000,
+    rating: 4.9,
+    reviews: 47,
+    name: "Иван Петров",
+    status: "Самозанятый",
+    commission: 5,
+    avatar: "И",
+    color: "#6366f1",
+  },
+  {
+    id: 2,
+    title: "Дизайн логотипа и фирменного стиля",
+    category: "Дизайн",
+    price: 8500,
+    rating: 4.8,
+    reviews: 82,
+    name: "Анна Смирнова",
+    status: "Самозанятый",
+    commission: 5,
+    avatar: "А",
+    color: "#ec4899",
+  },
+  {
+    id: 3,
+    title: "Настройка рекламы в Яндекс.Директ",
+    category: "Маркетинг",
+    price: 15000,
+    rating: 4.7,
+    reviews: 31,
+    name: "ООО Диджитал Про",
+    status: "Компания",
+    commission: 10,
+    avatar: "Д",
+    color: "#f59e0b",
+  },
+  {
+    id: 4,
+    title: "SEO-продвижение сайта на 3 месяца",
+    category: "SEO",
+    price: 25000,
+    rating: 4.9,
+    reviews: 19,
+    name: "Сергей Козлов",
+    status: "Самозанятый",
+    commission: 5,
+    avatar: "С",
+    color: "#10b981",
+  },
+  {
+    id: 5,
+    title: "Написание продающих текстов для сайта",
+    category: "Копирайтинг",
+    price: 4500,
+    rating: 4.6,
+    reviews: 64,
+    name: "Мария Волкова",
+    status: "Самозанятый",
+    commission: 5,
+    avatar: "М",
+    color: "#8b5cf6",
+  },
+  {
+    id: 6,
+    title: "Монтаж и обработка видео для YouTube",
+    category: "Видео",
+    price: 7000,
+    rating: 4.8,
+    reviews: 28,
+    name: "АВ Медиа Студия",
+    status: "Компания",
+    commission: 10,
+    avatar: "А",
+    color: "#ef4444",
+  },
+];
+
+const stats = [
+  { label: "Исполнителей", value: "1 200+", icon: "Users" },
+  { label: "Выполнено заказов", value: "8 400+", icon: "CheckCircle" },
+  { label: "Средняя оценка", value: "4.8 ★", icon: "Star" },
+  { label: "Категорий услуг", value: "40+", icon: "Grid3x3" },
+];
 
 const Index = () => {
+  const [activeCategory, setActiveCategory] = useState("Все");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+
+  const filtered =
+    activeCategory === "Все"
+      ? services
+      : services.filter((s) => s.category === activeCategory);
 
   return (
-    <div className="min-h-screen bg-[#36393f] text-white overflow-x-hidden">
-      {/* Навигация в стиле Discord */}
-      <nav className="bg-[#2f3136] border-b border-[#202225] px-4 sm:px-6 py-4">
-        <div className="max-w-7xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-3 sm:gap-4">
-            <div className="w-8 h-8 sm:w-10 sm:h-10 bg-[#5865f2] rounded-full flex items-center justify-center">
-              <Monitor className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
+    <div className="min-h-screen bg-[#0f1117] text-white">
+      {/* Навигация */}
+      <nav className="bg-[#0f1117]/95 backdrop-blur border-b border-white/10 sticky top-0 z-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center">
+              <Icon name="Zap" size={18} className="text-white" />
             </div>
-            <div>
-              <h1 className="text-lg sm:text-xl font-bold text-white">Дискордик</h1>
-              <p className="text-xs text-[#b9bbbe] hidden sm:block">Rich Presence для Figma в Discord</p>
-            </div>
+            <span className="text-xl font-bold bg-gradient-to-r from-violet-400 to-indigo-400 bg-clip-text text-transparent">
+              ЦифровойХаб
+            </span>
           </div>
-          <div className="hidden sm:flex items-center gap-4">
-            <Button variant="ghost" className="text-[#b9bbbe] hover:text-white hover:bg-[#40444b]">
-              <Github className="w-4 h-4 mr-2" />
-              GitHub
+
+          <div className="hidden md:flex items-center gap-6">
+            <a href="#" className="text-gray-400 hover:text-white text-sm transition-colors">Категории</a>
+            <a href="#" className="text-gray-400 hover:text-white text-sm transition-colors">Как работает</a>
+            <a href="#" className="text-gray-400 hover:text-white text-sm transition-colors">Тарифы</a>
+          </div>
+
+          <div className="hidden md:flex items-center gap-3">
+            <Button variant="ghost" className="text-gray-300 hover:text-white hover:bg-white/10 text-sm">
+              Войти
             </Button>
-            <Button className="bg-[#5865f2] hover:bg-[#4752c4] text-white px-6 py-2 rounded text-sm font-medium">
-              Скачать
+            <Button className="bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white text-sm px-5">
+              Разместить услугу
             </Button>
           </div>
+
           <Button
             variant="ghost"
-            className="sm:hidden text-[#b9bbbe] hover:text-white hover:bg-[#40444b] p-2"
+            className="md:hidden text-gray-400 p-2"
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
           >
-            {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+            <Icon name={mobileMenuOpen ? "X" : "Menu"} size={20} />
           </Button>
         </div>
 
-        {/* Мобильное меню */}
         {mobileMenuOpen && (
-          <div className="sm:hidden mt-4 pt-4 border-t border-[#202225]">
-            <div className="flex flex-col gap-3">
-              <Button variant="ghost" className="text-[#b9bbbe] hover:text-white hover:bg-[#40444b] justify-start">
-                <Github className="w-4 h-4 mr-2" />
-                GitHub
-              </Button>
-              <Button className="bg-[#5865f2] hover:bg-[#4752c4] text-white px-6 py-2 rounded text-sm font-medium">
-                Скачать
-              </Button>
-            </div>
+          <div className="md:hidden border-t border-white/10 px-4 py-4 space-y-3">
+            <a href="#" className="block text-gray-400 hover:text-white text-sm">Категории</a>
+            <a href="#" className="block text-gray-400 hover:text-white text-sm">Как работает</a>
+            <Button className="w-full bg-gradient-to-r from-violet-600 to-indigo-600 text-white text-sm mt-2">
+              Разместить услугу
+            </Button>
           </div>
         )}
       </nav>
 
-      {/* Макет в стиле Discord */}
-      <div className="flex min-h-screen">
-        {/* Боковая панель серверов - скрыта на мобильных */}
-        <div className="hidden lg:flex w-[72px] bg-[#202225] flex-col items-center py-3 gap-2">
-          <div className="w-12 h-12 bg-[#5865f2] rounded-2xl hover:rounded-xl transition-all duration-200 flex items-center justify-center cursor-pointer">
-            <Monitor className="w-6 h-6 text-white" />
+      {/* Герой */}
+      <section className="relative py-20 sm:py-28 px-4 overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-b from-violet-900/20 via-transparent to-transparent pointer-events-none" />
+        <div className="absolute top-20 left-1/4 w-72 h-72 bg-violet-600/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute top-10 right-1/4 w-56 h-56 bg-indigo-600/10 rounded-full blur-3xl pointer-events-none" />
+
+        <div className="max-w-4xl mx-auto text-center relative">
+          <Badge className="mb-6 bg-violet-600/20 text-violet-300 border-violet-500/30 px-4 py-1.5 text-sm">
+            🚀 Маркетплейс цифровых услуг
+          </Badge>
+          <h1 className="text-4xl sm:text-6xl font-extrabold mb-6 leading-tight">
+            Найди лучшего
+            <span className="bg-gradient-to-r from-violet-400 to-indigo-400 bg-clip-text text-transparent"> исполнителя</span>
+            <br />для своего проекта
+          </h1>
+          <p className="text-gray-400 text-lg sm:text-xl mb-10 max-w-2xl mx-auto">
+            Более 1 200 проверенных специалистов: разработчики, дизайнеры, маркетологи.
+            Комиссия от 5% — только для самозанятых.
+          </p>
+
+          <div className="flex flex-col sm:flex-row gap-3 justify-center max-w-lg mx-auto">
+            <div className="flex-1 relative">
+              <Icon name="Search" size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500" />
+              <input
+                className="w-full bg-white/5 border border-white/10 rounded-xl pl-10 pr-4 py-3 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-violet-500 transition-colors"
+                placeholder="Найти услугу или специалиста..."
+              />
+            </div>
+            <Button className="bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white px-6 py-3 rounded-xl text-sm font-medium">
+              Найти
+            </Button>
           </div>
-          <div className="w-8 h-[2px] bg-[#36393f] rounded-full"></div>
-          {[1, 2, 3, 4].map((i) => (
-            <div
-              key={i}
-              className="w-12 h-12 bg-[#36393f] rounded-3xl hover:rounded-xl transition-all duration-200 flex items-center justify-center cursor-pointer hover:bg-[#5865f2]"
-            >
-              <span className="text-[#dcddde] text-sm font-medium">{i}</span>
+        </div>
+      </section>
+
+      {/* Статистика */}
+      <section className="py-10 px-4 border-y border-white/5 bg-white/2">
+        <div className="max-w-6xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-6">
+          {stats.map((stat) => (
+            <div key={stat.label} className="text-center">
+              <div className="flex justify-center mb-2">
+                <div className="w-10 h-10 rounded-xl bg-violet-600/15 flex items-center justify-center">
+                  <Icon name={stat.icon} size={18} className="text-violet-400" />
+                </div>
+              </div>
+              <div className="text-2xl font-bold text-white">{stat.value}</div>
+              <div className="text-sm text-gray-500 mt-0.5">{stat.label}</div>
             </div>
           ))}
         </div>
+      </section>
 
-        {/* Основной контент */}
-        <div className="flex-1 flex flex-col lg:flex-row">
-          {/* Боковая панель каналов */}
-          <div
-            className={`${mobileSidebarOpen ? "block" : "hidden"} lg:block w-full lg:w-60 bg-[#2f3136] flex flex-col`}
-          >
-            <div className="p-4 border-b border-[#202225] flex items-center justify-between">
-              <h2 className="text-white font-semibold text-base">Сервер Дискордик</h2>
-              <Button
-                variant="ghost"
-                className="lg:hidden text-[#b9bbbe] hover:text-white hover:bg-[#40444b] p-1"
-                onClick={() => setMobileSidebarOpen(false)}
+      {/* Категории */}
+      <section className="py-14 px-4">
+        <div className="max-w-7xl mx-auto">
+          <h2 className="text-2xl font-bold mb-8 text-center">Категории услуг</h2>
+          <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3">
+            <button
+              onClick={() => setActiveCategory("Все")}
+              className={`flex flex-col items-center gap-2 p-4 rounded-xl border transition-all ${
+                activeCategory === "Все"
+                  ? "bg-violet-600/20 border-violet-500/50 text-violet-300"
+                  : "bg-white/3 border-white/8 text-gray-400 hover:border-white/20 hover:text-white"
+              }`}
+            >
+              <Icon name="LayoutGrid" size={22} />
+              <span className="text-xs font-medium">Все</span>
+            </button>
+            {categories.map((cat) => (
+              <button
+                key={cat.name}
+                onClick={() => setActiveCategory(cat.name)}
+                className={`flex flex-col items-center gap-2 p-4 rounded-xl border transition-all ${
+                  activeCategory === cat.name
+                    ? "bg-violet-600/20 border-violet-500/50 text-violet-300"
+                    : "bg-white/3 border-white/8 text-gray-400 hover:border-white/20 hover:text-white"
+                }`}
               >
-                <X className="w-4 h-4" />
-              </Button>
-            </div>
-            <div className="flex-1 p-2">
-              <div className="mb-4">
-                <div className="flex items-center gap-1 px-2 py-1 text-[#8e9297] text-xs font-semibold uppercase tracking-wide">
-                  <ArrowRight className="w-3 h-3" />
-                  <span>Текстовые каналы</span>
-                </div>
-                <div className="mt-1 space-y-0.5">
-                  {["общий", "новости", "витрина", "помощь"].map((channel) => (
-                    <div
-                      key={channel}
-                      className="flex items-center gap-1.5 px-2 py-1 rounded text-[#8e9297] hover:text-[#dcddde] hover:bg-[#393c43] cursor-pointer"
-                    >
-                      <Hash className="w-4 h-4" />
-                      <span className="text-sm">{channel}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-              <div>
-                <div className="flex items-center gap-1 px-2 py-1 text-[#8e9297] text-xs font-semibold uppercase tracking-wide">
-                  <ArrowRight className="w-3 h-3" />
-                  <span>Голосовые каналы</span>
-                </div>
-                <div className="mt-1 space-y-0.5">
-                  {["Общий", "Обзор дизайна"].map((channel) => (
-                    <div
-                      key={channel}
-                      className="flex items-center gap-1.5 px-2 py-1 rounded text-[#8e9297] hover:text-[#dcddde] hover:bg-[#393c43] cursor-pointer"
-                    >
-                      <Mic className="w-4 h-4" />
-                      <span className="text-sm">{channel}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-            {/* Область пользователя */}
-            <div className="p-2 bg-[#292b2f] flex items-center gap-2">
-              <div className="w-8 h-8 bg-[#5865f2] rounded-full flex items-center justify-center">
-                <span className="text-white text-sm font-medium">А</span>
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="text-white text-sm font-medium truncate">Алексей</div>
-                <div className="text-[#b9bbbe] text-xs truncate">#1234</div>
-              </div>
-              <div className="flex gap-1">
-                <Button variant="ghost" size="sm" className="w-8 h-8 p-0 hover:bg-[#40444b]">
-                  <Mic className="w-4 h-4 text-[#b9bbbe]" />
-                </Button>
-                <Button variant="ghost" size="sm" className="w-8 h-8 p-0 hover:bg-[#40444b]">
-                  <Settings className="w-4 h-4 text-[#b9bbbe]" />
-                </Button>
-              </div>
-            </div>
+                <Icon name={cat.icon} size={22} />
+                <span className="text-xs font-medium">{cat.name}</span>
+                <span className="text-[10px] text-gray-600">{cat.count}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Карточки услуг */}
+      <section className="pb-20 px-4">
+        <div className="max-w-7xl mx-auto">
+          <div className="flex items-center justify-between mb-8">
+            <h2 className="text-2xl font-bold">
+              {activeCategory === "Все" ? "Все услуги" : activeCategory}
+              <span className="text-gray-600 text-lg font-normal ml-3">{filtered.length}</span>
+            </h2>
+            <Button variant="ghost" className="text-gray-400 hover:text-white text-sm gap-2">
+              <Icon name="SlidersHorizontal" size={16} />
+              Фильтры
+            </Button>
           </div>
 
-          {/* Область чата */}
-          <div className="flex-1 flex flex-col">
-            {/* Заголовок чата */}
-            <div className="h-12 bg-[#36393f] border-b border-[#202225] flex items-center px-4 gap-2">
-              <Button
-                variant="ghost"
-                className="lg:hidden text-[#8e9297] hover:text-[#dcddde] hover:bg-[#40444b] p-1 mr-2"
-                onClick={() => setMobileSidebarOpen(true)}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            {filtered.map((service) => (
+              <div
+                key={service.id}
+                className="group bg-white/4 border border-white/8 rounded-2xl p-5 hover:border-violet-500/40 hover:bg-white/6 transition-all cursor-pointer"
               >
-                <Menu className="w-5 h-5" />
-              </Button>
-              <Hash className="w-5 h-5 text-[#8e9297]" />
-              <span className="text-white font-semibold">витрина</span>
-              <div className="w-px h-6 bg-[#40444b] mx-2 hidden sm:block"></div>
-              <span className="text-[#8e9297] text-sm hidden sm:block">Показывай свою работу в Figma с Дискордик</span>
-              <div className="ml-auto flex items-center gap-2 sm:gap-4">
-                <Bell className="w-4 h-4 sm:w-5 sm:h-5 text-[#b9bbbe] cursor-pointer hover:text-[#dcddde]" />
-                <Users className="w-4 h-4 sm:w-5 sm:h-5 text-[#b9bbbe] cursor-pointer hover:text-[#dcddde]" />
-                <Search className="w-4 h-4 sm:w-5 sm:h-5 text-[#b9bbbe] cursor-pointer hover:text-[#dcddde]" />
-              </div>
-            </div>
-
-            {/* Сообщения чата */}
-            <div className="flex-1 p-2 sm:p-4 space-y-4 sm:space-y-6 overflow-y-auto">
-              {/* Приветственное сообщение */}
-              <div className="flex gap-2 sm:gap-4">
-                <div className="w-8 h-8 sm:w-10 sm:h-10 bg-[#5865f2] rounded-full flex items-center justify-center flex-shrink-0">
-                  <Monitor className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-baseline gap-2 mb-1">
-                    <span className="text-white font-medium text-sm sm:text-base">Дискордик Бот</span>
-                    <span className="bg-[#5865f2] text-white text-xs px-1 rounded">БОТ</span>
-                    <span className="text-[#72767d] text-xs hidden sm:inline">Сегодня в 12:00</span>
-                  </div>
-                  <div className="text-[#dcddde] text-sm sm:text-base">
-                    <p className="mb-3 sm:mb-4">
-                      <strong>Добро пожаловать в Дискордик!</strong> Показывай свой прогресс в Figma прямо в Discord.
-                    </p>
-                    <div className="bg-[#2f3136] border-l-4 border-[#5865f2] p-3 sm:p-4 rounded">
-                      <h3 className="text-white font-semibold mb-2 text-sm sm:text-base">Что умеет Дискордик:</h3>
-                      <ul className="space-y-1 text-xs sm:text-sm text-[#b9bbbe]">
-                        <li>Автоматически определяет Figma в браузере и приложении</li>
-                        <li>Показывает название текущего проекта/файла</li>
-                        <li>Обновляется каждые 5 секунд в реальном времени</li>
-                        <li>Очищает статус при простое</li>
-                        <li>Работает на всех платформах</li>
-                      </ul>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Сообщение пользователя с Rich Presence */}
-              <div className="flex gap-2 sm:gap-4">
-                <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center flex-shrink-0">
-                  <span className="text-white text-xs sm:text-sm font-medium">М</span>
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-baseline gap-2 mb-1">
-                    <span className="text-white font-medium text-sm sm:text-base">Мария Дизайнер</span>
-                    <span className="text-[#72767d] text-xs hidden sm:inline">Сегодня в 12:05</span>
-                  </div>
-                  <div className="text-[#dcddde] mb-3 text-sm sm:text-base">
-                    Только начала работу над новым дизайном лендинга!
-                  </div>
-
-                  {/* Демо Rich Presence */}
-                  <div className="bg-[#2f3136] border border-[#202225] rounded-lg overflow-hidden w-full max-w-sm">
-                    {/* Заголовок профиля */}
-                    <div className="h-16 sm:h-20 bg-gradient-to-r from-[#5865f2] to-[#7c3aed] relative">
-                      <div className="absolute -bottom-3 sm:-bottom-4 left-3 sm:left-4">
-                        <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full border-4 border-[#2f3136] bg-[#36393f] overflow-hidden">
-                          <div className="w-full h-full bg-gradient-to-br from-[#4f46e5] to-[#7c3aed] flex items-center justify-center">
-                            <div className="w-12 h-12 sm:w-16 sm:h-16 bg-[#2f3136] rounded-full flex items-center justify-center">
-                              <span className="text-lg sm:text-2xl">M</span>
-                            </div>
-                          </div>
-                          <div className="absolute -bottom-1 -right-1 w-5 h-5 sm:w-6 sm:h-6 bg-[#3ba55c] border-4 border-[#2f3136] rounded-full"></div>
-                        </div>
-                      </div>
-                      <Button
-                        size="sm"
-                        className="absolute top-2 sm:top-4 right-2 sm:right-4 bg-[#4f545c] hover:bg-[#5d6269] text-white text-xs px-2 sm:px-3 py-1 rounded"
-                      >
-                        <Settings className="w-3 h-3 mr-1" />
-                        <span className="hidden sm:inline">Профиль</span>
-                      </Button>
-                    </div>
-
-                    {/* Информация профиля */}
-                    <div className="pt-4 sm:pt-6 px-3 sm:px-4 pb-3 sm:pb-4">
-                      <div className="mb-3 sm:mb-4">
-                        <h3 className="text-white text-lg sm:text-xl font-bold mb-1">Мария</h3>
-                        <div className="flex items-center gap-2 text-[#b9bbbe] text-xs sm:text-sm">
-                          <span>maria_design</span>
-                          <span>-</span>
-                          <span>Она</span>
-                          <div className="flex gap-1 ml-2">
-                            <div className="w-3 h-3 sm:w-4 sm:h-4 bg-[#5865f2] rounded-sm"></div>
-                            <div className="w-3 h-3 sm:w-4 sm:h-4 bg-[#3ba55c] rounded-sm"></div>
-                            <div className="w-3 h-3 sm:w-4 sm:h-4 bg-[#faa61a] rounded-sm"></div>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Статусное сообщение */}
-                      <div className="mb-3 sm:mb-4">
-                        <div className="bg-[#36393f] rounded-lg p-2 sm:p-3 relative">
-                          <div className="absolute -top-2 left-3 sm:left-4 w-4 h-4 bg-[#36393f] rotate-45"></div>
-                          <div className="flex items-center gap-2 text-[#dcddde] text-xs sm:text-sm">
-                            <div className="w-3 h-3 sm:w-4 sm:h-4 bg-[#5865f2] rounded-full flex items-center justify-center">
-                              <span className="text-xs">*</span>
-                            </div>
-                            <span>Работаю над проектом...</span>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Вкладки */}
-                      <div className="flex border-b border-[#40444b] mb-3 sm:mb-4">
-                        <button className="px-3 sm:px-4 py-2 text-[#8e9297] text-xs sm:text-sm font-medium hover:text-[#dcddde]">
-                          Обо мне
-                        </button>
-                        <button className="px-3 sm:px-4 py-2 text-white text-xs sm:text-sm font-medium border-b-2 border-[#5865f2]">
-                          Активность
-                        </button>
-                      </div>
-
-                      {/* Активность Дискордик */}
-                      <div>
-                        <div className="flex items-center gap-2 text-[#8e9297] text-xs font-semibold uppercase tracking-wide mb-2 sm:mb-3">
-                          <span>Играет</span>
-                        </div>
-
-                        <div className="flex items-start gap-2 sm:gap-3 p-2 sm:p-3 bg-[#36393f] rounded-lg">
-                          {/* Логотип Figma */}
-                          <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-[#ff7262] to-[#f24e1e] rounded-lg flex items-center justify-center flex-shrink-0">
-                            <svg className="w-5 h-5 sm:w-6 sm:h-6 text-white" viewBox="0 0 24 24" fill="currentColor">
-                              <path d="M15.852 8.981h-4.588V0h4.588c2.476 0 4.49 2.014 4.49 4.49s-2.014 4.491-4.49 4.491zM12.735 7.51h3.117c1.665 0 3.019-1.355 3.019-3.019s-1.354-3.019-3.019-3.019h-3.117V7.51zm0 1.471H8.148c-2.476 0-4.49-2.015-4.49-4.49S5.672 0 8.148 0h4.588v8.981zm-4.587-7.51c-1.665 0-3.019 1.355-3.019 3.019s1.354 3.02 3.019 3.02h3.117V1.471H8.148zm4.587 15.019H8.148c-2.476 0-4.49-2.014-4.49-4.49s2.014-4.49 4.49-4.49h4.588v8.98zM8.148 8.981c-1.665 0-3.019 1.355-3.019 3.019s1.355 3.019 3.019 3.019h3.117V8.981H8.148zM8.172 24c-2.489 0-4.515-2.014-4.515-4.49s2.014-4.49 4.49-4.49h4.588v4.441c0 2.503-2.047 4.539-4.563 4.539zm-.024-7.51a3.023 3.023 0 0 0-3.019 3.019c0 1.665 1.365 3.019 3.044 3.019 1.705 0 3.093-1.376 3.093-3.068v-2.97H8.148z" />
-                            </svg>
-                          </div>
-
-                          {/* Детали активности */}
-                          <div className="flex-1 min-w-0">
-                            <div className="text-white font-semibold text-xs sm:text-sm mb-1">Дискордик</div>
-                            <div className="text-[#dcddde] text-xs sm:text-sm mb-1">Работаю над логотипом</div>
-                            <div className="text-[#b9bbbe] text-xs sm:text-sm mb-2">Figma Desktop</div>
-                            <div className="flex items-center gap-2">
-                              <div className="w-2 h-2 bg-[#3ba55c] rounded-full animate-pulse"></div>
-                              <span className="text-[#3ba55c] text-xs font-medium">0:37 прошло</span>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Еще одно сообщение пользователя */}
-              <div className="flex gap-2 sm:gap-4">
-                <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-r from-green-500 to-blue-500 rounded-full flex items-center justify-center flex-shrink-0">
-                  <span className="text-white text-xs sm:text-sm font-medium">И</span>
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-baseline gap-2 mb-1">
-                    <span className="text-white font-medium text-sm sm:text-base">Иван UX</span>
-                    <span className="text-[#72767d] text-xs hidden sm:inline">Сегодня в 12:08</span>
-                  </div>
-                  <div className="text-[#dcddde] text-sm sm:text-base">
-                    Обожаю видеть прогресс всех! Дискордик делает общение таким удобным
-                  </div>
-                </div>
-              </div>
-
-              {/* Секция "Начало работы" */}
-              <div className="bg-[#2f3136] border border-[#202225] rounded-lg p-4 sm:p-6 mt-6 sm:mt-8">
-                <h2 className="text-xl sm:text-2xl font-bold text-white mb-4 flex items-center gap-2">
-                  <Download className="w-5 h-5 sm:w-6 sm:h-6 text-[#5865f2]" />
-                  Начни работу с Дискордик
-                </h2>
-
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6 mb-4 sm:mb-6">
-                  <div className="text-center">
-                    <div className="w-10 h-10 sm:w-12 sm:h-12 bg-[#5865f2] rounded-full flex items-center justify-center mx-auto mb-3">
-                      <span className="text-white font-bold text-sm sm:text-base">1</span>
-                    </div>
-                    <h3 className="text-white font-medium mb-2 text-sm sm:text-base">Скачай приложение</h3>
-                    <p className="text-[#b9bbbe] text-xs sm:text-sm">Получи Дискордик для Windows, macOS или Linux</p>
-                  </div>
-                  <div className="text-center">
-                    <div className="w-10 h-10 sm:w-12 sm:h-12 bg-[#5865f2] rounded-full flex items-center justify-center mx-auto mb-3">
-                      <span className="text-white font-bold text-sm sm:text-base">2</span>
-                    </div>
-                    <h3 className="text-white font-medium mb-2 text-sm sm:text-base">Авторизуй Discord</h3>
-                    <p className="text-[#b9bbbe] text-xs sm:text-sm">Подключись безопасно через OAuth</p>
-                  </div>
-                  <div className="text-center">
-                    <div className="w-10 h-10 sm:w-12 sm:h-12 bg-[#5865f2] rounded-full flex items-center justify-center mx-auto mb-3">
-                      <span className="text-white font-bold text-sm sm:text-base">3</span>
-                    </div>
-                    <h3 className="text-white font-medium mb-2 text-sm sm:text-base">Начни дизайнить</h3>
-                    <p className="text-[#b9bbbe] text-xs sm:text-sm">Открой Figma и смотри как работает магия</p>
-                  </div>
-                </div>
-
-                <div className="flex flex-col sm:flex-row gap-3 justify-center">
-                  <Button className="bg-[#5865f2] hover:bg-[#4752c4] text-white px-6 sm:px-8 py-2 sm:py-3 rounded text-sm font-medium">
-                    <Download className="w-4 h-4 mr-2" />
-                    Скачать Дискордик
-                  </Button>
-                  <Button
-                    variant="outline"
-                    className="border-[#4f545c] text-[#b9bbbe] hover:bg-[#40444b] hover:border-[#6d6f78] px-6 sm:px-8 py-2 sm:py-3 rounded text-sm font-medium bg-transparent"
+                <div className="flex items-start justify-between mb-4">
+                  <Badge
+                    className="text-xs px-2.5 py-1 rounded-lg"
+                    style={{
+                      backgroundColor: "rgba(99,102,241,0.15)",
+                      color: "#a5b4fc",
+                      border: "1px solid rgba(99,102,241,0.2)",
+                    }}
                   >
-                    <Shield className="w-4 h-4 mr-2" />
-                    Авторизовать Discord
+                    {service.category}
+                  </Badge>
+                  <div className="flex items-center gap-1 text-amber-400 text-sm">
+                    <Icon name="Star" size={13} />
+                    <span>{service.rating}</span>
+                    <span className="text-gray-600 text-xs">({service.reviews})</span>
+                  </div>
+                </div>
+
+                <h3 className="text-white font-semibold text-base mb-4 leading-snug group-hover:text-violet-200 transition-colors">
+                  {service.title}
+                </h3>
+
+                <div className="flex items-center gap-3 mb-4">
+                  <div
+                    className="w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-bold flex-shrink-0"
+                    style={{ backgroundColor: service.color }}
+                  >
+                    {service.avatar}
+                  </div>
+                  <div className="min-w-0">
+                    <div className="text-sm text-gray-300 font-medium truncate">{service.name}</div>
+                    <div className="flex items-center gap-1.5 mt-0.5">
+                      <span
+                        className={`text-[11px] px-2 py-0.5 rounded-full ${
+                          service.status === "Самозанятый"
+                            ? "bg-emerald-600/15 text-emerald-400"
+                            : "bg-blue-600/15 text-blue-400"
+                        }`}
+                      >
+                        {service.status}
+                      </span>
+                      <span className="text-[11px] text-gray-600">
+                        комиссия {service.commission}%
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between pt-4 border-t border-white/6">
+                  <div>
+                    <span className="text-gray-500 text-xs">от</span>
+                    <span className="text-white font-bold text-lg ml-1">
+                      {service.price.toLocaleString("ru-RU")} ₽
+                    </span>
+                  </div>
+                  <Button
+                    size="sm"
+                    className="bg-violet-600/20 hover:bg-violet-600 text-violet-300 hover:text-white border border-violet-500/30 hover:border-violet-500 rounded-lg text-xs transition-all"
+                  >
+                    Подробнее
                   </Button>
                 </div>
               </div>
-
-              {/* Преимущества */}
-              <div className="bg-[#2f3136] border border-[#202225] rounded-lg p-4 sm:p-6">
-                <h3 className="text-lg sm:text-xl font-bold text-white mb-4">Почему Дискордик?</h3>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-                  {[
-                    {
-                      icon: <Zap className="w-4 h-4 sm:w-5 sm:h-5" />,
-                      title: "Автоопределение",
-                      desc: "Работает с приложением и браузером",
-                    },
-                    {
-                      icon: <Eye className="w-4 h-4 sm:w-5 sm:h-5" />,
-                      title: "Умное отслеживание",
-                      desc: "Показывает имена проектов и статус",
-                    },
-                    {
-                      icon: <Clock className="w-4 h-4 sm:w-5 sm:h-5" />,
-                      title: "Обновление в реальном времени",
-                      desc: "Синхронизация каждые 5 секунд",
-                    },
-                    {
-                      icon: <Shield className="w-4 h-4 sm:w-5 sm:h-5" />,
-                      title: "Приватность прежде всего",
-                      desc: "Никакого сбора данных",
-                    },
-                  ].map((feature, index) => (
-                    <div
-                      key={index}
-                      className="flex items-start gap-2 sm:gap-3 p-2 sm:p-3 rounded hover:bg-[#36393f] transition-colors"
-                    >
-                      <div className="text-[#5865f2] mt-0.5">{feature.icon}</div>
-                      <div>
-                        <div className="text-white font-medium text-xs sm:text-sm">{feature.title}</div>
-                        <div className="text-[#b9bbbe] text-xs sm:text-sm">{feature.desc}</div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            {/* Поле ввода сообщения */}
-            <div className="p-2 sm:p-4">
-              <div className="bg-[#40444b] rounded-lg px-3 sm:px-4 py-2 sm:py-3">
-                <div className="text-[#72767d] text-xs sm:text-sm">Сообщение #витрина</div>
-              </div>
-            </div>
+            ))}
           </div>
 
-          {/* Боковая панель участников - скрыта на мобильных/планшетах */}
-          <div className="hidden xl:block w-60 bg-[#2f3136] p-4">
-            <div className="mb-4">
-              <h3 className="text-[#8e9297] text-xs font-semibold uppercase tracking-wide mb-2">В сети - 3</h3>
-              <div className="space-y-2">
-                {[
-                  {
-                    name: "Мария Дизайнер",
-                    status: "Работает в Figma",
-                    avatar: "М",
-                    color: "from-purple-500 to-pink-500",
-                  },
-                  { name: "Иван UX", status: "В сети", avatar: "И", color: "from-green-500 to-blue-500" },
-                  { name: "Алексей", status: "Разрабатывает Дискордик", avatar: "А", color: "from-blue-500 to-purple-500" },
-                ].map((user, index) => (
-                  <div key={index} className="flex items-center gap-3 p-2 rounded hover:bg-[#36393f] cursor-pointer">
-                    <div
-                      className={`w-8 h-8 bg-gradient-to-r ${user.color} rounded-full flex items-center justify-center relative`}
-                    >
-                      <span className="text-white text-sm font-medium">{user.avatar}</span>
-                      <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-[#3ba55c] border-2 border-[#2f3136] rounded-full"></div>
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="text-white text-sm font-medium truncate">{user.name}</div>
-                      <div className="text-[#b9bbbe] text-xs truncate">{user.status}</div>
-                    </div>
-                  </div>
-                ))}
+          <div className="text-center mt-10">
+            <Button
+              variant="outline"
+              className="border-white/15 text-gray-300 hover:text-white hover:bg-white/8 px-8"
+            >
+              Показать ещё услуги
+              <Icon name="ArrowDown" size={16} className="ml-2" />
+            </Button>
+          </div>
+        </div>
+      </section>
+
+      {/* Блок комиссии */}
+      <section className="py-16 px-4 bg-gradient-to-br from-violet-900/20 to-indigo-900/10 border-y border-white/5">
+        <div className="max-w-5xl mx-auto">
+          <h2 className="text-2xl font-bold text-center mb-3">Прозрачная комиссионная система</h2>
+          <p className="text-gray-400 text-center mb-10">Честные условия для всех участников платформы</p>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="bg-emerald-500/8 border border-emerald-500/20 rounded-2xl p-7">
+              <div className="w-12 h-12 rounded-xl bg-emerald-500/15 flex items-center justify-center mb-4">
+                <Icon name="UserCheck" size={22} className="text-emerald-400" />
               </div>
+              <div className="text-4xl font-extrabold text-emerald-400 mb-2">5%</div>
+              <div className="text-white font-semibold text-lg mb-2">Для самозанятых</div>
+              <p className="text-gray-400 text-sm leading-relaxed">
+                Минимальная комиссия для физических лиц со статусом самозанятого.
+                Регистрация бесплатна, вывод средств без ограничений.
+              </p>
+              <ul className="mt-4 space-y-2">
+                {["Быстрая регистрация", "Чек через приложение ФНС", "Вывод от 1 000 ₽"].map((item) => (
+                  <li key={item} className="flex items-center gap-2 text-sm text-gray-300">
+                    <Icon name="Check" size={14} className="text-emerald-400 flex-shrink-0" />
+                    {item}
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            <div className="bg-blue-500/8 border border-blue-500/20 rounded-2xl p-7">
+              <div className="w-12 h-12 rounded-xl bg-blue-500/15 flex items-center justify-center mb-4">
+                <Icon name="Building2" size={22} className="text-blue-400" />
+              </div>
+              <div className="text-4xl font-extrabold text-blue-400 mb-2">10%</div>
+              <div className="text-white font-semibold text-lg mb-2">Для компаний и ИП</div>
+              <p className="text-gray-400 text-sm leading-relaxed">
+                Стандартная комиссия для ИП, ООО и других юридических лиц.
+                Включает расширенный профиль и приоритетный показ.
+              </p>
+              <ul className="mt-4 space-y-2">
+                {["Корпоративный профиль", "Выставление счетов и актов", "Приоритет в поиске"].map((item) => (
+                  <li key={item} className="flex items-center gap-2 text-sm text-gray-300">
+                    <Icon name="Check" size={14} className="text-blue-400 flex-shrink-0" />
+                    {item}
+                  </li>
+                ))}
+              </ul>
             </div>
           </div>
         </div>
-      </div>
+      </section>
+
+      {/* CTA */}
+      <section className="py-20 px-4 text-center">
+        <div className="max-w-2xl mx-auto">
+          <h2 className="text-3xl sm:text-4xl font-extrabold mb-4">
+            Готов начать?
+          </h2>
+          <p className="text-gray-400 mb-8">
+            Размести свои услуги бесплатно и получи первых клиентов уже сегодня
+          </p>
+          <div className="flex flex-col sm:flex-row gap-3 justify-center">
+            <Button className="bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white px-8 py-3 text-base rounded-xl">
+              Стать исполнителем
+              <Icon name="ArrowRight" size={18} className="ml-2" />
+            </Button>
+            <Button variant="outline" className="border-white/15 text-gray-300 hover:text-white hover:bg-white/8 px-8 py-3 text-base rounded-xl">
+              Найти специалиста
+            </Button>
+          </div>
+        </div>
+      </section>
+
+      {/* Футер */}
+      <footer className="border-t border-white/8 py-8 px-4">
+        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="flex items-center gap-2">
+            <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center">
+              <Icon name="Zap" size={14} className="text-white" />
+            </div>
+            <span className="font-bold text-white">ЦифровойХаб</span>
+          </div>
+          <p className="text-gray-600 text-sm">© 2026 ЦифровойХаб. Все права защищены.</p>
+          <div className="flex gap-4">
+            <a href="#" className="text-gray-600 hover:text-gray-400 text-sm">Условия</a>
+            <a href="#" className="text-gray-600 hover:text-gray-400 text-sm">Конфиденциальность</a>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 };
