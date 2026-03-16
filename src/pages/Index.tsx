@@ -179,9 +179,9 @@ const Index = () => {
           </div>
 
           <div className="hidden md:flex items-center gap-6">
-            <a href="#" className="text-gray-400 hover:text-white text-sm transition-colors">Категории</a>
+            <a href="#categories" className="text-gray-400 hover:text-white text-sm transition-colors">Категории</a>
             <a href="/orders" className="text-gray-400 hover:text-white text-sm transition-colors">Лента заявок</a>
-            <a href="#" className="text-gray-400 hover:text-white text-sm transition-colors">Тарифы</a>
+            <a href="#pricing" className="text-gray-400 hover:text-white text-sm transition-colors">Тарифы</a>
           </div>
 
           <div className="hidden md:flex items-center gap-3">
@@ -215,8 +215,9 @@ const Index = () => {
 
         {mobileMenuOpen && (
           <div className="md:hidden border-t border-white/10 px-4 py-4 space-y-3">
-            <a href="#" className="block text-gray-400 hover:text-white text-sm">Категории</a>
-            <a href="#" className="block text-gray-400 hover:text-white text-sm">Как работает</a>
+            <a href="#categories" className="block text-gray-400 hover:text-white text-sm">Категории</a>
+            <a href="/orders" className="block text-gray-400 hover:text-white text-sm">Лента заявок</a>
+            <a href="#pricing" className="block text-gray-400 hover:text-white text-sm">Тарифы</a>
             <Button onClick={() => setMasterModalOpen(true)} className="w-full bg-gradient-to-r from-violet-600 to-indigo-600 text-white text-sm mt-2">
               Я мастер
             </Button>
@@ -277,7 +278,7 @@ const Index = () => {
       </section>
 
       {/* Категории */}
-      <section className="py-14 px-4">
+      <section id="categories" className="py-14 px-4">
         <div className="max-w-7xl mx-auto">
           <h2 className="text-2xl font-bold mb-8 text-center">Категории услуг</h2>
           <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3">
@@ -404,7 +405,7 @@ const Index = () => {
 
 
       {/* Блок пакетов */}
-      <section className="py-16 px-4 bg-gradient-to-br from-violet-900/20 to-indigo-900/10 border-y border-white/5">
+      <section id="pricing" className="py-16 px-4 bg-gradient-to-br from-violet-900/20 to-indigo-900/10 border-y border-white/5">
         <div className="max-w-5xl mx-auto">
           <h2 className="text-2xl font-bold text-center mb-3">Простая и честная система доступа</h2>
           <p className="text-gray-400 text-center mb-10">Покупайте пакет откликов и отвечайте на заявки — один отклик списывается за каждый контакт с заказчиком</p>
