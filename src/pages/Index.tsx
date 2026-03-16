@@ -188,7 +188,7 @@ const Index = () => {
               <Icon name="Search" size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500" />
               <input
                 className="w-full bg-white/5 border border-white/10 rounded-xl pl-10 pr-4 py-3 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-violet-500 transition-colors"
-                placeholder="Найти услугу или специалиста..."
+                placeholder="Например: сантехник, ремонт авто, маникюр..."
               />
             </div>
             <Button className="bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white px-6 py-3 rounded-xl text-sm font-medium">
@@ -401,18 +401,18 @@ const Index = () => {
       <section className="py-20 px-4 text-center">
         <div className="max-w-2xl mx-auto">
           <h2 className="text-3xl sm:text-4xl font-extrabold mb-4">
-            Готов начать?
+            Готов предложить свои услуги?
           </h2>
           <p className="text-gray-400 mb-8">
-            Размести свои услуги бесплатно и получи первых клиентов уже сегодня
+            Размести свои услуги бесплатно и получай заказы от клиентов уже сегодня
           </p>
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
             <Button className="bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white px-8 py-3 text-base rounded-xl">
-              Стать исполнителем
+              Стать мастером
               <Icon name="ArrowRight" size={18} className="ml-2" />
             </Button>
             <Button variant="outline" className="border-white/15 text-gray-300 hover:text-white hover:bg-white/8 px-8 py-3 text-base rounded-xl">
-              Найти специалиста
+              Найти мастера
             </Button>
           </div>
         </div>
