@@ -176,9 +176,12 @@ const Index = () => {
           </div>
 
           <div className="hidden md:flex items-center gap-3">
-            <Button variant="ghost" className="text-gray-300 hover:text-white hover:bg-white/10 text-sm">
-              Войти
-            </Button>
+            <a href="/cabinet">
+              <Button variant="ghost" className="text-gray-300 hover:text-white hover:bg-white/10 text-sm gap-2">
+                <Icon name="LayoutDashboard" size={15} />
+                Мои заявки
+              </Button>
+            </a>
             <Button onClick={() => setMasterModalOpen(true)} className="bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white text-sm px-5">
               Я мастер
             </Button>

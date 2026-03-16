@@ -1,0 +1,12 @@
+{
+  "tests": [
+    {
+      "name": "GET my orders by phone",
+      "method": "GET",
+      "path": "/?phone=%2B79001234567",
+      "expectedStatus": 200,
+      "bodyMatcher": "partial",
+      "expectedBody": {}
+    }
+  ]
+}
