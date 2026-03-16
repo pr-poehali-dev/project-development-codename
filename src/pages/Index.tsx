@@ -110,7 +110,7 @@ const Index = () => {
   const [activeCategory, setActiveCategory] = useState("Все");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [masterModalOpen, setMasterModalOpen] = useState(false);
-  const [masterForm, setMasterForm] = useState({ name: "", phone: "", category: "", about: "", status: "Самозанятый / ИП" });
+  const [masterForm, setMasterForm] = useState({ name: "", phone: "", category: "", about: "", status: "Самозанятый / ИП / Компания" });
   const [masterSent, setMasterSent] = useState(false);
 
   const handleMasterSubmit = (e: React.FormEvent) => {
@@ -368,13 +368,13 @@ const Index = () => {
                 <Icon name="UserCheck" size={22} className="text-emerald-400" />
               </div>
               <div className="text-4xl font-extrabold text-emerald-400 mb-2">5%</div>
-              <div className="text-white font-semibold text-lg mb-2">Для самозанятых</div>
+              <div className="text-white font-semibold text-lg mb-2">Самозанятые, ИП и компании</div>
               <p className="text-gray-400 text-sm leading-relaxed">
-                Минимальная комиссия для физических лиц со статусом самозанятого.
-                Регистрация бесплатна, вывод средств без ограничений.
+                Минимальная комиссия для всех, кто имеет официальный статус:
+                самозанятый, ИП или юридическое лицо.
               </p>
               <ul className="mt-4 space-y-2">
-                {["Быстрая регистрация", "Чек через приложение ФНС", "Вывод от 1 000 ₽"].map((item) => (
+                {["Самозанятые физлица", "Индивидуальные предприниматели", "ООО и другие юрлица"].map((item) => (
                   <li key={item} className="flex items-center gap-2 text-sm text-gray-300">
                     <Icon name="Check" size={14} className="text-emerald-400 flex-shrink-0" />
                     {item}
@@ -383,20 +383,20 @@ const Index = () => {
               </ul>
             </div>
 
-            <div className="bg-blue-500/8 border border-blue-500/20 rounded-2xl p-7">
-              <div className="w-12 h-12 rounded-xl bg-blue-500/15 flex items-center justify-center mb-4">
-                <Icon name="Building2" size={22} className="text-blue-400" />
+            <div className="bg-orange-500/8 border border-orange-500/20 rounded-2xl p-7">
+              <div className="w-12 h-12 rounded-xl bg-orange-500/15 flex items-center justify-center mb-4">
+                <Icon name="User" size={22} className="text-orange-400" />
               </div>
-              <div className="text-4xl font-extrabold text-blue-400 mb-2">10%</div>
-              <div className="text-white font-semibold text-lg mb-2">Для компаний и ИП</div>
+              <div className="text-4xl font-extrabold text-orange-400 mb-2">10%</div>
+              <div className="text-white font-semibold text-lg mb-2">Без официального статуса</div>
               <p className="text-gray-400 text-sm leading-relaxed">
-                Стандартная комиссия для ИП, ООО и других юридических лиц.
-                Включает расширенный профиль и приоритетный показ.
+                Стандартная комиссия для физических лиц без статуса
+                самозанятого или ИП.
               </p>
               <ul className="mt-4 space-y-2">
-                {["Корпоративный профиль", "Выставление счетов и актов", "Приоритет в поиске"].map((item) => (
+                {["Быстрый старт без оформления", "Полный доступ к заказам", "Вывод средств без ограничений"].map((item) => (
                   <li key={item} className="flex items-center gap-2 text-sm text-gray-300">
-                    <Icon name="Check" size={14} className="text-blue-400 flex-shrink-0" />
+                    <Icon name="Check" size={14} className="text-orange-400 flex-shrink-0" />
                     {item}
                   </li>
                 ))}
@@ -507,7 +507,7 @@ const Index = () => {
               <div>
                 <label className="text-sm text-gray-400 mb-1.5 block">Статус</label>
                 <div className="flex gap-3">
-                  {["Самозанятый / ИП", "Без статуса"].map((s) => (
+                  {["Самозанятый / ИП / Компания", "Без статуса"].map((s) => (
                     <button
                       key={s}
                       type="button"
@@ -523,7 +523,7 @@ const Index = () => {
                   ))}
                 </div>
                 <p className="text-[11px] text-gray-600 mt-1.5">
-                  {masterForm.status === "Самозанятый / ИП" ? "Комиссия платформы — 5%" : "Комиссия платформы — 10%"}
+                  {masterForm.status === "Самозанятый / ИП / Компания" ? "Комиссия платформы — 5%" : "Комиссия платформы — 10%"}
                 </p>
               </div>
               <div>
