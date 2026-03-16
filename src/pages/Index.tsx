@@ -488,18 +488,43 @@ const Index = () => {
       </section>
 
       {/* Футер */}
-      <footer className="border-t border-white/8 py-8 px-4">
-        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center">
-              <Icon name="Zap" size={14} className="text-white" />
+      <footer className="border-t border-white/8 py-10 px-4">
+        <div className="max-w-7xl mx-auto">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-8 mb-8">
+            <div>
+              <div className="flex items-center gap-2 mb-3">
+                <img src="https://cdn.poehali.dev/projects/b7f56b72-3dfb-49ff-a0ce-cff7b631f477/files/bb517738-7e1e-4e29-bd74-607574a9b222.jpg" alt="HandyMan" className="w-7 h-7 rounded-lg object-cover" />
+                <span className="font-bold text-white">HandyMan</span>
+              </div>
+              <p className="text-gray-600 text-sm leading-relaxed">Маркетплейс бытовых услуг. Находите мастеров быстро и удобно.</p>
             </div>
-            <span className="font-bold text-white">HandyMan</span>
+            <div>
+              <p className="text-gray-400 text-sm font-medium mb-3">Контакты</p>
+              <div className="space-y-2">
+                <a href="tel:+79966869812" className="flex items-center gap-2 text-gray-600 hover:text-gray-400 text-sm transition-colors">
+                  <Icon name="Phone" size={13} />
+                  +7 (996) 686-98-12
+                </a>
+                <a href="mailto:HandyMan@yandex.ru" className="flex items-center gap-2 text-gray-600 hover:text-gray-400 text-sm transition-colors">
+                  <Icon name="Mail" size={13} />
+                  HandyMan@yandex.ru
+                </a>
+                <p className="flex items-start gap-2 text-gray-600 text-sm">
+                  <Icon name="MapPin" size={13} className="mt-0.5 flex-shrink-0" />
+                  ХМАО-Югра, пгт. Белый Яр
+                </p>
+              </div>
+            </div>
+            <div>
+              <p className="text-gray-400 text-sm font-medium mb-3">Документы</p>
+              <div className="space-y-2">
+                <a href="/offer" className="block text-gray-600 hover:text-gray-400 text-sm transition-colors">Публичная оферта</a>
+                <a href="/offer#7" className="block text-gray-600 hover:text-gray-400 text-sm transition-colors">Конфиденциальность</a>
+              </div>
+            </div>
           </div>
-          <p className="text-gray-600 text-sm">© 2026 HandyMan. Харисов Э.И., ИНН 860234992431</p>
-          <div className="flex gap-4">
-            <a href="/offer" className="text-gray-600 hover:text-gray-400 text-sm">Оферта</a>
-            <a href="/offer#7" className="text-gray-600 hover:text-gray-400 text-sm">Конфиденциальность</a>
+          <div className="border-t border-white/6 pt-6">
+            <p className="text-gray-700 text-xs text-center">© 2026 HandyMan. Харисов Эрнест Иреко­вич, ИНН 860234992431. Самозанятый (плательщик НПД).</p>
           </div>
         </div>
       </footer>
