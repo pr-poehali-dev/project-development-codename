@@ -171,7 +171,7 @@ const Index = () => {
 
         <div className="max-w-4xl mx-auto text-center relative">
           <Badge className="mb-6 bg-violet-600/20 text-violet-300 border-violet-500/30 px-4 py-1.5 text-sm">
-            🚀 Маркетплейс цифровых услуг
+            🔧 Маркетплейс бытовых услуг
           </Badge>
           <h1 className="text-4xl sm:text-6xl font-extrabold mb-6 leading-tight">
             Найди лучшего
