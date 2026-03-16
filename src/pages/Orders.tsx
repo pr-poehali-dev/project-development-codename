@@ -25,7 +25,6 @@ const categoryColors: Record<string, string> = {
   "Дизайн интерьера": "bg-fuchsia-600/15 text-fuchsia-400 border-fuchsia-500/20",
   "Фото/Видео": "bg-sky-600/15 text-sky-400 border-sky-500/20",
   "Уборка снега": "bg-blue-600/15 text-blue-400 border-blue-500/20",
-  "Мойка окон": "bg-cyan-600/15 text-cyan-400 border-cyan-500/20",
   "Репетиторство": "bg-indigo-600/15 text-indigo-400 border-indigo-500/20",
   "Массаж": "bg-rose-600/15 text-rose-400 border-rose-500/20",
   "Повар на мероприятие": "bg-amber-600/15 text-amber-400 border-amber-500/20",

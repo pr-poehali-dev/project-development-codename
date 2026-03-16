@@ -22,7 +22,6 @@ const categories = [
   { name: "Дизайн интерьера", icon: "PenRuler", count: 55 },
   { name: "Фото/Видео", icon: "Camera", count: 89 },
   { name: "Уборка снега", icon: "Snowflake", count: 43 },
-  { name: "Мойка окон", icon: "Wind", count: 67 },
   { name: "Репетиторство", icon: "GraduationCap", count: 103 },
   { name: "Массаж", icon: "HandHeart", count: 78 },
   { name: "Повар на мероприятие", icon: "ChefHat", count: 49 },
