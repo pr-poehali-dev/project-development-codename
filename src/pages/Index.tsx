@@ -4,12 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import Icon from "@/components/ui/icon";
 
-const CITIES = [
-  "Москва", "Санкт-Петербург", "Новосибирск", "Екатеринбург", "Казань",
-  "Нижний Новгород", "Челябинск", "Самара", "Уфа", "Ростов-на-Дону",
-  "Краснодар", "Омск", "Воронеж", "Пермь", "Волгоград",
-  "Красноярск", "Саратов", "Тюмень", "Тольятти", "Ижевск",
-];
+import CITIES from "@/data/cities";
 
 const categories = [
   { name: "Авторемонт", icon: "Car", count: 312 },
