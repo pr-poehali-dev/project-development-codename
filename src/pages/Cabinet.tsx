@@ -4,6 +4,14 @@ import { Badge } from "@/components/ui/badge";
 import Icon from "@/components/ui/icon";
 
 const MY_ORDERS_URL = "https://functions.poehali.dev/458454d0-900d-46a1-9bff-15ecce0839e0";
+const PROFILE_URL = "https://functions.poehali.dev/de274bd5-3f08-42d8-9aac-b373bb34b900";
+
+const STATUS_LABELS: Record<string, { label: string; color: string }> = {
+  new: { label: "Новая", color: "bg-blue-600/15 text-blue-400 border-blue-500/20" },
+  in_progress: { label: "В работе", color: "bg-amber-600/15 text-amber-400 border-amber-500/20" },
+  done: { label: "Выполнена", color: "bg-emerald-600/15 text-emerald-400 border-emerald-500/20" },
+  cancelled: { label: "Отменена", color: "bg-gray-600/15 text-gray-400 border-gray-500/20" },
+};
 
 const categoryColors: Record<string, string> = {
   "Авторемонт": "bg-blue-600/15 text-blue-400 border-blue-500/20",
@@ -90,6 +98,20 @@ export default function Cabinet() {
   const [isNewUser, setIsNewUser] = useState(false);
   const [loginError, setLoginError] = useState("");
   const [loginLoading, setLoginLoading] = useState(false);
+
+  const [statusLoading, setStatusLoading] = useState<number | null>(null);
+
+  const handleStatusChange = async (orderId: number, status: string) => {
+    if (!customer) return;
+    setStatusLoading(orderId);
+    await fetch(PROFILE_URL, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ order_id: orderId, status, customer_id: customer.id }),
+    });
+    setOrders((prev) => prev.map((o) => o.id === orderId ? { ...o, status } : o));
+    setStatusLoading(null);
+  };
 
   // Форма отзыва
   const [reviewForm, setReviewForm] = useState<{ orderId: number; masterName: string; masterId: number | null } | null>(null);
@@ -361,6 +383,9 @@ export default function Cabinet() {
                         <Badge className={`text-xs px-2.5 py-1 rounded-lg border ${categoryColors[order.category] || "bg-violet-600/15 text-violet-400 border-violet-500/20"}`}>
                           {order.category}
                         </Badge>
+                        <Badge className={`text-xs px-2.5 py-1 rounded-lg border ${STATUS_LABELS[order.status]?.color || STATUS_LABELS.new.color}`}>
+                          {STATUS_LABELS[order.status]?.label || "Новая"}
+                        </Badge>
                         {order.city && <span className="text-gray-600 text-xs flex items-center gap-1"><Icon name="MapPin" size={11} />{order.city}</span>}
                         {order.budget && <span className="text-emerald-400 text-xs font-medium">до {order.budget.toLocaleString("ru-RU")} ₽</span>}
                         <span className="text-gray-600 text-xs">{formatDate(order.created_at)}</span>
@@ -381,6 +406,36 @@ export default function Cabinet() {
                 {expandedOrder === order.id && (
                   <div className="border-t border-white/6 px-5 pb-5 pt-4">
                     <p className="text-gray-400 text-sm mb-4">{order.description}</p>
+
+                    {/* Смена статуса */}
+                    {order.status !== "done" && order.status !== "cancelled" && (
+                      <div className="flex gap-2 flex-wrap mb-4">
+                        {order.status !== "in_progress" && (
+                          <button
+                            disabled={statusLoading === order.id}
+                            onClick={() => handleStatusChange(order.id, "in_progress")}
+                            className="text-xs px-3 py-1.5 rounded-lg bg-amber-600/15 text-amber-400 border border-amber-500/20 hover:bg-amber-600/25 transition-colors"
+                          >
+                            Мастер приступил
+                          </button>
+                        )}
+                        <button
+                          disabled={statusLoading === order.id}
+                          onClick={() => handleStatusChange(order.id, "done")}
+                          className="text-xs px-3 py-1.5 rounded-lg bg-emerald-600/15 text-emerald-400 border border-emerald-500/20 hover:bg-emerald-600/25 transition-colors"
+                        >
+                          Работа выполнена ✓
+                        </button>
+                        <button
+                          disabled={statusLoading === order.id}
+                          onClick={() => handleStatusChange(order.id, "cancelled")}
+                          className="text-xs px-3 py-1.5 rounded-lg bg-gray-600/15 text-gray-500 border border-gray-500/20 hover:bg-gray-600/25 transition-colors"
+                        >
+                          Отменить
+                        </button>
+                      </div>
+                    )}
+
                     {order.responses.length === 0 ? (
                       <p className="text-gray-600 text-sm">Откликов пока нет — мастера скоро увидят вашу заявку</p>
                     ) : (
@@ -390,7 +445,14 @@ export default function Cabinet() {
                           <div key={r.id} className="bg-white/3 border border-white/6 rounded-xl p-4">
                             <div className="flex items-start justify-between gap-3 mb-2">
                               <div>
-                                <p className="text-white font-semibold text-sm">{r.master_name}</p>
+                                <div className="flex items-center gap-2">
+                                  <p className="text-white font-semibold text-sm">{r.master_name}</p>
+                                  {r.master_id && (
+                                    <a href={`/master-page?id=${r.master_id}`} className="text-violet-400 hover:text-violet-300 text-xs flex items-center gap-1 transition-colors">
+                                      <Icon name="ExternalLink" size={11} />профиль
+                                    </a>
+                                  )}
+                                </div>
                                 {r.master_category && <p className="text-gray-500 text-xs">{r.master_category}</p>}
                               </div>
                               <a href={`tel:${r.master_phone}`} className="flex items-center gap-1.5 text-emerald-400 text-sm font-medium hover:text-emerald-300 transition-colors">

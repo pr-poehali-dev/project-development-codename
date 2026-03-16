@@ -191,10 +191,18 @@ export default function MasterCabinet() {
               <p className="text-gray-500 text-xs">{master?.category} · {master?.city}</p>
             </div>
           </div>
-          <button onClick={handleLogout} className="text-gray-500 hover:text-gray-300 text-sm flex items-center gap-1.5 transition-colors">
-            <Icon name="LogOut" size={15} />
-            Выйти
-          </button>
+          <div className="flex items-center gap-3">
+            {master?.id && (
+              <a href={`/master-page?id=${master.id}`} className="text-violet-400 hover:text-violet-300 text-sm flex items-center gap-1.5 transition-colors">
+                <Icon name="User" size={15} />
+                Мой профиль
+              </a>
+            )}
+            <button onClick={handleLogout} className="text-gray-500 hover:text-gray-300 text-sm flex items-center gap-1.5 transition-colors">
+              <Icon name="LogOut" size={15} />
+              Выйти
+            </button>
+          </div>
         </div>
       </div>
 
