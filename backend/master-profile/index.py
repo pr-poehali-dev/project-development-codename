@@ -38,9 +38,104 @@ def handler(event: dict, context) -> dict:
     method = event.get('httpMethod')
     params = event.get('queryStringParameters') or {}
 
-    # PUT — смена статуса заявки заказчиком
+    # GET — список услуг мастеров для главной страницы
+    if method == 'GET' and params.get('action') == 'services':
+        category = params.get('category', '').strip()
+        city = params.get('city', '').strip()
+
+        conn = get_conn()
+        cur = conn.cursor()
+
+        conditions = ['ms.is_active = TRUE']
+        args = []
+        if category:
+            conditions.append('ms.category = %s')
+            args.append(category)
+        if city:
+            conditions.append('ms.city ILIKE %s')
+            args.append(city)
+
+        where = ' AND '.join(conditions)
+        cur.execute(
+            f"SELECT ms.id, ms.title, ms.description, ms.category, ms.city, ms.price, ms.created_at, "
+            f"m.id as master_id, m.name as master_name, m.avatar_color, "
+            f"ROUND(AVG(r.rating)::numeric, 1) as rating, COUNT(r.id) as reviews_count "
+            f"FROM master_services ms "
+            f"JOIN masters m ON m.id = ms.master_id "
+            f"LEFT JOIN reviews r ON r.master_id = m.id "
+            f"WHERE {where} "
+            f"GROUP BY ms.id, ms.title, ms.description, ms.category, ms.city, ms.price, ms.created_at, "
+            f"m.id, m.name, m.avatar_color "
+            f"ORDER BY ms.created_at DESC LIMIT 50",
+            args
+        )
+        services = cur.fetchall()
+        cur.execute("SELECT DISTINCT city FROM master_services WHERE is_active = TRUE ORDER BY city")
+        cities = [row['city'] for row in cur.fetchall()]
+        cur.close(); conn.close()
+
+        return {
+            'statusCode': 200,
+            'headers': HEADERS,
+            'body': json.dumps({
+                'services': [{
+                    'id': s['id'],
+                    'title': s['title'],
+                    'description': s['description'],
+                    'category': s['category'],
+                    'city': s['city'],
+                    'price': s['price'],
+                    'master_id': s['master_id'],
+                    'master_name': s['master_name'],
+                    'avatar_color': s['avatar_color'] or '#7c3aed',
+                    'rating': float(s['rating']) if s['rating'] else None,
+                    'reviews_count': int(s['reviews_count']),
+                    'created_at': s['created_at'].isoformat() if s['created_at'] else None,
+                } for s in services],
+                'cities': cities,
+            }, ensure_ascii=False)
+        }
+
+    # PUT — смена статуса заявки заказчиком ИЛИ управление услугами мастера
     if method == 'PUT':
         body = json.loads(event.get('body') or '{}')
+
+        # PUT: скрыть/показать услугу
+        if body.get('action') == 'toggle_service':
+            service_id = body.get('service_id')
+            master_id = body.get('master_id')
+            is_active = body.get('is_active')
+            conn = get_conn()
+            cur = conn.cursor()
+            cur.execute(
+                "UPDATE master_services SET is_active = %s WHERE id = %s AND master_id = %s",
+                (bool(is_active), int(service_id), int(master_id))
+            )
+            conn.commit()
+            cur.close(); conn.close()
+            return {'statusCode': 200, 'headers': HEADERS, 'body': json.dumps({'success': True})}
+
+        # PUT: публикация новой услуги мастером
+        if body.get('action') == 'add_service':
+            master_id = body.get('master_id')
+            title = (body.get('title') or '').strip()
+            description = (body.get('description') or '').strip()
+            category = (body.get('category') or '').strip()
+            city = (body.get('city') or '').strip()
+            price = body.get('price')
+            if not all([master_id, title, category, city]):
+                return {'statusCode': 400, 'headers': HEADERS, 'body': json.dumps({'error': 'Заполните все обязательные поля'})}
+            conn = get_conn()
+            cur = conn.cursor()
+            cur.execute(
+                "INSERT INTO master_services (master_id, title, description, category, city, price) VALUES (%s, %s, %s, %s, %s, %s) RETURNING id",
+                (int(master_id), title, description, category, city, int(price) if price else None)
+            )
+            new_id = cur.fetchone()['id']
+            conn.commit()
+            cur.close(); conn.close()
+            return {'statusCode': 200, 'headers': HEADERS, 'body': json.dumps({'success': True, 'id': new_id})}
+
         order_id = body.get('order_id')
         status = body.get('status')
         customer_id = body.get('customer_id')
@@ -137,6 +232,11 @@ def handler(event: dict, context) -> dict:
             (master['id'],)
         )
         my_responses = cur.fetchall()
+        cur.execute(
+            "SELECT id, title, description, category, city, price, is_active, created_at FROM master_services WHERE master_id = %s ORDER BY created_at DESC",
+            (master['id'],)
+        )
+        my_services = cur.fetchall()
         cur.close(); conn.close()
 
         return {
@@ -160,7 +260,17 @@ def handler(event: dict, context) -> dict:
                     'order_city': r['order_city'],
                     'message': r['message'],
                     'created_at': r['created_at'].isoformat() if r['created_at'] else None,
-                } for r in my_responses]
+                } for r in my_responses],
+                'my_services': [{
+                    'id': s['id'],
+                    'title': s['title'],
+                    'description': s['description'],
+                    'category': s['category'],
+                    'city': s['city'],
+                    'price': s['price'],
+                    'is_active': s['is_active'],
+                    'created_at': s['created_at'].isoformat() if s['created_at'] else None,
+                } for s in my_services],
             }, ensure_ascii=False)
         }
 

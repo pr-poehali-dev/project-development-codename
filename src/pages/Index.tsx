@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -28,86 +28,19 @@ const categories = [
   { name: "Прочее", icon: "MoreHorizontal", count: 87 },
 ];
 
-const services = [
-  {
-    id: 1,
-    title: "Диагностика и ремонт двигателя любой марки",
-    category: "Авторемонт",
-    price: 3500,
-    rating: 4.9,
-    reviews: 112,
-    name: "Алексей Морозов",
-    status: "Самозанятый / ИП",
-    commission: 5,
-    avatar: "А",
-    color: "#6366f1",
-  },
-  {
-    id: 2,
-    title: "Ремонт квартиры под ключ: черновая и чистовая",
-    category: "Ремонт жилья",
-    price: 45000,
-    rating: 4.8,
-    reviews: 67,
-    name: "СтройМастер",
-    status: "Без статуса",
-    commission: 10,
-    avatar: "С",
-    color: "#f59e0b",
-  },
-  {
-    id: 3,
-    title: "Маникюр и педикюр с покрытием гель-лак",
-    category: "Бьюти",
-    price: 1800,
-    rating: 4.9,
-    reviews: 203,
-    name: "Анна Белова",
-    status: "Самозанятый / ИП",
-    commission: 5,
-    avatar: "А",
-    color: "#ec4899",
-  },
-  {
-    id: 4,
-    title: "Устранение засоров, замена труб и сантехники",
-    category: "Сантехника",
-    price: 2000,
-    rating: 4.7,
-    reviews: 89,
-    name: "Виктор Дроздов",
-    status: "Самозанятый / ИП",
-    commission: 5,
-    avatar: "В",
-    color: "#10b981",
-  },
-  {
-    id: 5,
-    title: "Настройка компьютера, Wi-Fi, умного дома",
-    category: "IT-помощь",
-    price: 1500,
-    rating: 4.8,
-    reviews: 54,
-    name: "Кирилл Захаров",
-    status: "Самозанятый / ИП",
-    commission: 5,
-    avatar: "К",
-    color: "#8b5cf6",
-  },
-  {
-    id: 6,
-    title: "Грузоперевозки и переезды — от 1 часа",
-    category: "Перевозки",
-    price: 2500,
-    rating: 4.7,
-    reviews: 78,
-    name: "ГрузЭкспресс",
-    status: "Без статуса",
-    commission: 10,
-    avatar: "Г",
-    color: "#ef4444",
-  },
-];
+interface Service {
+  id: number;
+  title: string;
+  description: string;
+  category: string;
+  city: string;
+  price: number | null;
+  master_id: number;
+  master_name: string;
+  avatar_color: string;
+  rating: number | null;
+  reviews_count: number;
+}
 
 const stats = [
   { label: "Исполнителей", value: "1 200+", icon: "Users" },
@@ -121,6 +54,10 @@ const MASTER_URL = "https://functions.poehali.dev/de274bd5-3f08-42d8-9aac-b373bb
 
 const Index = () => {
   const [activeCategory, setActiveCategory] = useState("Все");
+  const [selectedCity, setSelectedCityFilter] = useState("");
+  const [services, setServices] = useState<Service[]>([]);
+  const [availableCities, setAvailableCities] = useState<string[]>([]);
+  const [servicesLoading, setServicesLoading] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const [masterModalOpen, setMasterModalOpen] = useState(false);
@@ -130,11 +67,28 @@ const Index = () => {
   const [masterError, setMasterError] = useState("");
 
   const [orderModalOpen, setOrderModalOpen] = useState(false);
-  const [selectedCity, setSelectedCity] = useState("");
   const [orderForm, setOrderForm] = useState({ title: "", description: "", category: "", city: "", budget: "", contact_name: "", contact_phone: "", contact_email: "" });
   const [orderSent, setOrderSent] = useState(false);
   const [orderLoading, setOrderLoading] = useState(false);
   const [orderError, setOrderError] = useState("");
+
+  const loadServices = async (category: string, city: string) => {
+    setServicesLoading(true);
+    try {
+      const params = new URLSearchParams({ action: "services" });
+      if (category && category !== "Все") params.set("category", category);
+      if (city) params.set("city", city);
+      const res = await fetch(`${MASTER_URL}?${params}`);
+      const data = await res.json();
+      const parsed = typeof data === "string" ? JSON.parse(data) : data;
+      setServices(parsed.services || []);
+      setAvailableCities(parsed.cities || []);
+    } finally {
+      setServicesLoading(false);
+    }
+  };
+
+  useEffect(() => { loadServices(activeCategory, selectedCity); }, [activeCategory, selectedCity]);
 
   const handleMasterSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -190,10 +144,7 @@ const Index = () => {
     }
   };
 
-  const filtered =
-    activeCategory === "Все"
-      ? services
-      : services.filter((s) => s.category === activeCategory);
+  const filtered = services;
 
   return (
     <div className="min-h-screen bg-[#0f1117] text-white">
@@ -216,7 +167,7 @@ const Index = () => {
           <div className="hidden md:flex items-center gap-3">
             <CitySelect
               value={selectedCity}
-              onChange={setSelectedCity}
+              onChange={setSelectedCityFilter}
               allCitiesLabel="Все города"
               variant="glass"
             />
@@ -336,100 +287,113 @@ const Index = () => {
       {/* Карточки услуг */}
       <section className="pb-20 px-4">
         <div className="max-w-7xl mx-auto">
-          <div className="flex items-center justify-between mb-8">
+          <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
             <h2 className="text-2xl font-bold">
               {activeCategory === "Все" ? "Все услуги" : activeCategory}
-              <span className="text-gray-600 text-lg font-normal ml-3">{filtered.length}</span>
+              {!servicesLoading && <span className="text-gray-600 text-lg font-normal ml-3">{filtered.length}</span>}
             </h2>
-            <a href={activeCategory === "Все" ? "/orders" : `/orders?category=${encodeURIComponent(activeCategory)}`}>
-              <Button variant="ghost" className="text-gray-400 hover:text-white text-sm gap-2">
-                <Icon name="SlidersHorizontal" size={16} />
-                Все заявки →
-              </Button>
-            </a>
+            <div className="flex items-center gap-3">
+              {availableCities.length > 0 && (
+                <select
+                  value={selectedCity}
+                  onChange={e => setSelectedCityFilter(e.target.value)}
+                  className="bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-sm text-gray-300 focus:outline-none focus:border-violet-500"
+                >
+                  <option value="">Все города</option>
+                  {availableCities.map(c => <option key={c} value={c}>{c}</option>)}
+                </select>
+              )}
+              <a href={activeCategory === "Все" ? "/orders" : `/orders?category=${encodeURIComponent(activeCategory)}`}>
+                <Button variant="ghost" className="text-gray-400 hover:text-white text-sm gap-2">
+                  <Icon name="SlidersHorizontal" size={16} />
+                  Все заявки →
+                </Button>
+              </a>
+            </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-            {filtered.map((service) => (
-              <div
-                key={service.id}
-                className="group bg-white/4 border border-white/8 rounded-2xl p-5 hover:border-violet-500/40 hover:bg-white/6 transition-all cursor-pointer"
-              >
-                <div className="flex items-start justify-between mb-4">
-                  <Badge
-                    className="text-xs px-2.5 py-1 rounded-lg"
-                    style={{
-                      backgroundColor: "rgba(99,102,241,0.15)",
-                      color: "#a5b4fc",
-                      border: "1px solid rgba(99,102,241,0.2)",
-                    }}
-                  >
-                    {service.category}
-                  </Badge>
-                  <div className="flex items-center gap-1 text-amber-400 text-sm">
-                    <Icon name="Star" size={13} />
-                    <span>{service.rating}</span>
-                    <span className="text-gray-600 text-xs">({service.reviews})</span>
+          {servicesLoading ? (
+            <div className="text-center py-16 text-gray-500">
+              <div className="w-8 h-8 border-2 border-violet-500 border-t-transparent rounded-full animate-spin mx-auto mb-3" />
+              Загрузка...
+            </div>
+          ) : filtered.length === 0 ? (
+            <div className="text-center py-16">
+              <div className="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center mx-auto mb-4">
+                <Icon name="Briefcase" size={28} className="text-gray-600" />
+              </div>
+              <p className="text-gray-500 text-lg mb-2">Услуг пока нет</p>
+              <p className="text-gray-600 text-sm">Мастера ещё не опубликовали услуги в этой категории</p>
+              <a href="/master">
+                <Button className="mt-6 bg-gradient-to-r from-violet-600 to-indigo-600 text-white">Я мастер — опубликовать услугу</Button>
+              </a>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+              {filtered.map((service) => (
+                <a
+                  key={service.id}
+                  href={`/master-page?id=${service.master_id}`}
+                  className="group bg-white/4 border border-white/8 rounded-2xl p-5 hover:border-violet-500/40 hover:bg-white/6 transition-all block"
+                >
+                  <div className="flex items-start justify-between mb-4">
+                    <Badge
+                      className="text-xs px-2.5 py-1 rounded-lg"
+                      style={{ backgroundColor: "rgba(99,102,241,0.15)", color: "#a5b4fc", border: "1px solid rgba(99,102,241,0.2)" }}
+                    >
+                      {service.category}
+                    </Badge>
+                    {service.rating ? (
+                      <div className="flex items-center gap-1 text-amber-400 text-sm">
+                        <Icon name="Star" size={13} />
+                        <span>{service.rating}</span>
+                        <span className="text-gray-600 text-xs">({service.reviews_count})</span>
+                      </div>
+                    ) : (
+                      <span className="text-gray-600 text-xs">Новый</span>
+                    )}
                   </div>
-                </div>
 
-                <h3 className="text-white font-semibold text-base mb-4 leading-snug group-hover:text-violet-200 transition-colors">
-                  {service.title}
-                </h3>
+                  <h3 className="text-white font-semibold text-base mb-4 leading-snug group-hover:text-violet-200 transition-colors">
+                    {service.title}
+                  </h3>
 
-                <div className="flex items-center gap-3 mb-4">
-                  <div
-                    className="w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-bold flex-shrink-0"
-                    style={{ backgroundColor: service.color }}
-                  >
-                    {service.avatar}
-                  </div>
-                  <div className="min-w-0">
-                    <div className="text-sm text-gray-300 font-medium truncate">{service.name}</div>
-                    <div className="flex items-center gap-1.5 mt-0.5">
-                      <span
-                        className={`text-[11px] px-2 py-0.5 rounded-full ${
-                          service.status === "Самозанятый / ИП"
-                            ? "bg-emerald-600/15 text-emerald-400"
-                            : "bg-orange-600/15 text-orange-400"
-                        }`}
-                      >
-                        {service.status}
-                      </span>
-                      <span className="text-[11px] text-gray-600">
-                        комиссия {service.commission}%
-                      </span>
+                  <div className="flex items-center gap-3 mb-4">
+                    <div
+                      className="w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-bold flex-shrink-0"
+                      style={{ backgroundColor: service.avatar_color }}
+                    >
+                      {service.master_name?.[0]?.toUpperCase()}
+                    </div>
+                    <div className="min-w-0">
+                      <div className="text-sm text-gray-300 font-medium truncate">{service.master_name}</div>
+                      {service.city && (
+                        <div className="text-xs text-gray-600 flex items-center gap-1 mt-0.5">
+                          <Icon name="MapPin" size={10} />{service.city}
+                        </div>
+                      )}
                     </div>
                   </div>
-                </div>
 
-                <div className="flex items-center justify-between pt-4 border-t border-white/6">
-                  <div>
-                    <span className="text-gray-500 text-xs">от</span>
-                    <span className="text-white font-bold text-lg ml-1">
-                      {service.price.toLocaleString("ru-RU")} ₽
-                    </span>
+                  <div className="flex items-center justify-between pt-4 border-t border-white/6">
+                    <div>
+                      {service.price ? (
+                        <>
+                          <span className="text-gray-500 text-xs">от</span>
+                          <span className="text-white font-bold text-lg ml-1">{service.price.toLocaleString("ru-RU")} ₽</span>
+                        </>
+                      ) : (
+                        <span className="text-gray-500 text-sm">Цена по договору</span>
+                      )}
+                    </div>
+                    <Button size="sm" className="bg-violet-600/20 hover:bg-violet-600 text-violet-300 hover:text-white border border-violet-500/30 hover:border-violet-500 rounded-lg text-xs transition-all">
+                      Профиль
+                    </Button>
                   </div>
-                  <Button
-                    size="sm"
-                    className="bg-violet-600/20 hover:bg-violet-600 text-violet-300 hover:text-white border border-violet-500/30 hover:border-violet-500 rounded-lg text-xs transition-all"
-                  >
-                    Подробнее
-                  </Button>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          <div className="text-center mt-10">
-            <Button
-              variant="outline"
-              className="border-white/15 text-gray-300 hover:text-white hover:bg-white/8 px-8"
-            >
-              Показать ещё услуги
-              <Icon name="ArrowDown" size={16} className="ml-2" />
-            </Button>
-          </div>
+                </a>
+              ))}
+            </div>
+          )}
         </div>
       </section>
 

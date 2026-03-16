@@ -35,6 +35,22 @@ interface MyResponse {
   created_at: string;
 }
 
+interface MyService {
+  id: number;
+  title: string;
+  description: string;
+  category: string;
+  city: string;
+  price: number | null;
+  is_active: boolean;
+  created_at: string;
+}
+
+const CATEGORIES = [
+  "Авторемонт","Ремонт жилья","Строительство","Бьюти","IT-помощь",
+  "Сантехника","Электрика","Перевозки","Няня","Клининг","Прочее",
+];
+
 interface Package {
   id: number;
   name: string;
@@ -58,12 +74,18 @@ export default function MasterCabinet() {
   const [master, setMaster] = useState<Master | null>(null);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [myResponses, setMyResponses] = useState<MyResponse[]>([]);
+  const [myServices, setMyServices] = useState<MyService[]>([]);
   const [packages, setPackages] = useState<Package[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [buyingId, setBuyingId] = useState<number | null>(null);
   const [buySuccess, setBuySuccess] = useState("");
-  const [tab, setTab] = useState<"balance" | "history" | "responses">("balance");
+  const [tab, setTab] = useState<"balance" | "history" | "responses" | "services">("balance");
+
+  const [showServiceForm, setShowServiceForm] = useState(false);
+  const [serviceForm, setServiceForm] = useState({ title: "", description: "", category: "", city: "", price: "" });
+  const [serviceLoading, setServiceLoading] = useState(false);
+  const [serviceSuccess, setServiceSuccess] = useState("");
 
   useEffect(() => {
     const saved = localStorage.getItem("master_phone");
@@ -94,6 +116,7 @@ export default function MasterCabinet() {
         setMaster(data.master);
         setTransactions(data.transactions || []);
         setMyResponses(data.my_responses || []);
+        setMyServices(data.my_services || []);
         localStorage.setItem("master_phone", p);
       }
     } finally {
@@ -136,6 +159,44 @@ export default function MasterCabinet() {
     setPhone("");
     setInputPhone("");
     setTransactions([]);
+  };
+
+  const handleAddService = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!master) return;
+    setServiceLoading(true);
+    const res = await fetch(PROFILE_URL, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        action: "add_service",
+        master_id: master.id,
+        title: serviceForm.title,
+        description: serviceForm.description,
+        category: serviceForm.category || master.category,
+        city: serviceForm.city || master.city,
+        price: serviceForm.price ? Number(serviceForm.price) : null,
+      }),
+    });
+    const data = await res.json();
+    setServiceLoading(false);
+    if (data.success) {
+      setServiceSuccess("Услуга опубликована!");
+      setShowServiceForm(false);
+      setServiceForm({ title: "", description: "", category: "", city: "", price: "" });
+      await loadProfile(phone);
+      setTimeout(() => setServiceSuccess(""), 3000);
+    }
+  };
+
+  const handleToggleService = async (serviceId: number, isActive: boolean) => {
+    if (!master) return;
+    await fetch(PROFILE_URL, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "toggle_service", service_id: serviceId, master_id: master.id, is_active: isActive }),
+    });
+    setMyServices(prev => prev.map(s => s.id === serviceId ? { ...s, is_active: isActive } : s));
   };
 
   if (!master && !loading) {
@@ -232,33 +293,32 @@ export default function MasterCabinet() {
           </div>
         </div>
 
-        {/* Уведомление об успешной покупке */}
+        {/* Уведомления */}
         {buySuccess && (
-          <div className="bg-emerald-600/15 border border-emerald-500/30 rounded-xl px-4 py-3 mb-6 flex items-center gap-2 text-emerald-400 text-sm">
-            <Icon name="CheckCircle" size={16} />
-            {buySuccess}
+          <div className="bg-emerald-600/15 border border-emerald-500/30 rounded-xl px-4 py-3 mb-4 flex items-center gap-2 text-emerald-400 text-sm">
+            <Icon name="CheckCircle" size={16} />{buySuccess}
+          </div>
+        )}
+        {serviceSuccess && (
+          <div className="bg-emerald-600/15 border border-emerald-500/30 rounded-xl px-4 py-3 mb-4 flex items-center gap-2 text-emerald-400 text-sm">
+            <Icon name="CheckCircle" size={16} />{serviceSuccess}
           </div>
         )}
 
         {/* Вкладки */}
-        <div className="flex gap-1 bg-white/4 rounded-xl p-1 mb-6">
-          <button
-            onClick={() => setTab("balance")}
-            className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all ${tab === "balance" ? "bg-violet-600 text-white" : "text-gray-400 hover:text-white"}`}
-          >
-            Пополнить баланс
+        <div className="grid grid-cols-4 gap-1 bg-white/4 rounded-xl p-1 mb-6">
+          <button onClick={() => setTab("balance")} className={`py-2 rounded-lg text-xs font-medium transition-all ${tab === "balance" ? "bg-violet-600 text-white" : "text-gray-400 hover:text-white"}`}>
+            Баланс
           </button>
-          <button
-            onClick={() => setTab("responses")}
-            className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all flex items-center justify-center gap-1.5 ${tab === "responses" ? "bg-violet-600 text-white" : "text-gray-400 hover:text-white"}`}
-          >
-            Мои отклики
-            {myResponses.length > 0 && <span className={`text-xs px-1.5 py-0.5 rounded-md ${tab === "responses" ? "bg-white/20" : "bg-white/10"}`}>{myResponses.length}</span>}
+          <button onClick={() => setTab("services")} className={`py-2 rounded-lg text-xs font-medium transition-all flex items-center justify-center gap-1 ${tab === "services" ? "bg-violet-600 text-white" : "text-gray-400 hover:text-white"}`}>
+            Услуги
+            {myServices.length > 0 && <span className={`text-[10px] px-1 py-0.5 rounded ${tab === "services" ? "bg-white/20" : "bg-white/10"}`}>{myServices.length}</span>}
           </button>
-          <button
-            onClick={() => setTab("history")}
-            className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all ${tab === "history" ? "bg-violet-600 text-white" : "text-gray-400 hover:text-white"}`}
-          >
+          <button onClick={() => setTab("responses")} className={`py-2 rounded-lg text-xs font-medium transition-all flex items-center justify-center gap-1 ${tab === "responses" ? "bg-violet-600 text-white" : "text-gray-400 hover:text-white"}`}>
+            Отклики
+            {myResponses.length > 0 && <span className={`text-[10px] px-1 py-0.5 rounded ${tab === "responses" ? "bg-white/20" : "bg-white/10"}`}>{myResponses.length}</span>}
+          </button>
+          <button onClick={() => setTab("history")} className={`py-2 rounded-lg text-xs font-medium transition-all ${tab === "history" ? "bg-violet-600 text-white" : "text-gray-400 hover:text-white"}`}>
             История
           </button>
         </div>
@@ -301,6 +361,97 @@ export default function MasterCabinet() {
               . Исполнитель: Харисов Э.И., ИНН 860234992431.
             </p>
           </>
+        )}
+
+        {tab === "services" && (
+          <div>
+            <div className="flex items-center justify-between mb-4">
+              <p className="text-gray-400 text-sm">Ваши услуги отображаются в разделе «Все услуги» на главной</p>
+              <Button onClick={() => setShowServiceForm(true)} className="bg-violet-600 hover:bg-violet-500 text-white text-sm gap-1.5">
+                <Icon name="Plus" size={15} />Добавить
+              </Button>
+            </div>
+
+            {showServiceForm && (
+              <form onSubmit={handleAddService} className="bg-white/4 border border-violet-500/30 rounded-2xl p-5 mb-5 space-y-3">
+                <h3 className="text-white font-semibold">Новая услуга</h3>
+                <input
+                  required
+                  placeholder="Название услуги *"
+                  value={serviceForm.title}
+                  onChange={e => setServiceForm(f => ({ ...f, title: e.target.value }))}
+                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-violet-500"
+                />
+                <textarea
+                  rows={2}
+                  placeholder="Описание (необязательно)"
+                  value={serviceForm.description}
+                  onChange={e => setServiceForm(f => ({ ...f, description: e.target.value }))}
+                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-violet-500 resize-none"
+                />
+                <div className="grid grid-cols-2 gap-3">
+                  <select
+                    value={serviceForm.category || master?.category || ""}
+                    onChange={e => setServiceForm(f => ({ ...f, category: e.target.value }))}
+                    className="bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-violet-500"
+                  >
+                    <option value="" disabled>Категория *</option>
+                    {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+                  </select>
+                  <input
+                    placeholder={`Город (${master?.city || "укажите"})`}
+                    value={serviceForm.city || master?.city || ""}
+                    onChange={e => setServiceForm(f => ({ ...f, city: e.target.value }))}
+                    className="bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-violet-500"
+                  />
+                </div>
+                <input
+                  type="number"
+                  placeholder="Цена от (₽)"
+                  value={serviceForm.price}
+                  onChange={e => setServiceForm(f => ({ ...f, price: e.target.value }))}
+                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-violet-500"
+                />
+                <div className="flex gap-3 pt-1">
+                  <Button type="button" variant="ghost" className="flex-1 text-gray-400" onClick={() => setShowServiceForm(false)}>Отмена</Button>
+                  <Button type="submit" disabled={serviceLoading} className="flex-1 bg-violet-600 hover:bg-violet-500 text-white">
+                    {serviceLoading ? "Публикация..." : "Опубликовать"}
+                  </Button>
+                </div>
+              </form>
+            )}
+
+            {myServices.length === 0 && !showServiceForm ? (
+              <div className="text-center py-12 text-gray-500">
+                <Icon name="Briefcase" size={32} className="mx-auto mb-3 opacity-40" />
+                <p>Услуг пока нет — добавьте первую</p>
+              </div>
+            ) : (
+              <div className="flex flex-col gap-3">
+                {myServices.map(s => (
+                  <div key={s.id} className={`bg-white/4 border rounded-xl p-4 ${s.is_active ? "border-white/8" : "border-white/4 opacity-60"}`}>
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-white font-medium text-sm">{s.title}</p>
+                        <div className="flex items-center gap-2 mt-1 flex-wrap">
+                          <span className="text-gray-500 text-xs">{s.category}</span>
+                          <span className="text-gray-600 text-xs flex items-center gap-1"><Icon name="MapPin" size={10}/>{s.city}</span>
+                          {s.price && <span className="text-emerald-400 text-xs">от {s.price.toLocaleString("ru-RU")} ₽</span>}
+                        </div>
+                        {s.description && <p className="text-gray-500 text-xs mt-1 line-clamp-1">{s.description}</p>}
+                      </div>
+                      <button
+                        onClick={() => handleToggleService(s.id, !s.is_active)}
+                        className={`flex-shrink-0 text-xs px-3 py-1.5 rounded-lg border transition-colors ${s.is_active ? "bg-emerald-600/15 text-emerald-400 border-emerald-500/20 hover:bg-red-600/15 hover:text-red-400 hover:border-red-500/20" : "bg-gray-600/15 text-gray-400 border-gray-500/20 hover:bg-emerald-600/15 hover:text-emerald-400 hover:border-emerald-500/20"}`}
+                      >
+                        {s.is_active ? "Скрыть" : "Показать"}
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         )}
 
         {tab === "responses" && (
