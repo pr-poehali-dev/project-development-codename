@@ -184,6 +184,7 @@ export default function MasterCabinet() {
       setServiceSuccess("Услуга опубликована!");
       setShowServiceForm(false);
       setServiceForm({ title: "", description: "", category: "", city: "", price: "" });
+      localStorage.removeItem("master_banner_dismissed");
       await loadProfile(phone);
       setTimeout(() => setServiceSuccess(""), 3000);
     }
