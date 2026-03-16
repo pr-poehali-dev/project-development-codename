@@ -90,6 +90,11 @@ const Index = () => {
 
   useEffect(() => { loadServices(activeCategory, selectedCity); }, [activeCategory, selectedCity]);
 
+  const isMaster = typeof window !== "undefined" && !!localStorage.getItem("master_phone");
+  const [masterBannerDismissed, setMasterBannerDismissed] = useState(
+    typeof window !== "undefined" && localStorage.getItem("master_banner_dismissed") === "1"
+  );
+
   const handleMasterSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setMasterLoading(true);
@@ -204,6 +209,32 @@ const Index = () => {
           </div>
         )}
       </nav>
+
+      {/* Баннер для мастеров */}
+      {isMaster && !masterBannerDismissed && (
+        <div className="bg-gradient-to-r from-violet-600/20 to-indigo-600/10 border-b border-violet-500/20 px-4 py-3">
+          <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-lg bg-violet-600/30 flex items-center justify-center flex-shrink-0">
+                <Icon name="Briefcase" size={15} className="text-violet-400" />
+              </div>
+              <p className="text-sm text-gray-300">
+                Вы зарегистрированы как мастер —{" "}
+                <a href="/master" className="text-violet-400 hover:text-violet-300 font-medium transition-colors">
+                  опубликуйте свои услуги
+                </a>
+                {" "}чтобы клиенты могли вас найти
+              </p>
+            </div>
+            <button
+              onClick={() => { setMasterBannerDismissed(true); localStorage.setItem("master_banner_dismissed", "1"); }}
+              className="text-gray-500 hover:text-gray-300 transition-colors flex-shrink-0"
+            >
+              <Icon name="X" size={16} />
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Герой */}
       <section className="relative py-20 sm:py-28 px-4 overflow-hidden">
