@@ -175,11 +175,11 @@ const Index = () => {
           </Badge>
           <h1 className="text-4xl sm:text-6xl font-extrabold mb-6 leading-tight">
             Найди лучшего
-            <span className="bg-gradient-to-r from-violet-400 to-indigo-400 bg-clip-text text-transparent"> исполнителя</span>
-            <br />для своего проекта
+            <span className="bg-gradient-to-r from-violet-400 to-indigo-400 bg-clip-text text-transparent"> мастера</span>
+            <br />для любой задачи
           </h1>
           <p className="text-gray-400 text-lg sm:text-xl mb-10 max-w-2xl mx-auto">
-            Более 1 200 проверенных специалистов: разработчики, дизайнеры, маркетологи.
+            Более 1 200 проверенных специалистов: мастера по ремонту, сантехники, электрики, бьюти-мастера, грузчики и многое другое.
             Комиссия от 5% — только для самозанятых.
           </p>
 
