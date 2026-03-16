@@ -113,7 +113,7 @@ const stats = [
   { label: "Исполнителей", value: "1 200+", icon: "Users" },
   { label: "Выполнено заказов", value: "8 400+", icon: "CheckCircle" },
   { label: "Средняя оценка", value: "4.8 ★", icon: "Star" },
-  { label: "Категорий услуг", value: "40+", icon: "Grid3x3" },
+  { label: "Категорий услуг", value: "20+", icon: "Grid3x3" },
 ];
 
 const ORDERS_URL = "https://functions.poehali.dev/34db9bab-e58a-479e-b1cc-c27fb8e0b728";
@@ -281,31 +281,23 @@ const Index = () => {
         <div className="max-w-7xl mx-auto">
           <h2 className="text-2xl font-bold mb-8 text-center">Категории услуг</h2>
           <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3">
-            <button
-              onClick={() => setActiveCategory("Все")}
-              className={`flex flex-col items-center gap-2 p-4 rounded-xl border transition-all ${
-                activeCategory === "Все"
-                  ? "bg-violet-600/20 border-violet-500/50 text-violet-300"
-                  : "bg-white/3 border-white/8 text-gray-400 hover:border-white/20 hover:text-white"
-              }`}
+            <a
+              href="/orders"
+              className="flex flex-col items-center gap-2 p-4 rounded-xl border transition-all bg-white/3 border-white/8 text-gray-400 hover:border-white/20 hover:text-white"
             >
               <Icon name="LayoutGrid" size={22} />
               <span className="text-xs font-medium">Все</span>
-            </button>
+            </a>
             {categories.map((cat) => (
-              <button
+              <a
                 key={cat.name}
-                onClick={() => setActiveCategory(cat.name)}
-                className={`flex flex-col items-center gap-2 p-4 rounded-xl border transition-all ${
-                  activeCategory === cat.name
-                    ? "bg-violet-600/20 border-violet-500/50 text-violet-300"
-                    : "bg-white/3 border-white/8 text-gray-400 hover:border-white/20 hover:text-white"
-                }`}
+                href={`/orders?category=${encodeURIComponent(cat.name)}`}
+                className="flex flex-col items-center gap-2 p-4 rounded-xl border transition-all bg-white/3 border-white/8 text-gray-400 hover:border-white/20 hover:text-white hover:bg-white/6"
               >
                 <Icon name={cat.icon} size={22} />
                 <span className="text-xs font-medium">{cat.name}</span>
                 <span className="text-[10px] text-gray-600">{cat.count}</span>
-              </button>
+              </a>
             ))}
           </div>
         </div>

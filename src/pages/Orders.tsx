@@ -48,7 +48,8 @@ const PROFILE_URL = "https://functions.poehali.dev/de274bd5-3f08-42d8-9aac-b373b
 const Orders = () => {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeCategory, setActiveCategory] = useState("Все");
+  const initialCategory = new URLSearchParams(window.location.search).get("category") || "Все";
+  const [activeCategory, setActiveCategory] = useState(initialCategory);
   const [selectedCity, setSelectedCity] = useState("");
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [responseForm, setResponseForm] = useState({ master_name: "", master_phone: "", master_category: "", message: "" });
