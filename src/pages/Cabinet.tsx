@@ -218,6 +218,12 @@ export default function Cabinet() {
     }
   };
 
+  const [activeTab, setActiveTab] = useState<"active" | "done">("active");
+
+  const activeOrders = orders.filter(o => o.status !== "done" && o.status !== "cancelled");
+  const doneOrders = orders.filter(o => o.status === "done" || o.status === "cancelled");
+  const visibleOrders = activeTab === "active" ? activeOrders : doneOrders;
+
   const totalResponses = orders.reduce((s, o) => s + o.responses.length, 0);
 
   // Экран входа
@@ -363,18 +369,44 @@ export default function Cabinet() {
           </div>
         )}
 
+        {/* Вкладки */}
+        <div className="flex gap-2 mb-6">
+          <button
+            onClick={() => setActiveTab("active")}
+            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-colors ${activeTab === "active" ? "bg-violet-600 text-white" : "bg-white/5 text-gray-400 hover:text-white hover:bg-white/8"}`}
+          >
+            <Icon name="Clock" size={15} />
+            Активные
+            {activeOrders.length > 0 && <span className={`text-xs px-1.5 py-0.5 rounded-md ${activeTab === "active" ? "bg-white/20" : "bg-white/10"}`}>{activeOrders.length}</span>}
+          </button>
+          <button
+            onClick={() => setActiveTab("done")}
+            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-colors ${activeTab === "done" ? "bg-violet-600 text-white" : "bg-white/5 text-gray-400 hover:text-white hover:bg-white/8"}`}
+          >
+            <Icon name="CheckCircle" size={15} />
+            Завершённые
+            {doneOrders.length > 0 && <span className={`text-xs px-1.5 py-0.5 rounded-md ${activeTab === "done" ? "bg-white/20" : "bg-white/10"}`}>{doneOrders.length}</span>}
+          </button>
+        </div>
+
         {/* Список заявок */}
-        {orders.length === 0 ? (
+        {visibleOrders.length === 0 ? (
           <div className="text-center py-16">
             <div className="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center mx-auto mb-4">
               <Icon name="ClipboardList" size={28} className="text-gray-600" />
             </div>
-            <p className="text-gray-500 text-lg">Заявок пока нет</p>
-            <a href="/"><Button className="mt-6 bg-gradient-to-r from-violet-600 to-indigo-600 text-white">Создать заявку</Button></a>
+            {activeTab === "active" ? (
+              <>
+                <p className="text-gray-500 text-lg">Активных заявок нет</p>
+                <a href="/"><Button className="mt-6 bg-gradient-to-r from-violet-600 to-indigo-600 text-white">Создать заявку</Button></a>
+              </>
+            ) : (
+              <p className="text-gray-500 text-lg">Завершённых заявок пока нет</p>
+            )}
           </div>
         ) : (
           <div className="space-y-4">
-            {orders.map((order) => (
+            {visibleOrders.map((order) => (
               <div key={order.id} className="bg-white/4 border border-white/8 rounded-2xl overflow-hidden">
                 <div className="p-5 cursor-pointer hover:bg-white/2 transition-colors" onClick={() => setExpandedOrder(expandedOrder === order.id ? null : order.id)}>
                   <div className="flex items-start justify-between gap-3">
