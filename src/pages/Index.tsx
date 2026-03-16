@@ -4,6 +4,13 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import Icon from "@/components/ui/icon";
 
+const CITIES = [
+  "Москва", "Санкт-Петербург", "Новосибирск", "Екатеринбург", "Казань",
+  "Нижний Новгород", "Челябинск", "Самара", "Уфа", "Ростов-на-Дону",
+  "Краснодар", "Омск", "Воронеж", "Пермь", "Волгоград",
+  "Красноярск", "Саратов", "Тюмень", "Тольятти", "Ижевск",
+];
+
 const categories = [
   { name: "Авторемонт", icon: "Car", count: 312 },
   { name: "Ремонт жилья", icon: "Hammer", count: 278 },
@@ -117,7 +124,8 @@ const Index = () => {
   const [masterSent, setMasterSent] = useState(false);
 
   const [orderModalOpen, setOrderModalOpen] = useState(false);
-  const [orderForm, setOrderForm] = useState({ title: "", description: "", category: "", budget: "", contact_name: "", contact_phone: "", contact_email: "" });
+  const [selectedCity, setSelectedCity] = useState("");
+  const [orderForm, setOrderForm] = useState({ title: "", description: "", category: "", city: "", budget: "", contact_name: "", contact_phone: "", contact_email: "" });
   const [orderSent, setOrderSent] = useState(false);
   const [orderLoading, setOrderLoading] = useState(false);
   const [orderError, setOrderError] = useState("");
@@ -176,6 +184,17 @@ const Index = () => {
           </div>
 
           <div className="hidden md:flex items-center gap-3">
+            <div className="relative">
+              <Icon name="MapPin" size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" />
+              <select
+                className="bg-white/5 border border-white/10 rounded-xl pl-8 pr-8 py-2 text-sm text-gray-300 focus:outline-none focus:border-violet-500 transition-colors appearance-none cursor-pointer hover:border-white/20"
+                value={selectedCity}
+                onChange={(e) => setSelectedCity(e.target.value)}
+              >
+                <option value="">Все города</option>
+                {CITIES.map((c) => <option key={c} value={c}>{c}</option>)}
+              </select>
+            </div>
             <a href="/cabinet">
               <Button variant="ghost" className="text-gray-300 hover:text-white hover:bg-white/10 text-sm gap-2">
                 <Icon name="LayoutDashboard" size={15} />
@@ -526,6 +545,18 @@ const Index = () => {
                 />
               </div>
               <div>
+                <label className="text-sm text-gray-400 mb-1.5 block">Город *</label>
+                <select
+                  required
+                  className="w-full bg-[#0f1117] border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-violet-500 transition-colors"
+                  value={masterForm.city || ""}
+                  onChange={(e) => setMasterForm({ ...masterForm, city: e.target.value })}
+                >
+                  <option value="" disabled>Выберите город</option>
+                  {CITIES.map((c) => <option key={c} value={c}>{c}</option>)}
+                </select>
+              </div>
+              <div>
                 <label className="text-sm text-gray-400 mb-1.5 block">Категория услуг *</label>
                 <select
                   required
@@ -618,19 +649,33 @@ const Index = () => {
                   onChange={(e) => setOrderForm({ ...orderForm, title: e.target.value })}
                 />
               </div>
-              <div>
-                <label className="text-sm text-gray-400 mb-1.5 block">Категория *</label>
-                <select
-                  required
-                  className="w-full bg-[#0f1117] border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-violet-500 transition-colors"
-                  value={orderForm.category}
-                  onChange={(e) => setOrderForm({ ...orderForm, category: e.target.value })}
-                >
-                  <option value="" disabled>Выберите категорию</option>
-                  {categories.map((c) => (
-                    <option key={c.name} value={c.name}>{c.name}</option>
-                  ))}
-                </select>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-sm text-gray-400 mb-1.5 block">Категория *</label>
+                  <select
+                    required
+                    className="w-full bg-[#0f1117] border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-violet-500 transition-colors"
+                    value={orderForm.category}
+                    onChange={(e) => setOrderForm({ ...orderForm, category: e.target.value })}
+                  >
+                    <option value="" disabled>Выберите</option>
+                    {categories.map((c) => (
+                      <option key={c.name} value={c.name}>{c.name}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="text-sm text-gray-400 mb-1.5 block">Город *</label>
+                  <select
+                    required
+                    className="w-full bg-[#0f1117] border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-violet-500 transition-colors"
+                    value={orderForm.city}
+                    onChange={(e) => setOrderForm({ ...orderForm, city: e.target.value })}
+                  >
+                    <option value="" disabled>Выберите</option>
+                    {CITIES.map((c) => <option key={c} value={c}>{c}</option>)}
+                  </select>
+                </div>
               </div>
               <div>
                 <label className="text-sm text-gray-400 mb-1.5 block">Подробное описание *</label>

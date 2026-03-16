@@ -26,6 +26,7 @@ interface Order {
   title: string;
   description: string;
   category: string;
+  city: string;
   budget: number | null;
   contact_name: string;
   status: string;
@@ -36,6 +37,7 @@ const Orders = () => {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeCategory, setActiveCategory] = useState("Все");
+  const [selectedCity, setSelectedCity] = useState("");
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [responseForm, setResponseForm] = useState({ master_name: "", master_phone: "", master_category: "", message: "" });
   const [responseSent, setResponseSent] = useState(false);
@@ -43,17 +45,22 @@ const Orders = () => {
   const [responseError, setResponseError] = useState("");
 
   useEffect(() => {
-    fetch(ORDERS_URL)
+    const url = selectedCity ? `${ORDERS_URL}?city=${encodeURIComponent(selectedCity)}` : ORDERS_URL;
+    setLoading(true);
+    fetch(url)
       .then((r) => r.json())
       .then((data) => {
         const raw = typeof data === "string" ? JSON.parse(data) : data;
         setOrders(raw.orders || []);
       })
       .finally(() => setLoading(false));
-  }, []);
+  }, [selectedCity]);
 
+  const cities = ["Все", ...Array.from(new Set(orders.map((o) => o.city).filter(Boolean)))];
   const categories = ["Все", ...Array.from(new Set(orders.map((o) => o.category)))];
-  const filtered = activeCategory === "Все" ? orders : orders.filter((o) => o.category === activeCategory);
+  const filtered = orders.filter((o) =>
+    (activeCategory === "Все" || o.category === activeCategory)
+  );
 
   const handleRespond = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -119,6 +126,27 @@ const Orders = () => {
             <p className="text-gray-400">Найди подходящий заказ и откликнись — заказчик выберет лучшего мастера</p>
           </div>
 
+          {/* Фильтр по городу */}
+          <div className="flex items-center gap-3 mb-5 flex-wrap">
+            <div className="relative">
+              <Icon name="MapPin" size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" />
+              <select
+                className="bg-white/5 border border-white/10 rounded-xl pl-8 pr-8 py-2 text-sm text-gray-300 focus:outline-none focus:border-violet-500 transition-colors appearance-none cursor-pointer hover:border-white/20"
+                value={selectedCity}
+                onChange={(e) => setSelectedCity(e.target.value)}
+              >
+                <option value="">Все города</option>
+                {cities.filter(c => c !== "Все").map((c) => <option key={c} value={c}>{c}</option>)}
+              </select>
+            </div>
+            {selectedCity && (
+              <button onClick={() => setSelectedCity("")} className="text-gray-500 hover:text-gray-300 text-sm flex items-center gap-1 transition-colors">
+                <Icon name="X" size={14} />
+                Сбросить
+              </button>
+            )}
+          </div>
+
           {/* Фильтр по категориям */}
           <div className="flex gap-2 flex-wrap mb-8">
             {categories.map((cat) => (
@@ -164,10 +192,18 @@ const Orders = () => {
                   onClick={() => { setSelectedOrder(order); setResponseSent(false); setResponseError(""); setResponseForm({ master_name: "", master_phone: "", master_category: "", message: "" }); }}
                 >
                   <div className="flex items-start justify-between mb-3">
-                    <Badge className={`text-xs px-2.5 py-1 rounded-lg border ${categoryColors[order.category] || "bg-violet-600/15 text-violet-400 border-violet-500/20"}`}>
-                      {order.category}
-                    </Badge>
-                    <span className="text-gray-600 text-xs">{formatDate(order.created_at)}</span>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <Badge className={`text-xs px-2.5 py-1 rounded-lg border ${categoryColors[order.category] || "bg-violet-600/15 text-violet-400 border-violet-500/20"}`}>
+                        {order.category}
+                      </Badge>
+                      {order.city && (
+                        <span className="flex items-center gap-1 text-gray-500 text-xs">
+                          <Icon name="MapPin" size={11} />
+                          {order.city}
+                        </span>
+                      )}
+                    </div>
+                    <span className="text-gray-600 text-xs flex-shrink-0">{formatDate(order.created_at)}</span>
                   </div>
 
                   <h3 className="text-white font-semibold text-base mb-2 leading-snug group-hover:text-violet-200 transition-colors">

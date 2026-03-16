@@ -15,7 +15,7 @@ def get_conn():
 
 
 def handler(event: dict, context) -> dict:
-    """Создание и получение заявок от заказчиков."""
+    """Создание и получение заявок от заказчиков с фильтрацией по городу."""
 
     if event.get('httpMethod') == 'OPTIONS':
         return {'statusCode': 200, 'headers': HEADERS, 'body': ''}
@@ -27,12 +27,13 @@ def handler(event: dict, context) -> dict:
         title = body.get('title', '').strip()
         description = body.get('description', '').strip()
         category = body.get('category', '').strip()
+        city = body.get('city', '').strip()
         budget = body.get('budget')
         contact_name = body.get('contact_name', '').strip()
         contact_phone = body.get('contact_phone', '').strip()
         contact_email = body.get('contact_email', '').strip()
 
-        if not all([title, description, category, contact_name, contact_phone]):
+        if not all([title, description, category, city, contact_name, contact_phone]):
             return {
                 'statusCode': 400,
                 'headers': HEADERS,
@@ -42,9 +43,9 @@ def handler(event: dict, context) -> dict:
         conn = get_conn()
         cur = conn.cursor()
         cur.execute(
-            "INSERT INTO orders (title, description, category, budget, contact_name, contact_phone, contact_email) "
-            "VALUES (%s, %s, %s, %s, %s, %s, %s) RETURNING id",
-            (title, description, category, int(budget) if budget else None,
+            "INSERT INTO orders (title, description, category, city, budget, contact_name, contact_phone, contact_email) "
+            "VALUES (%s, %s, %s, %s, %s, %s, %s, %s) RETURNING id",
+            (title, description, category, city, int(budget) if budget else None,
              contact_name, contact_phone, contact_email)
         )
         order_id = cur.fetchone()['id']
@@ -59,12 +60,24 @@ def handler(event: dict, context) -> dict:
         }
 
     if method == 'GET':
+        params = event.get('queryStringParameters') or {}
+        city_filter = params.get('city', '').strip()
+
         conn = get_conn()
         cur = conn.cursor()
-        cur.execute(
-            "SELECT id, title, description, category, budget, contact_name, status, created_at "
-            "FROM orders ORDER BY created_at DESC LIMIT 50"
-        )
+
+        if city_filter:
+            cur.execute(
+                "SELECT id, title, description, category, city, budget, contact_name, status, created_at "
+                "FROM orders WHERE city = %s ORDER BY created_at DESC LIMIT 50",
+                (city_filter,)
+            )
+        else:
+            cur.execute(
+                "SELECT id, title, description, category, city, budget, contact_name, status, created_at "
+                "FROM orders ORDER BY created_at DESC LIMIT 50"
+            )
+
         rows = cur.fetchall()
         cur.close()
         conn.close()
@@ -75,6 +88,7 @@ def handler(event: dict, context) -> dict:
                 'title': r['title'],
                 'description': r['description'],
                 'category': r['category'],
+                'city': r['city'] or '',
                 'budget': r['budget'],
                 'contact_name': r['contact_name'],
                 'status': r['status'],

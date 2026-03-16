@@ -16,6 +16,7 @@
         "title": "Нужен сантехник",
         "description": "Течёт кран на кухне",
         "category": "Сантехника",
+        "city": "Москва",
         "budget": 2000,
         "contact_name": "Иван",
         "contact_phone": "+79001234567",

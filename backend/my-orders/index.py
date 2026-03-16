@@ -34,7 +34,7 @@ def handler(event: dict, context) -> dict:
     cur = conn.cursor()
 
     cur.execute(
-        "SELECT id, title, description, category, budget, status, created_at "
+        "SELECT id, title, description, category, city, budget, status, created_at "
         "FROM orders WHERE contact_phone = %s ORDER BY created_at DESC",
         (phone,)
     )
@@ -53,6 +53,7 @@ def handler(event: dict, context) -> dict:
             'title': o['title'],
             'description': o['description'],
             'category': o['category'],
+            'city': o['city'] or '',
             'budget': o['budget'],
             'status': o['status'],
             'created_at': o['created_at'].isoformat() if o['created_at'] else None,
