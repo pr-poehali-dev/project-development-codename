@@ -171,7 +171,7 @@ const Index = () => {
 
           <div className="hidden md:flex items-center gap-6">
             <a href="#" className="text-gray-400 hover:text-white text-sm transition-colors">Категории</a>
-            <a href="#" className="text-gray-400 hover:text-white text-sm transition-colors">Как работает</a>
+            <a href="/orders" className="text-gray-400 hover:text-white text-sm transition-colors">Лента заявок</a>
             <a href="#" className="text-gray-400 hover:text-white text-sm transition-colors">Тарифы</a>
           </div>
 

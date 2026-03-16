@@ -1,0 +1,27 @@
+{
+  "tests": [
+    {
+      "name": "GET responses list",
+      "method": "GET",
+      "path": "/",
+      "expectedStatus": 200,
+      "bodyMatcher": "partial",
+      "expectedBody": {}
+    },
+    {
+      "name": "POST create response",
+      "method": "POST",
+      "path": "/",
+      "body": {
+        "order_id": 1,
+        "master_name": "Иван Мастер",
+        "master_phone": "+79001234567",
+        "master_category": "Сантехника",
+        "message": "Готов взяться за работу!"
+      },
+      "expectedStatus": 200,
+      "bodyMatcher": "partial",
+      "expectedBody": {}
+    }
+  ]
+}
