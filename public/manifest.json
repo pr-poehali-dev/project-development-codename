@@ -1,0 +1,42 @@
+{
+  "name": "HandyMan — маркетплейс мастеров",
+  "short_name": "HandyMan",
+  "description": "Найдите мастера для ремонта, сантехники, электрики и других бытовых услуг",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#080b12",
+  "theme_color": "#7c3aed",
+  "orientation": "portrait",
+  "lang": "ru",
+  "icons": [
+    {
+      "src": "https://cdn.poehali.dev/projects/b7f56b72-3dfb-49ff-a0ce-cff7b631f477/files/bb517738-7e1e-4e29-bd74-607574a9b222.jpg",
+      "sizes": "192x192",
+      "type": "image/jpeg",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "https://cdn.poehali.dev/projects/b7f56b72-3dfb-49ff-a0ce-cff7b631f477/files/bb517738-7e1e-4e29-bd74-607574a9b222.jpg",
+      "sizes": "512x512",
+      "type": "image/jpeg",
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Лента заявок",
+      "url": "/orders",
+      "description": "Смотреть заявки от заказчиков"
+    },
+    {
+      "name": "Мои заявки",
+      "url": "/cabinet",
+      "description": "Личный кабинет заказчика"
+    },
+    {
+      "name": "Кабинет мастера",
+      "url": "/master",
+      "description": "Баланс и отклики"
+    }
+  ]
+}
