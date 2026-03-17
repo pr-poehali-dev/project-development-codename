@@ -118,6 +118,7 @@ export default function Cabinet() {
       if (parsed.error) { setLoginError(parsed.error); return; }
       if (parsed.success) {
         localStorage.setItem("customer_phone", parsed.user.phone);
+        if (parsed.master_phone) localStorage.setItem("master_phone", parsed.master_phone);
         await loadProfile(parsed.user.phone);
       }
     } finally {

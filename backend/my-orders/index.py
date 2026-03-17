@@ -337,10 +337,17 @@ def handler(event: dict, context) -> dict:
                         'body': json.dumps({'error': 'Завершите регистрацию — подтвердите email.'})}
             if not verify_password(password, row['password_hash']):
                 return {'statusCode': 401, 'headers': HEADERS, 'body': json.dumps({'error': 'Неверный пароль'})}
+            # Проверяем зарегистрирован ли также как мастер
+            conn2 = get_conn()
+            cur2 = conn2.cursor()
+            cur2.execute(f"SELECT phone FROM {SCHEMA}.masters WHERE phone=%s OR email=%s", (row['phone'], (row['email'] or '').lower()))
+            master_row = cur2.fetchone()
+            cur2.close(); conn2.close()
             return {'statusCode': 200, 'headers': HEADERS,
                     'body': json.dumps({'success': True,
                                         'user': {'id': row['id'], 'name': row['name'],
-                                                 'phone': row['phone'], 'email': row['email'] or ''}})}
+                                                 'phone': row['phone'], 'email': row['email'] or ''},
+                                        'master_phone': master_row['phone'] if master_row else None})}
 
         if action == 'delete_order':
             order_id = body.get('order_id')
