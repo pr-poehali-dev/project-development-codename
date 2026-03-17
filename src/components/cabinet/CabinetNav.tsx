@@ -35,6 +35,8 @@ export default function CabinetNav({
   pwLoading, pwError, setPwError, pwSuccess,
   onChangePassword, onLogout,
 }: CabinetNavProps) {
+  const isMaster = typeof window !== "undefined" && !!localStorage.getItem("master_phone");
+
   return (
     <>
       <nav className="bg-[#0f1117]/95 backdrop-blur border-b border-white/10 sticky top-0 z-50">
@@ -50,6 +52,12 @@ export default function CabinetNav({
               </div>
               <span className="text-gray-300 text-sm hidden sm:block">{customer?.name}</span>
             </div>
+            {isMaster && (
+              <a href="/master" className="text-violet-400 hover:text-violet-300 text-sm flex items-center gap-1.5 transition-colors hidden sm:flex">
+                <Icon name="Briefcase" size={15} />
+                Кабинет мастера
+              </a>
+            )}
             <button onClick={() => { setShowPwForm(v => !v); setPwError(""); }}
               className="text-gray-500 hover:text-gray-300 text-sm flex items-center gap-1.5 transition-colors hidden sm:flex">
               <Icon name="KeyRound" size={15} />
