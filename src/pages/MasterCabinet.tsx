@@ -222,10 +222,6 @@ export default function MasterCabinet() {
   if (!master && !loading) {
     return (
       <MasterLoginForm
-        inputPhone={inputPhone}
-        setInputPhone={setInputPhone}
-        error={error}
-        onSubmit={handleLogin}
         onEmailLogin={(p) => { setPhone(p); setInputPhone(p); loadProfile(p); }}
       />
     );
