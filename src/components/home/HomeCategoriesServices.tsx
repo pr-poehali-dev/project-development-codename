@@ -4,26 +4,30 @@ import { Badge } from "@/components/ui/badge";
 import Icon from "@/components/ui/icon";
 
 const categories = [
-  { name: "Авторемонт", icon: "Car", count: 312 },
-  { name: "Ремонт жилья", icon: "Hammer", count: 278 },
-  { name: "Строительство", icon: "HardHat", count: 194 },
-  { name: "Бьюти", icon: "Sparkles", count: 221 },
-  { name: "IT-помощь", icon: "Monitor", count: 143 },
-  { name: "Сантехника", icon: "Wrench", count: 167 },
-  { name: "Электрика", icon: "Zap", count: 189 },
-  { name: "Перевозки", icon: "Truck", count: 134 },
-  { name: "Няня", icon: "Baby", count: 98 },
-  { name: "Клининг", icon: "Sparkle", count: 156 },
-  { name: "Озеленение", icon: "Leaf", count: 74 },
-  { name: "Зоопомощь", icon: "PawPrint", count: 61 },
-  { name: "Сборка мебели", icon: "Package", count: 112 },
-  { name: "Дизайн интерьера", icon: "PenRuler", count: 55 },
-  { name: "Фото/Видео", icon: "Camera", count: 89 },
-  { name: "Уборка снега", icon: "Snowflake", count: 43 },
-  { name: "Репетиторство", icon: "GraduationCap", count: 103 },
-  { name: "Массаж", icon: "HandHeart", count: 78 },
-  { name: "Повар на мероприятие", icon: "ChefHat", count: 49 },
-  { name: "Прочее", icon: "MoreHorizontal", count: 87 },
+  { name: "Авторемонт", icon: "Car", count: 312, subcategories: ["Кузовной ремонт", "Автоэлектрика", "Шиномонтаж", "Детейлинг", "Диагностика", "Техническое обслуживание"] },
+  { name: "Ремонт жилья", icon: "Hammer", count: 278, subcategories: ["Отделка и штукатурка", "Укладка плитки", "Укладка полов", "Покраска стен", "Натяжные потолки", "Демонтаж"] },
+  { name: "Строительство", icon: "HardHat", count: 194, subcategories: ["Фундамент", "Кровля", "Забор и ворота", "Баня и беседка", "Кирпичная кладка", "Каркасный дом"] },
+  { name: "Бьюти", icon: "Sparkles", count: 221, subcategories: ["Маникюр и педикюр", "Стрижка и окрашивание", "Брови и ресницы", "Макияж", "Эпиляция", "Наращивание волос"] },
+  { name: "Массаж", icon: "HandHeart", count: 78, subcategories: ["Классический массаж", "Спортивный массаж", "Детский массаж", "Антицеллюлитный", "Лимфодренаж", "Массаж лица"] },
+  { name: "IT-помощь", icon: "Monitor", count: 143, subcategories: ["Ремонт компьютеров", "Настройка ПО", "Разработка сайтов", "1С и бухгалтерия", "Настройка сетей", "Восстановление данных"] },
+  { name: "Сантехника", icon: "Wrench", count: 167, subcategories: ["Установка сантехники", "Устранение засоров", "Монтаж труб", "Водонагреватели", "Канализация", "Тёплый пол"] },
+  { name: "Электрика", icon: "Zap", count: 189, subcategories: ["Монтаж проводки", "Установка розеток", "Электрощиты", "Подключение техники", "Освещение", "Аварийный вызов"] },
+  { name: "Клининг", icon: "Sparkle", count: 156, subcategories: ["Уборка квартиры", "Уборка офиса", "После ремонта", "Мойка окон", "Химчистка мебели", "Генеральная уборка"] },
+  { name: "Перевозки", icon: "Truck", count: 134, subcategories: ["Квартирный переезд", "Офисный переезд", "Грузовое такси", "Доставка мебели", "Эвакуатор", "Межгород"] },
+  { name: "Няня", icon: "Baby", count: 98, subcategories: ["Няня на день", "Ночная няня", "Няня-гувернантка", "Присмотр за пожилыми", "Помощь по хозяйству", "Сиделка"] },
+  { name: "Репетиторство", icon: "GraduationCap", count: 103, subcategories: ["Математика", "Английский язык", "Подготовка к ЕГЭ/ОГЭ", "Другие языки", "Физика и химия", "Подготовка к школе"] },
+  { name: "Озеленение", icon: "Leaf", count: 74, subcategories: ["Ландшафтный дизайн", "Посадка растений", "Стрижка газона", "Уборка листьев", "Полив и уход", "Вырубка деревьев"] },
+  { name: "Зоопомощь", icon: "PawPrint", count: 61, subcategories: ["Выгул собак", "Стрижка животных", "Ветеринар на дом", "Передержка", "Дрессировка", "Зоотакси"] },
+  { name: "Сборка мебели", icon: "Package", count: 112, subcategories: ["Сборка из ИКЕА", "Корпусная мебель", "Кухни", "Шкафы-купе", "Детская мебель", "Разборка и перестановка"] },
+  { name: "Дизайн интерьера", icon: "PenRuler", count: 55, subcategories: ["Дизайн-проект", "3D-визуализация", "Авторский надзор", "Подбор материалов", "Декорирование", "Планировка"] },
+  { name: "Фото/Видео", icon: "Camera", count: 89, subcategories: ["Свадебная съёмка", "Семейная фотосессия", "Коммерческая съёмка", "Видеомонтаж", "Аэросъёмка", "Репортаж"] },
+  { name: "Уборка снега", icon: "Snowflake", count: 43, subcategories: ["Уборка кровли", "Чистка двора", "Посыпка песком", "Вывоз снега", "Расчистка дорожек", "Коммерческие объекты"] },
+  { name: "Повар на мероприятие", icon: "ChefHat", count: 49, subcategories: ["Банкет", "День рождения", "Корпоратив", "Барбекю", "Суши-мастер", "Детский праздник"] },
+  { name: "Тренер", icon: "Dumbbell", count: 67, subcategories: ["Персональный тренинг", "Йога", "Пилатес", "Бокс и единоборства", "Плавание", "Онлайн-тренировки"] },
+  { name: "Аниматор", icon: "PartyPopper", count: 38, subcategories: ["Детский праздник", "Аниматор в костюме", "Фокусник", "Клоун", "Ведущий праздника", "Корпоратив"] },
+  { name: "Юрист", icon: "Scale", count: 52, subcategories: ["Консультация", "Составление договоров", "Семейное право", "Недвижимость", "Трудовые споры", "Представительство в суде"] },
+  { name: "Бухгалтер", icon: "Calculator", count: 44, subcategories: ["Бухгалтерский учёт", "Налоговая отчётность", "УСН и ИП", "Расчёт зарплат", "1С-сопровождение", "Аудит"] },
+  { name: "Прочее", icon: "MoreHorizontal", count: 87, subcategories: [] },
 ];
 
 interface Service {
@@ -62,6 +66,7 @@ const HomeCategoriesServices = ({
   setOrderModalOpen,
 }: HomeCategoriesServicesProps) => {
   const [searchQuery, setSearchQuery] = React.useState("");
+  const [expandedCategory, setExpandedCategory] = React.useState<string | null>(null);
   const q = searchQuery.trim().toLowerCase();
   const filtered = q
     ? services.filter(s =>
@@ -78,26 +83,73 @@ const HomeCategoriesServices = ({
       <section id="categories" className="py-14 px-4">
         <div className="max-w-7xl mx-auto">
           <h2 className="text-2xl font-bold mb-8 text-center">Категории услуг</h2>
-          <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-3">
             <a
               href="/orders"
               className="flex flex-col items-center gap-2 p-4 rounded-xl border transition-all bg-white/3 border-white/8 text-gray-400 hover:border-white/20 hover:text-white"
             >
               <Icon name="LayoutGrid" size={22} />
-              <span className="text-xs font-medium">Все</span>
+              <span className="text-xs font-medium text-center">Все</span>
             </a>
             {categories.map((cat) => (
-              <a
+              <button
                 key={cat.name}
-                href={`/orders?category=${encodeURIComponent(cat.name)}`}
-                className="flex flex-col items-center gap-2 p-4 rounded-xl border transition-all bg-white/3 border-white/8 text-gray-400 hover:border-white/20 hover:text-white hover:bg-white/6"
+                onClick={() => setExpandedCategory(expandedCategory === cat.name ? null : cat.name)}
+                className={`flex flex-col items-center gap-2 p-4 rounded-xl border transition-all text-left ${
+                  expandedCategory === cat.name
+                    ? "bg-violet-600/15 border-violet-500/40 text-violet-300"
+                    : "bg-white/3 border-white/8 text-gray-400 hover:border-white/20 hover:text-white hover:bg-white/6"
+                }`}
               >
                 <Icon name={cat.icon} size={22} />
-                <span className="text-xs font-medium">{cat.name}</span>
-                <span className="text-[10px] text-gray-600">{cat.count}</span>
-              </a>
+                <span className="text-xs font-medium text-center leading-tight">{cat.name}</span>
+                <div className="flex items-center gap-1">
+                  <span className="text-[10px] text-gray-600">{cat.count}</span>
+                  {cat.subcategories.length > 0 && (
+                    <Icon
+                      name="ChevronDown"
+                      size={10}
+                      className={`text-gray-600 transition-transform ${expandedCategory === cat.name ? "rotate-180" : ""}`}
+                    />
+                  )}
+                </div>
+              </button>
             ))}
           </div>
+
+          {/* Подкатегории */}
+          {expandedCategory && (() => {
+            const cat = categories.find(c => c.name === expandedCategory);
+            if (!cat || cat.subcategories.length === 0) return null;
+            return (
+              <div className="mt-4 p-5 rounded-2xl bg-white/3 border border-white/8 animate-in fade-in slide-in-from-top-2 duration-200">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-2">
+                    <Icon name={cat.icon} size={16} className="text-violet-400" />
+                    <span className="text-sm font-semibold text-white">{cat.name}</span>
+                    <span className="text-xs text-gray-600">— выбери подкатегорию</span>
+                  </div>
+                  <a
+                    href={`/orders?category=${encodeURIComponent(cat.name)}`}
+                    className="text-xs text-violet-400 hover:text-violet-300 transition-colors"
+                  >
+                    Все в категории →
+                  </a>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {cat.subcategories.map((sub) => (
+                    <a
+                      key={sub}
+                      href={`/orders?category=${encodeURIComponent(sub)}`}
+                      className="px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-sm text-gray-300 hover:border-violet-500/40 hover:text-violet-300 hover:bg-violet-600/10 transition-all"
+                    >
+                      {sub}
+                    </a>
+                  ))}
+                </div>
+              </div>
+            );
+          })()}
         </div>
       </section>
 
