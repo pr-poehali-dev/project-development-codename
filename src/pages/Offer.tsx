@@ -2,9 +2,9 @@ import { useEffect } from "react";
 
 export default function Offer() {
   useEffect(() => {
-    const hash = window.location.hash;
+    const hash = window.location.hash.replace("#", "");
     if (hash) {
-      const el = document.querySelector(hash);
+      const el = document.getElementById(hash);
       if (el) setTimeout(() => el.scrollIntoView({ behavior: "smooth", block: "start" }), 100);
     }
   }, []);
