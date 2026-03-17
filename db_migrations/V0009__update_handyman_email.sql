@@ -1,0 +1,1 @@
+UPDATE t_p86314354_project_development_.masters SET email = 'handymanbusiness@yandex.ru' WHERE id = 2;
