@@ -230,6 +230,59 @@ def handler(event: dict, context) -> dict:
                                         'user': {'id': row['id'], 'name': row['name'],
                                                  'phone': row['phone'], 'email': row['email'] or ''}})}
 
+        # ── СБРОС ПАРОЛЯ: запрос кода ──
+        if body_raw.get('action') == 'reset_password_request':
+            email = (body_raw.get('email') or '').strip().lower()
+            if not email:
+                return {'statusCode': 400, 'headers': HEADERS, 'body': json.dumps({'error': 'Укажите email'})}
+            conn = get_conn()
+            cur = conn.cursor()
+            cur.execute(f"SELECT id, name FROM {SCHEMA}.masters WHERE email=%s AND email_verified=TRUE", (email,))
+            row = cur.fetchone()
+            if not row:
+                cur.close(); conn.close()
+                return {'statusCode': 404, 'headers': HEADERS, 'body': json.dumps({'error': 'Аккаунт с таким email не найден'})}
+            code = str(random.randint(100000, 999999))
+            cur.execute(f"UPDATE {SCHEMA}.auth_codes SET used=TRUE WHERE email=%s AND used=FALSE", (email,))
+            cur.execute(f"INSERT INTO {SCHEMA}.auth_codes (email, code) VALUES (%s,%s)", (email, code))
+            conn.commit()
+            cur.close(); conn.close()
+            send_code_email_master(email, code, row['name'])
+            return {'statusCode': 200, 'headers': HEADERS, 'body': json.dumps({'success': True})}
+
+        # ── СБРОС ПАРОЛЯ: подтверждение кода и новый пароль ──
+        if body_raw.get('action') == 'reset_password_confirm':
+            email = (body_raw.get('email') or '').strip().lower()
+            code = (body_raw.get('code') or '').strip()
+            password = body_raw.get('password', '')
+            if not email or not code:
+                return {'statusCode': 400, 'headers': HEADERS, 'body': json.dumps({'error': 'Укажите email и код'})}
+            if len(password) < 6:
+                return {'statusCode': 400, 'headers': HEADERS, 'body': json.dumps({'error': 'Пароль минимум 6 символов'})}
+            conn = get_conn()
+            cur = conn.cursor()
+            cur.execute(
+                f"SELECT id FROM {SCHEMA}.auth_codes WHERE email=%s AND code=%s AND used=FALSE AND expires_at > NOW()",
+                (email, code)
+            )
+            row = cur.fetchone()
+            if not row:
+                cur.close(); conn.close()
+                return {'statusCode': 400, 'headers': HEADERS, 'body': json.dumps({'error': 'Неверный или устаревший код'})}
+            cur.execute(f"UPDATE {SCHEMA}.auth_codes SET used=TRUE WHERE id=%s", (row['id'],))
+            pw_hash = hash_password(password)
+            cur.execute(
+                f"UPDATE {SCHEMA}.masters SET password_hash=%s WHERE email=%s RETURNING id, name, phone, email",
+                (pw_hash, email)
+            )
+            user_row = cur.fetchone()
+            conn.commit()
+            cur.close(); conn.close()
+            return {'statusCode': 200, 'headers': HEADERS,
+                    'body': json.dumps({'success': True,
+                                        'user': {'id': user_row['id'], 'name': user_row['name'],
+                                                 'phone': user_row['phone'], 'email': user_row['email'] or ''}})}
+
         # ── ОТПРАВИТЬ КОД ВХОДА (для существующих мастеров без пароля) ──
         if body_raw.get('action') == 'send_code':
             email = (body_raw.get('email') or '').strip().lower()

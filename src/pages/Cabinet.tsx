@@ -96,8 +96,9 @@ export default function Cabinet() {
   const [expandedOrder, setExpandedOrder] = useState<number | null>(null);
 
   // Форма входа
-  const [loginMode, setLoginMode] = useState<"login" | "register">("login");
+  const [loginMode, setLoginMode] = useState<"login" | "register" | "reset">("login");
   const [regStep, setRegStep] = useState<"form" | "code" | "password">("form");
+  const [resetStep, setResetStep] = useState<"email" | "code_password">("email");
   const [loginIdentifier, setLoginIdentifier] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
   const [loginName, setLoginName] = useState("");
@@ -106,6 +107,10 @@ export default function Cabinet() {
   const [regCode, setRegCode] = useState("");
   const [regPassword, setRegPassword] = useState("");
   const [regPasswordConfirm, setRegPasswordConfirm] = useState("");
+  const [resetEmail, setResetEmail] = useState("");
+  const [resetCode, setResetCode] = useState("");
+  const [resetPassword, setResetPassword] = useState("");
+  const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
   const [loginError, setLoginError] = useState("");
   const [loginLoading, setLoginLoading] = useState(false);
 
@@ -252,6 +257,37 @@ export default function Cabinet() {
     }
   };
 
+  const handleResetRequest = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoginLoading(true); setLoginError("");
+    try {
+      const res = await fetch(AUTH_URL, { method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "reset_password_request", email: resetEmail }) });
+      const d = await res.json();
+      const parsed = typeof d === "string" ? JSON.parse(d) : d;
+      if (parsed.error) { setLoginError(parsed.error); return; }
+      setResetStep("code_password");
+    } finally { setLoginLoading(false); }
+  };
+
+  const handleResetConfirm = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (resetPassword !== resetPasswordConfirm) { setLoginError("Пароли не совпадают"); return; }
+    if (resetPassword.length < 6) { setLoginError("Пароль минимум 6 символов"); return; }
+    setLoginLoading(true); setLoginError("");
+    try {
+      const res = await fetch(AUTH_URL, { method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "reset_password_confirm", email: resetEmail, code: resetCode, password: resetPassword }) });
+      const d = await res.json();
+      const parsed = typeof d === "string" ? JSON.parse(d) : d;
+      if (parsed.error) { setLoginError(parsed.error); return; }
+      if (parsed.success) {
+        localStorage.setItem("customer_phone", parsed.user.phone);
+        await loadProfile(parsed.user.phone);
+      }
+    } finally { setLoginLoading(false); }
+  };
+
   const handleLogout = () => {
     localStorage.removeItem("customer_phone");
     setCustomer(null);
@@ -318,17 +354,19 @@ export default function Cabinet() {
             <h1 className="text-2xl font-bold text-white mb-2">Кабинет заказчика</h1>
           </div>
 
-          {/* Табы */}
-          <div className="flex gap-1 bg-white/5 rounded-xl p-1 mb-5">
-            <button onClick={() => { setLoginMode("login"); setLoginError(""); setRegisterSent(false); }}
-              className={`flex-1 py-2 text-sm rounded-lg transition-colors font-medium ${loginMode === "login" ? "bg-violet-600 text-white" : "text-gray-400 hover:text-white"}`}>
-              Войти
-            </button>
-            <button onClick={() => { setLoginMode("register"); setLoginError(""); setRegisterSent(false); }}
-              className={`flex-1 py-2 text-sm rounded-lg transition-colors font-medium ${loginMode === "register" ? "bg-violet-600 text-white" : "text-gray-400 hover:text-white"}`}>
-              Регистрация
-            </button>
-          </div>
+          {/* Табы — только на входе и первом шаге регистрации */}
+          {loginMode !== "reset" && (regStep === "form" || loginMode === "login") && (
+            <div className="flex gap-1 bg-white/5 rounded-xl p-1 mb-5">
+              <button onClick={() => { setLoginMode("login"); setLoginError(""); }}
+                className={`flex-1 py-2 text-sm rounded-lg transition-colors font-medium ${loginMode === "login" ? "bg-violet-600 text-white" : "text-gray-400 hover:text-white"}`}>
+                Войти
+              </button>
+              <button onClick={() => { setLoginMode("register"); setRegStep("form"); setLoginError(""); }}
+                className={`flex-1 py-2 text-sm rounded-lg transition-colors font-medium ${loginMode === "register" ? "bg-violet-600 text-white" : "text-gray-400 hover:text-white"}`}>
+                Регистрация
+              </button>
+            </div>
+          )}
 
           {loginMode === "login" ? (
             <form onSubmit={handleLogin} className="bg-white/4 border border-white/8 rounded-2xl p-6 flex flex-col gap-4">
@@ -346,10 +384,67 @@ export default function Cabinet() {
               <Button type="submit" disabled={loginLoading} className="bg-gradient-to-r from-violet-600 to-indigo-600 text-white w-full">
                 {loginLoading ? "Вход..." : "Войти"}
               </Button>
-              <p className="text-center text-gray-500 text-xs">Нет аккаунта?{" "}
-                <button type="button" onClick={() => { setLoginMode("register"); setRegStep("form"); setLoginError(""); }} className="text-violet-400 hover:underline">Зарегистрироваться</button>
-              </p>
+              <div className="flex items-center justify-between">
+                <p className="text-gray-500 text-xs">Нет аккаунта?{" "}
+                  <button type="button" onClick={() => { setLoginMode("register"); setRegStep("form"); setLoginError(""); }} className="text-violet-400 hover:underline">Зарегистрироваться</button>
+                </p>
+                <button type="button" onClick={() => { setLoginMode("reset"); setResetStep("email"); setResetEmail(""); setResetCode(""); setResetPassword(""); setResetPasswordConfirm(""); setLoginError(""); }}
+                  className="text-gray-500 text-xs hover:text-gray-400 transition-colors">
+                  Забыл пароль
+                </button>
+              </div>
             </form>
+          ) : loginMode === "reset" ? (
+            resetStep === "email" ? (
+              <form onSubmit={handleResetRequest} className="bg-white/4 border border-white/8 rounded-2xl p-6 flex flex-col gap-4">
+                <div className="text-center mb-1">
+                  <div className="w-12 h-12 rounded-2xl bg-violet-600/20 flex items-center justify-center mx-auto mb-3">
+                    <Icon name="KeyRound" size={22} className="text-violet-400" />
+                  </div>
+                  <p className="text-white font-medium">Сброс пароля</p>
+                  <p className="text-gray-500 text-sm mt-1">Введите email — пришлём код</p>
+                </div>
+                <div>
+                  <label className="text-sm text-gray-400 mb-1.5 block">Email</label>
+                  <input type="email" required value={resetEmail} onChange={e => setResetEmail(e.target.value)}
+                    placeholder="email@example.com" className={inputCls} autoFocus />
+                </div>
+                {loginError && <p className="text-amber-400 text-sm">{loginError}</p>}
+                <Button type="submit" disabled={loginLoading} className="bg-gradient-to-r from-violet-600 to-indigo-600 text-white w-full">
+                  {loginLoading ? "Отправка..." : "Получить код"}
+                </Button>
+                <button type="button" onClick={() => { setLoginMode("login"); setLoginError(""); }}
+                  className="text-center text-xs text-gray-500 hover:text-gray-400 transition-colors">← Вернуться ко входу</button>
+              </form>
+            ) : (
+              <form onSubmit={handleResetConfirm} className="bg-white/4 border border-white/8 rounded-2xl p-6 flex flex-col gap-4">
+                <div className="text-center mb-1">
+                  <p className="text-white font-medium">Новый пароль</p>
+                  <p className="text-gray-500 text-sm mt-1">Код отправлен на <span className="text-gray-300">{resetEmail}</span></p>
+                </div>
+                <div>
+                  <label className="text-sm text-gray-400 mb-1.5 block">Код из письма</label>
+                  <input type="text" required maxLength={6} value={resetCode} onChange={e => setResetCode(e.target.value.replace(/\D/g, ""))}
+                    placeholder="000000" className={`${inputCls} text-center tracking-widest text-xl font-bold`} autoFocus />
+                </div>
+                <div>
+                  <label className="text-sm text-gray-400 mb-1.5 block">Новый пароль</label>
+                  <input type="password" required value={resetPassword} onChange={e => setResetPassword(e.target.value)}
+                    placeholder="Минимум 6 символов" className={inputCls} />
+                </div>
+                <div>
+                  <label className="text-sm text-gray-400 mb-1.5 block">Повторите пароль</label>
+                  <input type="password" required value={resetPasswordConfirm} onChange={e => setResetPasswordConfirm(e.target.value)}
+                    placeholder="Повторите пароль" className={inputCls} />
+                </div>
+                {loginError && <p className="text-amber-400 text-sm">{loginError}</p>}
+                <Button type="submit" disabled={loginLoading} className="bg-gradient-to-r from-violet-600 to-indigo-600 text-white w-full">
+                  {loginLoading ? "Сохранение..." : "Сохранить пароль"}
+                </Button>
+                <button type="button" onClick={() => setResetStep("email")}
+                  className="text-center text-xs text-gray-500 hover:text-gray-400 transition-colors">← Ввести другой email</button>
+              </form>
+            )
           ) : regStep === "form" ? (
             <form onSubmit={handleRegister} className="bg-white/4 border border-white/8 rounded-2xl p-6 flex flex-col gap-4">
               <div>

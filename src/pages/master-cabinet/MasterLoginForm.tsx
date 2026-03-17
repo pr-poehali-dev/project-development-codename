@@ -9,8 +9,9 @@ interface MasterLoginFormProps {
 }
 
 export default function MasterLoginForm({ onLogin }: MasterLoginFormProps) {
-  const [mode, setMode] = useState<"login" | "register">("login");
+  const [mode, setMode] = useState<"login" | "register" | "reset">("login");
   const [regStep, setRegStep] = useState<"form" | "code" | "password">("form");
+  const [resetStep, setResetStep] = useState<"email" | "code_password">("email");
 
   // Вход
   const [identifier, setIdentifier] = useState("");
@@ -23,6 +24,12 @@ export default function MasterLoginForm({ onLogin }: MasterLoginFormProps) {
   const [regCode, setRegCode] = useState("");
   const [regPassword, setRegPassword] = useState("");
   const [regPasswordConfirm, setRegPasswordConfirm] = useState("");
+
+  // Сброс пароля
+  const [resetEmail, setResetEmail] = useState("");
+  const [resetCode, setResetCode] = useState("");
+  const [resetPassword, setResetPassword] = useState("");
+  const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
 
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -89,6 +96,28 @@ export default function MasterLoginForm({ onLogin }: MasterLoginFormProps) {
     } finally { setLoading(false); }
   };
 
+  const handleResetRequest = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(""); setLoading(true);
+    try {
+      const d = await post({ action: "reset_password_request", email: resetEmail });
+      if (d.error) { setError(d.error); return; }
+      setResetStep("code_password");
+    } finally { setLoading(false); }
+  };
+
+  const handleResetConfirm = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (resetPassword !== resetPasswordConfirm) { setError("Пароли не совпадают"); return; }
+    if (resetPassword.length < 6) { setError("Пароль минимум 6 символов"); return; }
+    setError(""); setLoading(true);
+    try {
+      const d = await post({ action: "reset_password_confirm", email: resetEmail, code: resetCode, password: resetPassword });
+      if (d.error) { setError(d.error); return; }
+      if (d.success) onLogin(d.user.phone);
+    } finally { setLoading(false); }
+  };
+
   return (
     <div className="min-h-screen bg-[#080b12] flex items-center justify-center px-4">
       <a href="/" className="absolute top-5 left-5 flex items-center gap-2 text-gray-400 hover:text-white text-sm transition-colors">
@@ -103,8 +132,8 @@ export default function MasterLoginForm({ onLogin }: MasterLoginFormProps) {
           <h1 className="text-2xl font-bold text-white mb-2">Кабинет мастера</h1>
         </div>
 
-        {/* Табы — показываем только на первом шаге регистрации или на входе */}
-        {(mode === "login" || regStep === "form") && (
+        {/* Табы — только на входе и первом шаге регистрации */}
+        {mode !== "reset" && (mode === "login" || regStep === "form") && (
           <div className="flex gap-1 bg-white/5 rounded-xl p-1 mb-5">
             <button onClick={() => { setMode("login"); setError(""); }}
               className={`flex-1 py-2 text-sm rounded-lg transition-colors font-medium ${mode === "login" ? "bg-violet-600 text-white" : "text-gray-400 hover:text-white"}`}>
@@ -133,10 +162,67 @@ export default function MasterLoginForm({ onLogin }: MasterLoginFormProps) {
             <Button type="submit" disabled={loading} className="bg-gradient-to-r from-violet-600 to-indigo-600 text-white w-full">
               {loading ? "Вход..." : "Войти"}
             </Button>
-            <p className="text-center text-gray-500 text-xs">Нет аккаунта?{" "}
-              <button type="button" onClick={() => { setMode("register"); setRegStep("form"); setError(""); }} className="text-violet-400 hover:underline">Зарегистрироваться</button>
-            </p>
+            <div className="flex items-center justify-between">
+              <p className="text-gray-500 text-xs">Нет аккаунта?{" "}
+                <button type="button" onClick={() => { setMode("register"); setRegStep("form"); setError(""); }} className="text-violet-400 hover:underline">Зарегистрироваться</button>
+              </p>
+              <button type="button" onClick={() => { setMode("reset"); setResetStep("email"); setResetEmail(""); setResetCode(""); setResetPassword(""); setResetPasswordConfirm(""); setError(""); }}
+                className="text-gray-500 text-xs hover:text-gray-400 transition-colors">
+                Забыл пароль
+              </button>
+            </div>
           </form>
+        ) : mode === "reset" ? (
+          resetStep === "email" ? (
+            <form onSubmit={handleResetRequest} className="bg-white/4 border border-white/8 rounded-2xl p-6 flex flex-col gap-4">
+              <div className="text-center mb-1">
+                <div className="w-12 h-12 rounded-2xl bg-violet-600/20 flex items-center justify-center mx-auto mb-3">
+                  <Icon name="KeyRound" size={22} className="text-violet-400" />
+                </div>
+                <p className="text-white font-medium">Сброс пароля</p>
+                <p className="text-gray-500 text-sm mt-1">Введите email — пришлём код</p>
+              </div>
+              <div>
+                <label className="text-sm text-gray-400 mb-1.5 block">Email</label>
+                <input type="email" required value={resetEmail} onChange={e => setResetEmail(e.target.value)}
+                  placeholder="email@example.com" className={inputCls} autoFocus />
+              </div>
+              {error && <p className="text-amber-400 text-sm">{error}</p>}
+              <Button type="submit" disabled={loading} className="bg-gradient-to-r from-violet-600 to-indigo-600 text-white w-full">
+                {loading ? "Отправка..." : "Получить код"}
+              </Button>
+              <button type="button" onClick={() => { setMode("login"); setError(""); }}
+                className="text-center text-xs text-gray-500 hover:text-gray-400 transition-colors">← Вернуться ко входу</button>
+            </form>
+          ) : (
+            <form onSubmit={handleResetConfirm} className="bg-white/4 border border-white/8 rounded-2xl p-6 flex flex-col gap-4">
+              <div className="text-center mb-1">
+                <p className="text-white font-medium">Новый пароль</p>
+                <p className="text-gray-500 text-sm mt-1">Код отправлен на <span className="text-gray-300">{resetEmail}</span></p>
+              </div>
+              <div>
+                <label className="text-sm text-gray-400 mb-1.5 block">Код из письма</label>
+                <input type="text" required maxLength={6} value={resetCode} onChange={e => setResetCode(e.target.value.replace(/\D/g, ""))}
+                  placeholder="000000" className={`${inputCls} text-center tracking-widest text-xl font-bold`} autoFocus />
+              </div>
+              <div>
+                <label className="text-sm text-gray-400 mb-1.5 block">Новый пароль</label>
+                <input type="password" required value={resetPassword} onChange={e => setResetPassword(e.target.value)}
+                  placeholder="Минимум 6 символов" className={inputCls} />
+              </div>
+              <div>
+                <label className="text-sm text-gray-400 mb-1.5 block">Повторите пароль</label>
+                <input type="password" required value={resetPasswordConfirm} onChange={e => setResetPasswordConfirm(e.target.value)}
+                  placeholder="Повторите пароль" className={inputCls} />
+              </div>
+              {error && <p className="text-amber-400 text-sm">{error}</p>}
+              <Button type="submit" disabled={loading} className="bg-gradient-to-r from-violet-600 to-indigo-600 text-white w-full">
+                {loading ? "Сохранение..." : "Сохранить пароль"}
+              </Button>
+              <button type="button" onClick={() => setResetStep("email")}
+                className="text-center text-xs text-gray-500 hover:text-gray-400 transition-colors">← Ввести другой email</button>
+            </form>
+          )
         ) : regStep === "form" ? (
           <form onSubmit={handleRegister} className="bg-white/4 border border-white/8 rounded-2xl p-6 flex flex-col gap-4">
             <div>
