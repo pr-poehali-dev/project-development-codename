@@ -2,6 +2,9 @@ import { useState, useEffect } from "react";
 import CabinetAuth from "@/components/cabinet/CabinetAuth";
 import CabinetNav from "@/components/cabinet/CabinetNav";
 import CabinetOrderList from "@/components/cabinet/CabinetOrderList";
+import OrderModal from "@/components/home/OrderModal";
+
+const ORDERS_URL = "https://functions.poehali.dev/34db9bab-e58a-479e-b1cc-c27fb8e0b728";
 
 const MY_ORDERS_URL = "https://functions.poehali.dev/458454d0-900d-46a1-9bff-15ecce0839e0";
 const PROFILE_URL = "https://functions.poehali.dev/de274bd5-3f08-42d8-9aac-b373bb34b900";
@@ -68,6 +71,13 @@ export default function Cabinet() {
   const [loginError, setLoginError] = useState("");
   const [loginLoading, setLoginLoading] = useState(false);
 
+  // Создание заявки
+  const [orderModalOpen, setOrderModalOpen] = useState(false);
+  const [orderForm, setOrderForm] = useState({ title: "", description: "", category: "", city: "", budget: "", contact_name: "", contact_phone: "", contact_email: "" });
+  const [orderSent, setOrderSent] = useState(false);
+  const [orderLoading, setOrderLoading] = useState(false);
+  const [orderError, setOrderError] = useState("");
+
   const [statusLoading, setStatusLoading] = useState<number | null>(null);
   const [selectMasterLoading, setSelectMasterLoading] = useState<number | null>(null);
 
@@ -86,6 +96,13 @@ export default function Cabinet() {
     const saved = localStorage.getItem("customer_phone");
     if (saved) loadProfile(saved);
   }, []);
+
+  useEffect(() => {
+    if (orderModalOpen && customer) {
+      setOrderForm(f => ({ ...f, contact_name: customer.name, contact_phone: customer.phone, contact_email: customer.email }));
+    }
+    if (!orderModalOpen) { setOrderSent(false); setOrderError(""); }
+  }, [orderModalOpen]);
 
   const loadProfile = async (phone: string) => {
     setLoading(true);
@@ -226,6 +243,23 @@ export default function Cabinet() {
     setOrders([]);
     setLoginIdentifier("");
     setLoginPassword("");
+  };
+
+  const handleOrderSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setOrderLoading(true); setOrderError("");
+    try {
+      const res = await fetch(ORDERS_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(orderForm),
+      });
+      const data = await res.json();
+      const parsed = typeof data === "string" ? JSON.parse(data) : data;
+      if (parsed.error) { setOrderError(parsed.error); return; }
+      setOrderSent(true);
+      if (customer) await loadProfile(customer.phone);
+    } finally { setOrderLoading(false); }
   };
 
   const handleDeleteOrder = async (orderId: number) => {
@@ -390,6 +424,19 @@ export default function Cabinet() {
         pwLoading={pwLoading} pwError={pwError} setPwError={setPwError} pwSuccess={pwSuccess}
         onChangePassword={handleChangePassword}
         onLogout={handleLogout}
+        onCreateOrder={() => setOrderModalOpen(true)}
+      />
+      <OrderModal
+        orderModalOpen={orderModalOpen}
+        setOrderModalOpen={setOrderModalOpen}
+        orderForm={orderForm}
+        setOrderForm={setOrderForm}
+        orderSent={orderSent}
+        setOrderSent={setOrderSent}
+        orderLoading={orderLoading}
+        orderError={orderError}
+        setOrderError={setOrderError}
+        handleOrderSubmit={handleOrderSubmit}
       />
       <CabinetOrderList
         orders={orders}

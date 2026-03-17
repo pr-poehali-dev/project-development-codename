@@ -24,6 +24,7 @@ interface CabinetNavProps {
   pwSuccess: string;
   onChangePassword: (e: React.FormEvent) => void;
   onLogout: () => void;
+  onCreateOrder: () => void;
 }
 
 export default function CabinetNav({
@@ -33,7 +34,7 @@ export default function CabinetNav({
   pwNew, setPwNew,
   pwConfirm, setPwConfirm,
   pwLoading, pwError, setPwError, pwSuccess,
-  onChangePassword, onLogout,
+  onChangePassword, onLogout, onCreateOrder,
 }: CabinetNavProps) {
   const isMaster = typeof window !== "undefined" && !!localStorage.getItem("master_phone");
 
@@ -46,6 +47,13 @@ export default function CabinetNav({
             <span className="text-xl font-bold bg-gradient-to-r from-violet-400 to-indigo-400 bg-clip-text text-transparent">HandyMan</span>
           </a>
           <div className="flex items-center gap-3">
+            <Button onClick={onCreateOrder} className="bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white text-sm h-9 px-4 hidden sm:flex items-center gap-1.5">
+              <Icon name="Plus" size={15} />
+              Создать заявку
+            </Button>
+            <button onClick={onCreateOrder} className="sm:hidden w-9 h-9 rounded-lg bg-violet-600 flex items-center justify-center">
+              <Icon name="Plus" size={18} className="text-white" />
+            </button>
             <div className="flex items-center gap-2">
               <div className="w-8 h-8 rounded-lg bg-violet-600/20 flex items-center justify-center font-bold text-violet-400 text-sm">
                 {customer?.name?.[0]?.toUpperCase()}
