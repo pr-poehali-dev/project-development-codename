@@ -128,7 +128,7 @@ export default function CitySelect({
                 className={`px-4 py-2 text-sm cursor-pointer transition-colors ${
                   value === ""
                     ? "bg-violet-600/20 text-violet-300"
-                    : "text-gray-300 hover:bg-white/5"
+                    : "text-gray-400 hover:bg-white/8 hover:text-white"
                 }`}
               >
                 {allCitiesLabel}
@@ -146,7 +146,7 @@ export default function CitySelect({
                 className={`px-4 py-2 text-sm cursor-pointer transition-colors ${
                   value === c
                     ? "bg-violet-600/20 text-violet-300"
-                    : "text-gray-300 hover:bg-white/5"
+                    : "text-gray-400 hover:bg-white/8 hover:text-white"
                 }`}
               >
                 {c}
