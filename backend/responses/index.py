@@ -20,14 +20,14 @@ def get_conn():
 def send_email(to_email: str, order_title: str, master_name: str, master_phone: str, master_category: str, message: str, order_id: int):
     smtp_host = os.environ.get('SMTP_HOST', 'smtp.yandex.ru')
     smtp_user = os.environ['SMTP_USER']
-    smtp_password = os.environ['SMTP_PASSWORD']
+    smtp_password = os.environ['SMTP_PASS']
 
     msg = MIMEMultipart('alternative')
     msg['Subject'] = f'Новый отклик на вашу заявку — {order_title}'
-    msg['From'] = f'ЦифровойХаб <{smtp_user}>'
+    msg['From'] = f'HandyMan <{smtp_user}>'
     msg['To'] = to_email
 
-    cabinet_url = 'https://your-domain.poehali.dev/cabinet'
+    cabinet_url = 'https://handyman.poehali.dev/cabinet'
 
     html = f"""
     <div style="font-family: Arial, sans-serif; max-width: 560px; margin: 0 auto; background: #0f1117; color: #ffffff; border-radius: 16px; overflow: hidden;">
