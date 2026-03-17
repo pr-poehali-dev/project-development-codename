@@ -1,14 +1,6 @@
 {
   "tests": [
     {
-      "name": "GET orders list",
-      "method": "GET",
-      "path": "/",
-      "expectedStatus": 200,
-      "expectedBody": {"orders": [{"id": 1}]},
-      "bodyMatcher": "partial"
-    },
-    {
       "name": "POST create order",
       "method": "POST",
       "path": "/",

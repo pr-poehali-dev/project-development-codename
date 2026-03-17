@@ -100,11 +100,19 @@ def handler(event: dict, context) -> dict:
         conn = get_conn()
         cur = conn.cursor()
 
+        SCHEMA = os.environ.get("MAIN_DB_SCHEMA", "public")
         cur.execute(
-            "SELECT title, contact_email FROM orders WHERE id = %s",
+            f"SELECT o.title, o.contact_email, c.email as customer_email "
+            f"FROM {SCHEMA}.orders o "
+            f"LEFT JOIN {SCHEMA}.customers c ON c.id = o.customer_id "
+            f"WHERE o.id = %s",
             (int(order_id),)
         )
         order = cur.fetchone()
+        # Берём email заказчика: сначала из аккаунта, потом из поля contact_email
+        if order:
+            order = dict(order)
+            order['contact_email'] = order.get('customer_email') or order.get('contact_email') or ''
 
         cur.execute(
             "INSERT INTO responses (order_id, master_name, master_phone, master_category, message, master_id) "
