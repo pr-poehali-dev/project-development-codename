@@ -1,4 +1,4 @@
-const CACHE_NAME = 'handyman-v1';
+const CACHE_NAME = 'handyman-v2';
 const STATIC_ASSETS = ['/', '/orders', '/cabinet', '/master', '/offer'];
 
 self.addEventListener('install', (event) => {

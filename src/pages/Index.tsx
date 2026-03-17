@@ -5,6 +5,11 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import Icon from "@/components/ui/icon";
 import CitySelect from "@/components/ui/city-select";
 
+interface BeforeInstallPromptEvent extends Event {
+  prompt(): Promise<void>;
+  userChoice: Promise<{ outcome: "accepted" | "dismissed" }>;
+}
+
 const categories = [
   { name: "Авторемонт", icon: "Car", count: 312 },
   { name: "Ремонт жилья", icon: "Hammer", count: 278 },
@@ -115,6 +120,24 @@ const Index = () => {
     typeof window !== "undefined" && localStorage.getItem("master_banner_dismissed") === "1"
   );
 
+  // PWA install
+  const [installPrompt, setInstallPrompt] = useState<Event | null>(null);
+  const [isInstalled, setIsInstalled] = useState(false);
+
+  useEffect(() => {
+    const handler = (e: Event) => { e.preventDefault(); setInstallPrompt(e); };
+    window.addEventListener("beforeinstallprompt", handler);
+    if (window.matchMedia("(display-mode: standalone)").matches) setIsInstalled(true);
+    return () => window.removeEventListener("beforeinstallprompt", handler);
+  }, []);
+
+  const handleInstall = async () => {
+    if (!installPrompt) return;
+    (installPrompt as BeforeInstallPromptEvent).prompt();
+    const { outcome } = await (installPrompt as BeforeInstallPromptEvent).userChoice;
+    if (outcome === "accepted") { setInstallPrompt(null); setIsInstalled(true); }
+  };
+
   const handleMasterSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setMasterLoading(true);
@@ -211,6 +234,16 @@ const Index = () => {
               <Icon name="UserPlus" size={15} />
               Зарегистрироваться
             </Button>
+            {installPrompt && !isInstalled && (
+              <Button
+                variant="ghost"
+                onClick={handleInstall}
+                className="text-gray-300 hover:text-white hover:bg-white/10 text-sm gap-2 border border-white/10"
+              >
+                <Icon name="Download" size={15} />
+                Установить приложение
+              </Button>
+            )}
             <a href="/master">
               <Button className="bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white text-sm px-5">
                 Кабинет мастера
@@ -243,6 +276,16 @@ const Index = () => {
             <Button onClick={() => setMasterModalOpen(true)} className="w-full bg-gradient-to-r from-violet-600 to-indigo-600 text-white text-sm mt-2">
               Кабинет мастера
             </Button>
+            {installPrompt && !isInstalled && (
+              <Button
+                variant="ghost"
+                onClick={handleInstall}
+                className="w-full text-gray-300 hover:text-white hover:bg-white/10 text-sm gap-2 border border-white/10 mt-1"
+              >
+                <Icon name="Download" size={15} />
+                Установить приложение
+              </Button>
+            )}
           </div>
         )}
       </nav>
