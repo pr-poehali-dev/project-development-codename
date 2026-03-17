@@ -115,7 +115,7 @@ const Index = () => {
       const data = await res.json();
       const parsed = typeof data === "string" ? JSON.parse(data) : data;
       if (parsed.master) {
-        localStorage.setItem("master_phone", masterForm.phone);
+        if (parsed.master.phone) localStorage.setItem("master_phone", parsed.master.phone);
         setMasterSent(true);
       } else {
         setMasterError(parsed.error || "Ошибка регистрации");
@@ -542,7 +542,8 @@ const Index = () => {
                 <Icon name="CheckCircle" size={32} className="text-emerald-400" />
               </div>
               <p className="text-gray-300 mb-2">Добро пожаловать, <span className="text-white font-semibold">{masterForm.name}</span>!</p>
-              <p className="text-gray-500 text-sm mb-6">Аккаунт создан. Теперь вы можете откликаться на заявки заказчиков.</p>
+              <p className="text-gray-500 text-sm mb-1">Аккаунт создан. Теперь вы можете откликаться на заявки заказчиков.</p>
+              <p className="text-gray-600 text-xs mb-6">Для входа используйте email <span className="text-violet-400">{masterForm.email}</span></p>
               <div className="flex flex-col gap-3">
                 <a href="/master" onClick={() => { setMasterModalOpen(false); setMasterSent(false); }}>
                   <Button className="w-full bg-gradient-to-r from-violet-600 to-indigo-600 text-white">
@@ -570,9 +571,8 @@ const Index = () => {
                 />
               </div>
               <div>
-                <label className="text-sm text-gray-400 mb-1.5 block">Номер телефона *</label>
+                <label className="text-sm text-gray-400 mb-1.5 block">Номер телефона (для связи с клиентами)</label>
                 <input
-                  required
                   type="tel"
                   className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-violet-500 transition-colors"
                   placeholder="+7 (999) 000-00-00"
@@ -581,9 +581,10 @@ const Index = () => {
                 />
               </div>
               <div>
-                <label className="text-sm text-gray-400 mb-1.5 block">Email (для входа по коду)</label>
+                <label className="text-sm text-gray-400 mb-1.5 block">Email *</label>
                 <input
                   type="email"
+                  required
                   className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-violet-500 transition-colors"
                   placeholder="you@example.com"
                   value={masterForm.email}
