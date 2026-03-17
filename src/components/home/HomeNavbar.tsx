@@ -13,6 +13,7 @@ interface HomeNavbarProps {
   setMasterBannerDismissed: (v: boolean) => void;
   setRegisterModalOpen: (v: boolean) => void;
   setMasterModalOpen: (v: boolean) => void;
+  setLoginModalOpen: (v: boolean) => void;
 }
 
 const HomeNavbar = ({
@@ -27,6 +28,7 @@ const HomeNavbar = ({
   setMasterBannerDismissed,
   setRegisterModalOpen,
   setMasterModalOpen,
+  setLoginModalOpen,
 }: HomeNavbarProps) => {
   const isLoggedIn = isMaster || isCustomer;
 
@@ -60,16 +62,26 @@ const HomeNavbar = ({
               </Button>
             )}
 
-            {/* Кнопка «Зарегистрироваться» — только если не залогинен */}
+            {/* Кнопки Войти и Зарегистрироваться — только если не залогинен */}
             {!isLoggedIn && (
-              <Button
-                variant="ghost"
-                onClick={() => setRegisterModalOpen(true)}
-                className="text-gray-300 hover:text-white hover:bg-white/8 text-sm gap-2"
-              >
-                <Icon name="UserPlus" size={15} />
-                Зарегистрироваться
-              </Button>
+              <>
+                <Button
+                  variant="ghost"
+                  onClick={() => setLoginModalOpen(true)}
+                  className="text-gray-300 hover:text-white hover:bg-white/8 text-sm gap-2"
+                >
+                  <Icon name="LogIn" size={15} />
+                  Войти
+                </Button>
+                <Button
+                  variant="ghost"
+                  onClick={() => setRegisterModalOpen(true)}
+                  className="text-gray-300 hover:text-white hover:bg-white/8 text-sm gap-2"
+                >
+                  <Icon name="UserPlus" size={15} />
+                  Зарегистрироваться
+                </Button>
+              </>
             )}
 
             {/* Кабинет заказчика — если залогинен как заказчик */}
@@ -109,14 +121,24 @@ const HomeNavbar = ({
             <a href="#pricing" className="block text-gray-400 hover:text-white text-sm">Тарифы</a>
 
             {!isLoggedIn && (
-              <Button
-                variant="ghost"
-                onClick={() => { setRegisterModalOpen(true); setMobileMenuOpen(false); }}
-                className="w-full text-gray-300 hover:text-white hover:bg-white/10 text-sm gap-2 border border-white/10"
-              >
-                <Icon name="UserPlus" size={15} />
-                Зарегистрироваться
-              </Button>
+              <>
+                <Button
+                  variant="ghost"
+                  onClick={() => { setLoginModalOpen(true); setMobileMenuOpen(false); }}
+                  className="w-full text-gray-300 hover:text-white hover:bg-white/10 text-sm gap-2 border border-white/10"
+                >
+                  <Icon name="LogIn" size={15} />
+                  Войти
+                </Button>
+                <Button
+                  variant="ghost"
+                  onClick={() => { setRegisterModalOpen(true); setMobileMenuOpen(false); }}
+                  className="w-full text-gray-300 hover:text-white hover:bg-white/10 text-sm gap-2 border border-white/10"
+                >
+                  <Icon name="UserPlus" size={15} />
+                  Зарегистрироваться
+                </Button>
+              </>
             )}
 
             {isCustomer && (

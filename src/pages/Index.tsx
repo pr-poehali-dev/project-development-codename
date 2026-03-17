@@ -38,6 +38,7 @@ const Index = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [registerModalOpen, setRegisterModalOpen] = useState(false);
 
+  const [loginModalOpen, setLoginModalOpen] = useState(false);
   const [masterModalOpen, setMasterModalOpen] = useState(false);
   const [masterForm, setMasterForm] = useState({ name: "", phone: "", email: "", category: "", city: "", about: "", status: "Самозанятый / ИП / Компания" });
   const [masterSent, setMasterSent] = useState(false);
@@ -179,6 +180,7 @@ const Index = () => {
         setMasterBannerDismissed={setMasterBannerDismissed}
         setRegisterModalOpen={setRegisterModalOpen}
         setMasterModalOpen={setMasterModalOpen}
+        setLoginModalOpen={setLoginModalOpen}
       />
 
       <HomeHeroStats />
@@ -299,6 +301,8 @@ const Index = () => {
       </footer>
 
       <HomeModals
+        loginModalOpen={loginModalOpen}
+        setLoginModalOpen={setLoginModalOpen}
         registerModalOpen={registerModalOpen}
         setRegisterModalOpen={setRegisterModalOpen}
         masterModalOpen={masterModalOpen}
