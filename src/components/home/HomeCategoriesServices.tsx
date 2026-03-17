@@ -1,3 +1,4 @@
+import React from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import Icon from "@/components/ui/icon";
@@ -60,7 +61,16 @@ const HomeCategoriesServices = ({
   setOrderForm,
   setOrderModalOpen,
 }: HomeCategoriesServicesProps) => {
-  const filtered = services;
+  const [searchQuery, setSearchQuery] = React.useState("");
+  const q = searchQuery.trim().toLowerCase();
+  const filtered = q
+    ? services.filter(s =>
+        s.title.toLowerCase().includes(q) ||
+        s.description.toLowerCase().includes(q) ||
+        s.category.toLowerCase().includes(q) ||
+        s.master_name.toLowerCase().includes(q)
+      )
+    : services;
 
   return (
     <>
@@ -94,11 +104,28 @@ const HomeCategoriesServices = ({
       {/* Карточки услуг */}
       <section className="pb-20 px-4">
         <div className="max-w-7xl mx-auto">
-          <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
-            <h2 className="text-2xl font-bold">
-              {activeCategory === "Все" ? "Все услуги" : activeCategory}
-              {!servicesLoading && <span className="text-gray-600 text-lg font-normal ml-3">{filtered.length}</span>}
-            </h2>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
+            <div className="flex items-center gap-4 flex-wrap">
+              <h2 className="text-2xl font-bold">
+                {activeCategory === "Все" ? "Все услуги" : activeCategory}
+                {!servicesLoading && <span className="text-gray-600 text-lg font-normal ml-3">{filtered.length}</span>}
+              </h2>
+              <div className="relative">
+                <Icon name="Search" size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={e => setSearchQuery(e.target.value)}
+                  placeholder="Поиск услуг..."
+                  className="bg-white/5 border border-white/10 rounded-xl pl-8 pr-8 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-violet-500 transition-colors w-48"
+                />
+                {searchQuery && (
+                  <button onClick={() => setSearchQuery("")} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-300 transition-colors">
+                    <Icon name="X" size={12} />
+                  </button>
+                )}
+              </div>
+            </div>
             <div className="flex items-center gap-3">
               {availableCities.length > 0 && (
                 <select
@@ -129,11 +156,15 @@ const HomeCategoriesServices = ({
               <div className="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center mx-auto mb-4">
                 <Icon name="Briefcase" size={28} className="text-gray-600" />
               </div>
-              <p className="text-gray-500 text-lg mb-2">Услуг пока нет</p>
-              <p className="text-gray-600 text-sm">Мастера ещё не опубликовали услуги в этой категории</p>
-              <a href="/master?tab=services">
-                <Button className="mt-6 bg-gradient-to-r from-violet-600 to-indigo-600 text-white">Я мастер — опубликовать услугу</Button>
-              </a>
+              <p className="text-gray-500 text-lg mb-2">{q ? "Ничего не найдено" : "Услуг пока нет"}</p>
+              <p className="text-gray-600 text-sm">{q ? `По запросу «${searchQuery}» услуги не найдены` : "Мастера ещё не опубликовали услуги в этой категории"}</p>
+              {q ? (
+                <button onClick={() => setSearchQuery("")} className="mt-4 text-violet-400 hover:text-violet-300 text-sm transition-colors">Сбросить поиск</button>
+              ) : (
+                <a href="/master?tab=services">
+                  <Button className="mt-6 bg-gradient-to-r from-violet-600 to-indigo-600 text-white">Я мастер — опубликовать услугу</Button>
+                </a>
+              )}
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
