@@ -373,7 +373,7 @@ const Index = () => {
               </div>
               <p className="text-gray-500 text-lg mb-2">Услуг пока нет</p>
               <p className="text-gray-600 text-sm">Мастера ещё не опубликовали услуги в этой категории</p>
-              <a href="/master">
+              <a href="/master?tab=services">
                 <Button className="mt-6 bg-gradient-to-r from-violet-600 to-indigo-600 text-white">Я мастер — опубликовать услугу</Button>
               </a>
             </div>

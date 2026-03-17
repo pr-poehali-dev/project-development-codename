@@ -84,7 +84,10 @@ export default function MasterCabinet() {
   const [error, setError] = useState("");
   const [buyingId, setBuyingId] = useState<number | null>(null);
   const [buySuccess, setBuySuccess] = useState("");
-  const [tab, setTab] = useState<"balance" | "history" | "responses" | "services">("balance");
+  const initialTab = new URLSearchParams(window.location.search).get("tab");
+  const [tab, setTab] = useState<"balance" | "history" | "responses" | "services">(
+    initialTab === "services" || initialTab === "responses" || initialTab === "history" ? initialTab : "balance"
+  );
 
   const [showServiceForm, setShowServiceForm] = useState(false);
   const [serviceForm, setServiceForm] = useState({ title: "", description: "", category: "", city: "", price: "" });
