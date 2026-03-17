@@ -1,0 +1,221 @@
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import Icon from "@/components/ui/icon";
+
+const categories = [
+  { name: "Авторемонт", icon: "Car", count: 312 },
+  { name: "Ремонт жилья", icon: "Hammer", count: 278 },
+  { name: "Строительство", icon: "HardHat", count: 194 },
+  { name: "Бьюти", icon: "Sparkles", count: 221 },
+  { name: "IT-помощь", icon: "Monitor", count: 143 },
+  { name: "Сантехника", icon: "Wrench", count: 167 },
+  { name: "Электрика", icon: "Zap", count: 189 },
+  { name: "Перевозки", icon: "Truck", count: 134 },
+  { name: "Няня", icon: "Baby", count: 98 },
+  { name: "Клининг", icon: "Sparkle", count: 156 },
+  { name: "Озеленение", icon: "Leaf", count: 74 },
+  { name: "Зоопомощь", icon: "PawPrint", count: 61 },
+  { name: "Сборка мебели", icon: "Package", count: 112 },
+  { name: "Дизайн интерьера", icon: "PenRuler", count: 55 },
+  { name: "Фото/Видео", icon: "Camera", count: 89 },
+  { name: "Уборка снега", icon: "Snowflake", count: 43 },
+  { name: "Репетиторство", icon: "GraduationCap", count: 103 },
+  { name: "Массаж", icon: "HandHeart", count: 78 },
+  { name: "Повар на мероприятие", icon: "ChefHat", count: 49 },
+  { name: "Прочее", icon: "MoreHorizontal", count: 87 },
+];
+
+interface Service {
+  id: number;
+  title: string;
+  description: string;
+  category: string;
+  city: string;
+  price: number | null;
+  master_id: number;
+  master_name: string;
+  avatar_color: string;
+  rating: number | null;
+  reviews_count: number;
+}
+
+interface HomeCategoriesServicesProps {
+  activeCategory: string;
+  selectedCity: string;
+  setSelectedCityFilter: (city: string) => void;
+  services: Service[];
+  availableCities: string[];
+  servicesLoading: boolean;
+  setOrderForm: (fn: (f: { title: string; description: string; category: string; city: string; budget: string; contact_name: string; contact_phone: string; contact_email: string }) => { title: string; description: string; category: string; city: string; budget: string; contact_name: string; contact_phone: string; contact_email: string }) => void;
+  setOrderModalOpen: (v: boolean) => void;
+}
+
+const HomeCategoriesServices = ({
+  activeCategory,
+  selectedCity,
+  setSelectedCityFilter,
+  services,
+  availableCities,
+  servicesLoading,
+  setOrderForm,
+  setOrderModalOpen,
+}: HomeCategoriesServicesProps) => {
+  const filtered = services;
+
+  return (
+    <>
+      {/* Категории */}
+      <section id="categories" className="py-14 px-4">
+        <div className="max-w-7xl mx-auto">
+          <h2 className="text-2xl font-bold mb-8 text-center">Категории услуг</h2>
+          <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3">
+            <a
+              href="/orders"
+              className="flex flex-col items-center gap-2 p-4 rounded-xl border transition-all bg-white/3 border-white/8 text-gray-400 hover:border-white/20 hover:text-white"
+            >
+              <Icon name="LayoutGrid" size={22} />
+              <span className="text-xs font-medium">Все</span>
+            </a>
+            {categories.map((cat) => (
+              <a
+                key={cat.name}
+                href={`/orders?category=${encodeURIComponent(cat.name)}`}
+                className="flex flex-col items-center gap-2 p-4 rounded-xl border transition-all bg-white/3 border-white/8 text-gray-400 hover:border-white/20 hover:text-white hover:bg-white/6"
+              >
+                <Icon name={cat.icon} size={22} />
+                <span className="text-xs font-medium">{cat.name}</span>
+                <span className="text-[10px] text-gray-600">{cat.count}</span>
+              </a>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Карточки услуг */}
+      <section className="pb-20 px-4">
+        <div className="max-w-7xl mx-auto">
+          <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
+            <h2 className="text-2xl font-bold">
+              {activeCategory === "Все" ? "Все услуги" : activeCategory}
+              {!servicesLoading && <span className="text-gray-600 text-lg font-normal ml-3">{filtered.length}</span>}
+            </h2>
+            <div className="flex items-center gap-3">
+              {availableCities.length > 0 && (
+                <select
+                  value={selectedCity}
+                  onChange={e => setSelectedCityFilter(e.target.value)}
+                  className="bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-sm text-gray-300 focus:outline-none focus:border-violet-500"
+                >
+                  <option value="">Все города</option>
+                  {availableCities.map(c => <option key={c} value={c}>{c}</option>)}
+                </select>
+              )}
+              <a href={activeCategory === "Все" ? "/orders" : `/orders?category=${encodeURIComponent(activeCategory)}`}>
+                <Button variant="ghost" className="text-gray-400 hover:text-white text-sm gap-2">
+                  <Icon name="SlidersHorizontal" size={16} />
+                  Все заявки →
+                </Button>
+              </a>
+            </div>
+          </div>
+
+          {servicesLoading ? (
+            <div className="text-center py-16 text-gray-500">
+              <div className="w-8 h-8 border-2 border-violet-500 border-t-transparent rounded-full animate-spin mx-auto mb-3" />
+              Загрузка...
+            </div>
+          ) : filtered.length === 0 ? (
+            <div className="text-center py-16">
+              <div className="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center mx-auto mb-4">
+                <Icon name="Briefcase" size={28} className="text-gray-600" />
+              </div>
+              <p className="text-gray-500 text-lg mb-2">Услуг пока нет</p>
+              <p className="text-gray-600 text-sm">Мастера ещё не опубликовали услуги в этой категории</p>
+              <a href="/master?tab=services">
+                <Button className="mt-6 bg-gradient-to-r from-violet-600 to-indigo-600 text-white">Я мастер — опубликовать услугу</Button>
+              </a>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+              {filtered.map((service) => (
+                <div
+                  key={service.id}
+                  className="group bg-white/4 border border-white/8 rounded-2xl p-5 hover:border-violet-500/40 hover:bg-white/6 transition-all flex flex-col"
+                >
+                  <a href={`/master-page?id=${service.master_id}`} className="block flex-1">
+                    <div className="flex items-start justify-between mb-4">
+                      <Badge
+                        className="text-xs px-2.5 py-1 rounded-lg"
+                        style={{ backgroundColor: "rgba(99,102,241,0.15)", color: "#a5b4fc", border: "1px solid rgba(99,102,241,0.2)" }}
+                      >
+                        {service.category}
+                      </Badge>
+                      {service.rating ? (
+                        <div className="flex items-center gap-1 text-amber-400 text-sm">
+                          <Icon name="Star" size={13} />
+                          <span>{service.rating}</span>
+                          <span className="text-gray-600 text-xs">({service.reviews_count})</span>
+                        </div>
+                      ) : (
+                        <span className="text-gray-600 text-xs">Новый</span>
+                      )}
+                    </div>
+
+                    <h3 className="text-white font-semibold text-base mb-4 leading-snug group-hover:text-violet-200 transition-colors">
+                      {service.title}
+                    </h3>
+
+                    <div className="flex items-center gap-3 mb-4">
+                      <div
+                        className="w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-bold flex-shrink-0"
+                        style={{ backgroundColor: service.avatar_color }}
+                      >
+                        {service.master_name?.[0]?.toUpperCase()}
+                      </div>
+                      <div className="min-w-0">
+                        <div className="text-sm text-gray-300 font-medium truncate">{service.master_name}</div>
+                        {service.city && (
+                          <div className="text-xs text-gray-600 flex items-center gap-1 mt-0.5">
+                            <Icon name="MapPin" size={10} />{service.city}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-between pt-4 border-t border-white/6 mb-3">
+                      <div>
+                        {service.price ? (
+                          <>
+                            <span className="text-gray-500 text-xs">от</span>
+                            <span className="text-white font-bold text-lg ml-1">{service.price.toLocaleString("ru-RU")} ₽</span>
+                          </>
+                        ) : (
+                          <span className="text-gray-500 text-sm">Цена по договору</span>
+                        )}
+                      </div>
+                      <span className="text-violet-400 text-xs hover:text-violet-300 transition-colors">Профиль →</span>
+                    </div>
+                  </a>
+
+                  <Button
+                    size="sm"
+                    className="w-full bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white text-xs rounded-xl"
+                    onClick={() => {
+                      setOrderForm(f => ({ ...f, category: service.category, city: service.city || "" }));
+                      setOrderModalOpen(true);
+                    }}
+                  >
+                    <Icon name="Send" size={13} className="mr-1.5" />
+                    Оставить заявку
+                  </Button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </section>
+    </>
+  );
+};
+
+export default HomeCategoriesServices;

@@ -1,37 +1,15 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import Icon from "@/components/ui/icon";
-import CitySelect from "@/components/ui/city-select";
+import HomeNavbar from "@/components/home/HomeNavbar";
+import HomeHeroStats from "@/components/home/HomeHeroStats";
+import HomeCategoriesServices from "@/components/home/HomeCategoriesServices";
+import HomeModals from "@/components/home/HomeModals";
 
 interface BeforeInstallPromptEvent extends Event {
   prompt(): Promise<void>;
   userChoice: Promise<{ outcome: "accepted" | "dismissed" }>;
 }
-
-const categories = [
-  { name: "Авторемонт", icon: "Car", count: 312 },
-  { name: "Ремонт жилья", icon: "Hammer", count: 278 },
-  { name: "Строительство", icon: "HardHat", count: 194 },
-  { name: "Бьюти", icon: "Sparkles", count: 221 },
-  { name: "IT-помощь", icon: "Monitor", count: 143 },
-  { name: "Сантехника", icon: "Wrench", count: 167 },
-  { name: "Электрика", icon: "Zap", count: 189 },
-  { name: "Перевозки", icon: "Truck", count: 134 },
-  { name: "Няня", icon: "Baby", count: 98 },
-  { name: "Клининг", icon: "Sparkle", count: 156 },
-  { name: "Озеленение", icon: "Leaf", count: 74 },
-  { name: "Зоопомощь", icon: "PawPrint", count: 61 },
-  { name: "Сборка мебели", icon: "Package", count: 112 },
-  { name: "Дизайн интерьера", icon: "PenRuler", count: 55 },
-  { name: "Фото/Видео", icon: "Camera", count: 89 },
-  { name: "Уборка снега", icon: "Snowflake", count: 43 },
-  { name: "Репетиторство", icon: "GraduationCap", count: 103 },
-  { name: "Массаж", icon: "HandHeart", count: 78 },
-  { name: "Повар на мероприятие", icon: "ChefHat", count: 49 },
-  { name: "Прочее", icon: "MoreHorizontal", count: 87 },
-];
 
 interface Service {
   id: number;
@@ -46,13 +24,6 @@ interface Service {
   rating: number | null;
   reviews_count: number;
 }
-
-const stats = [
-  { label: "Исполнителей", value: "1 200+", icon: "Users" },
-  { label: "Выполнено заказов", value: "8 400+", icon: "CheckCircle" },
-  { label: "Средняя оценка", value: "4.8 ★", icon: "Star" },
-  { label: "Категорий услуг", value: "20+", icon: "Grid3x3" },
-];
 
 const ORDERS_URL = "https://functions.poehali.dev/34db9bab-e58a-479e-b1cc-c27fb8e0b728";
 const MASTER_URL = "https://functions.poehali.dev/de274bd5-3f08-42d8-9aac-b373bb34b900";
@@ -193,333 +164,33 @@ const Index = () => {
     }
   };
 
-  const filtered = services;
-
   return (
     <div className="min-h-screen bg-[#0f1117] text-white">
-      {/* Навигация */}
-      <nav className="bg-[#0f1117]/95 backdrop-blur border-b border-white/10 sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <img src="https://cdn.poehali.dev/projects/b7f56b72-3dfb-49ff-a0ce-cff7b631f477/files/bb517738-7e1e-4e29-bd74-607574a9b222.jpg" alt="HandyMan" className="w-9 h-9 rounded-xl object-cover" />
-            <span className="text-xl font-bold bg-gradient-to-r from-violet-400 to-indigo-400 bg-clip-text text-transparent">
-              HandyMan
-            </span>
-          </div>
+      <HomeNavbar
+        mobileMenuOpen={mobileMenuOpen}
+        setMobileMenuOpen={setMobileMenuOpen}
+        installPrompt={installPrompt}
+        isInstalled={isInstalled}
+        handleInstall={handleInstall}
+        isMaster={isMaster}
+        masterBannerDismissed={masterBannerDismissed}
+        setMasterBannerDismissed={setMasterBannerDismissed}
+        setRegisterModalOpen={setRegisterModalOpen}
+        setMasterModalOpen={setMasterModalOpen}
+      />
 
-          <div className="hidden md:flex items-center gap-6">
-            <a href="#categories" className="text-gray-400 hover:text-white text-sm transition-colors">Категории</a>
-            <a href="/orders" className="text-gray-400 hover:text-white text-sm transition-colors">Лента заявок</a>
-            <a href="#pricing" className="text-gray-400 hover:text-white text-sm transition-colors">Тарифы</a>
-          </div>
+      <HomeHeroStats />
 
-          <div className="hidden md:flex items-center gap-3">
-            <CitySelect
-              value={selectedCity}
-              onChange={setSelectedCityFilter}
-              allCitiesLabel="Все города"
-              variant="glass"
-            />
-            <a href="/cabinet">
-              <Button variant="ghost" className="text-gray-300 hover:text-white hover:bg-white/10 text-sm gap-2">
-                <Icon name="LayoutDashboard" size={15} />
-                Кабинет заказчика
-              </Button>
-            </a>
-            <Button
-              variant="ghost"
-              onClick={() => setRegisterModalOpen(true)}
-              className="text-gray-300 hover:text-white hover:bg-white/10 text-sm gap-2 border border-white/10"
-            >
-              <Icon name="UserPlus" size={15} />
-              Зарегистрироваться
-            </Button>
-            {installPrompt && !isInstalled && (
-              <Button
-                variant="ghost"
-                onClick={handleInstall}
-                className="text-gray-300 hover:text-white hover:bg-white/10 text-sm gap-2 border border-white/10"
-              >
-                <Icon name="Download" size={15} />
-                Установить приложение
-              </Button>
-            )}
-            <a href="/master">
-              <Button className="bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white text-sm px-5">
-                Кабинет мастера
-              </Button>
-            </a>
-          </div>
-
-          <Button
-            variant="ghost"
-            className="md:hidden text-gray-400 p-2"
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-          >
-            <Icon name={mobileMenuOpen ? "X" : "Menu"} size={20} />
-          </Button>
-        </div>
-
-        {mobileMenuOpen && (
-          <div className="md:hidden border-t border-white/10 px-4 py-4 space-y-3">
-            <a href="#categories" className="block text-gray-400 hover:text-white text-sm">Категории</a>
-            <a href="/orders" className="block text-gray-400 hover:text-white text-sm">Лента заявок</a>
-            <a href="#pricing" className="block text-gray-400 hover:text-white text-sm">Тарифы</a>
-            <Button
-              variant="ghost"
-              onClick={() => { setRegisterModalOpen(true); setMobileMenuOpen(false); }}
-              className="w-full text-gray-300 hover:text-white hover:bg-white/10 text-sm gap-2 border border-white/10"
-            >
-              <Icon name="UserPlus" size={15} />
-              Зарегистрироваться
-            </Button>
-            <Button onClick={() => setMasterModalOpen(true)} className="w-full bg-gradient-to-r from-violet-600 to-indigo-600 text-white text-sm mt-2">
-              Кабинет мастера
-            </Button>
-            {installPrompt && !isInstalled && (
-              <Button
-                variant="ghost"
-                onClick={handleInstall}
-                className="w-full text-gray-300 hover:text-white hover:bg-white/10 text-sm gap-2 border border-white/10 mt-1"
-              >
-                <Icon name="Download" size={15} />
-                Установить приложение
-              </Button>
-            )}
-          </div>
-        )}
-      </nav>
-
-      {/* Баннер для мастеров */}
-      {isMaster && !masterBannerDismissed && (
-        <div className="bg-gradient-to-r from-violet-600/20 to-indigo-600/10 border-b border-violet-500/20 px-4 py-3">
-          <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-lg bg-violet-600/30 flex items-center justify-center flex-shrink-0">
-                <Icon name="Briefcase" size={15} className="text-violet-400" />
-              </div>
-              <p className="text-sm text-gray-300">
-                Вы зарегистрированы как мастер —{" "}
-                <a href="/master" className="text-violet-400 hover:text-violet-300 font-medium transition-colors">
-                  опубликуйте свои услуги
-                </a>
-                {" "}чтобы клиенты могли вас найти
-              </p>
-            </div>
-            <button
-              onClick={() => { setMasterBannerDismissed(true); localStorage.setItem("master_banner_dismissed", "1"); }}
-              className="text-gray-500 hover:text-gray-300 transition-colors flex-shrink-0"
-            >
-              <Icon name="X" size={16} />
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Герой */}
-      <section className="relative py-20 sm:py-28 px-4 overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-b from-violet-900/20 via-transparent to-transparent pointer-events-none" />
-        <div className="absolute top-20 left-1/4 w-72 h-72 bg-violet-600/10 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute top-10 right-1/4 w-56 h-56 bg-indigo-600/10 rounded-full blur-3xl pointer-events-none" />
-
-        <div className="max-w-4xl mx-auto text-center relative">
-          <Badge className="mb-6 bg-violet-600/20 text-violet-300 border-violet-500/30 px-4 py-1.5 text-sm">
-            🔧 Маркетплейс бытовых услуг
-          </Badge>
-          <h1 className="text-4xl sm:text-6xl font-extrabold mb-6 leading-tight">
-            Найди лучшего
-            <span className="bg-gradient-to-r from-violet-400 to-indigo-400 bg-clip-text text-transparent"> мастера</span>
-            <br />для любой задачи
-          </h1>
-          <p className="text-gray-400 text-lg sm:text-xl mb-10 max-w-2xl mx-auto">
-            Более 1 200 проверенных специалистов: мастера по ремонту, сантехники, электрики, бьюти-мастера, грузчики и многое другое.
-            Комиссия от 5% — только для самозанятых.
-          </p>
-
-          <div className="flex flex-col sm:flex-row gap-3 justify-center max-w-lg mx-auto">
-            <div className="flex-1 relative">
-              <Icon name="Search" size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500" />
-              <input
-                className="w-full bg-white/5 border border-white/10 rounded-xl pl-10 pr-4 py-3 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-violet-500 transition-colors"
-                placeholder="Например: сантехник, ремонт авто, маникюр..."
-              />
-            </div>
-            <Button className="bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white px-6 py-3 rounded-xl text-sm font-medium">
-              Найти
-            </Button>
-          </div>
-        </div>
-      </section>
-
-      {/* Статистика */}
-      <section className="py-10 px-4 border-y border-white/5 bg-white/2">
-        <div className="max-w-6xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-6">
-          {stats.map((stat) => (
-            <div key={stat.label} className="text-center">
-              <div className="flex justify-center mb-2">
-                <div className="w-10 h-10 rounded-xl bg-violet-600/15 flex items-center justify-center">
-                  <Icon name={stat.icon} size={18} className="text-violet-400" />
-                </div>
-              </div>
-              <div className="text-2xl font-bold text-white">{stat.value}</div>
-              <div className="text-sm text-gray-500 mt-0.5">{stat.label}</div>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* Категории */}
-      <section id="categories" className="py-14 px-4">
-        <div className="max-w-7xl mx-auto">
-          <h2 className="text-2xl font-bold mb-8 text-center">Категории услуг</h2>
-          <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3">
-            <a
-              href="/orders"
-              className="flex flex-col items-center gap-2 p-4 rounded-xl border transition-all bg-white/3 border-white/8 text-gray-400 hover:border-white/20 hover:text-white"
-            >
-              <Icon name="LayoutGrid" size={22} />
-              <span className="text-xs font-medium">Все</span>
-            </a>
-            {categories.map((cat) => (
-              <a
-                key={cat.name}
-                href={`/orders?category=${encodeURIComponent(cat.name)}`}
-                className="flex flex-col items-center gap-2 p-4 rounded-xl border transition-all bg-white/3 border-white/8 text-gray-400 hover:border-white/20 hover:text-white hover:bg-white/6"
-              >
-                <Icon name={cat.icon} size={22} />
-                <span className="text-xs font-medium">{cat.name}</span>
-                <span className="text-[10px] text-gray-600">{cat.count}</span>
-              </a>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Карточки услуг */}
-      <section className="pb-20 px-4">
-        <div className="max-w-7xl mx-auto">
-          <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
-            <h2 className="text-2xl font-bold">
-              {activeCategory === "Все" ? "Все услуги" : activeCategory}
-              {!servicesLoading && <span className="text-gray-600 text-lg font-normal ml-3">{filtered.length}</span>}
-            </h2>
-            <div className="flex items-center gap-3">
-              {availableCities.length > 0 && (
-                <select
-                  value={selectedCity}
-                  onChange={e => setSelectedCityFilter(e.target.value)}
-                  className="bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-sm text-gray-300 focus:outline-none focus:border-violet-500"
-                >
-                  <option value="">Все города</option>
-                  {availableCities.map(c => <option key={c} value={c}>{c}</option>)}
-                </select>
-              )}
-              <a href={activeCategory === "Все" ? "/orders" : `/orders?category=${encodeURIComponent(activeCategory)}`}>
-                <Button variant="ghost" className="text-gray-400 hover:text-white text-sm gap-2">
-                  <Icon name="SlidersHorizontal" size={16} />
-                  Все заявки →
-                </Button>
-              </a>
-            </div>
-          </div>
-
-          {servicesLoading ? (
-            <div className="text-center py-16 text-gray-500">
-              <div className="w-8 h-8 border-2 border-violet-500 border-t-transparent rounded-full animate-spin mx-auto mb-3" />
-              Загрузка...
-            </div>
-          ) : filtered.length === 0 ? (
-            <div className="text-center py-16">
-              <div className="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center mx-auto mb-4">
-                <Icon name="Briefcase" size={28} className="text-gray-600" />
-              </div>
-              <p className="text-gray-500 text-lg mb-2">Услуг пока нет</p>
-              <p className="text-gray-600 text-sm">Мастера ещё не опубликовали услуги в этой категории</p>
-              <a href="/master?tab=services">
-                <Button className="mt-6 bg-gradient-to-r from-violet-600 to-indigo-600 text-white">Я мастер — опубликовать услугу</Button>
-              </a>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-              {filtered.map((service) => (
-                <div
-                  key={service.id}
-                  className="group bg-white/4 border border-white/8 rounded-2xl p-5 hover:border-violet-500/40 hover:bg-white/6 transition-all flex flex-col"
-                >
-                  <a href={`/master-page?id=${service.master_id}`} className="block flex-1">
-                    <div className="flex items-start justify-between mb-4">
-                      <Badge
-                        className="text-xs px-2.5 py-1 rounded-lg"
-                        style={{ backgroundColor: "rgba(99,102,241,0.15)", color: "#a5b4fc", border: "1px solid rgba(99,102,241,0.2)" }}
-                      >
-                        {service.category}
-                      </Badge>
-                      {service.rating ? (
-                        <div className="flex items-center gap-1 text-amber-400 text-sm">
-                          <Icon name="Star" size={13} />
-                          <span>{service.rating}</span>
-                          <span className="text-gray-600 text-xs">({service.reviews_count})</span>
-                        </div>
-                      ) : (
-                        <span className="text-gray-600 text-xs">Новый</span>
-                      )}
-                    </div>
-
-                    <h3 className="text-white font-semibold text-base mb-4 leading-snug group-hover:text-violet-200 transition-colors">
-                      {service.title}
-                    </h3>
-
-                    <div className="flex items-center gap-3 mb-4">
-                      <div
-                        className="w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-bold flex-shrink-0"
-                        style={{ backgroundColor: service.avatar_color }}
-                      >
-                        {service.master_name?.[0]?.toUpperCase()}
-                      </div>
-                      <div className="min-w-0">
-                        <div className="text-sm text-gray-300 font-medium truncate">{service.master_name}</div>
-                        {service.city && (
-                          <div className="text-xs text-gray-600 flex items-center gap-1 mt-0.5">
-                            <Icon name="MapPin" size={10} />{service.city}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-
-                    <div className="flex items-center justify-between pt-4 border-t border-white/6 mb-3">
-                      <div>
-                        {service.price ? (
-                          <>
-                            <span className="text-gray-500 text-xs">от</span>
-                            <span className="text-white font-bold text-lg ml-1">{service.price.toLocaleString("ru-RU")} ₽</span>
-                          </>
-                        ) : (
-                          <span className="text-gray-500 text-sm">Цена по договору</span>
-                        )}
-                      </div>
-                      <span className="text-violet-400 text-xs hover:text-violet-300 transition-colors">Профиль →</span>
-                    </div>
-                  </a>
-
-                  <Button
-                    size="sm"
-                    className="w-full bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white text-xs rounded-xl"
-                    onClick={() => {
-                      setOrderForm(f => ({ ...f, category: service.category, city: service.city || "" }));
-                      setOrderModalOpen(true);
-                    }}
-                  >
-                    <Icon name="Send" size={13} className="mr-1.5" />
-                    Оставить заявку
-                  </Button>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      </section>
-
-
+      <HomeCategoriesServices
+        activeCategory={activeCategory}
+        selectedCity={selectedCity}
+        setSelectedCityFilter={setSelectedCityFilter}
+        services={services}
+        availableCities={availableCities}
+        servicesLoading={servicesLoading}
+        setOrderForm={setOrderForm}
+        setOrderModalOpen={setOrderModalOpen}
+      />
 
       {/* Блок пакетов */}
       <section id="pricing" className="py-16 px-4 bg-gradient-to-br from-violet-900/20 to-indigo-900/10 border-y border-white/5">
@@ -617,303 +288,29 @@ const Index = () => {
         </div>
       </footer>
 
-      {/* Модальное окно регистрации мастера */}
-      <Dialog open={masterModalOpen} onOpenChange={(v) => { setMasterModalOpen(v); if (!v) setMasterSent(false); }}>
-        <DialogContent className="bg-[#1a1d27] border border-white/10 text-white max-w-md w-full">
-          <DialogHeader>
-            <DialogTitle className="text-xl font-bold text-white">
-              {masterSent ? "Заявка отправлена!" : "Регистрация мастера"}
-            </DialogTitle>
-          </DialogHeader>
-
-          {masterSent ? (
-            <div className="py-6 text-center">
-              <div className="w-16 h-16 rounded-full bg-emerald-500/15 flex items-center justify-center mx-auto mb-4">
-                <Icon name="CheckCircle" size={32} className="text-emerald-400" />
-              </div>
-              <p className="text-gray-300 mb-2">Добро пожаловать, <span className="text-white font-semibold">{masterForm.name}</span>!</p>
-              <p className="text-gray-500 text-sm mb-1">Аккаунт создан. Теперь вы можете откликаться на заявки заказчиков.</p>
-              <p className="text-gray-600 text-xs mb-6">Для входа используйте email <span className="text-violet-400">{masterForm.email}</span></p>
-              <div className="flex flex-col gap-3">
-                <a href="/master" onClick={() => { setMasterModalOpen(false); setMasterSent(false); }}>
-                  <Button className="w-full bg-gradient-to-r from-violet-600 to-indigo-600 text-white">
-                    Перейти в кабинет мастера
-                    <Icon name="ArrowRight" size={16} className="ml-2" />
-                  </Button>
-                </a>
-                <a href="/orders" onClick={() => { setMasterModalOpen(false); setMasterSent(false); }}>
-                  <Button variant="ghost" className="w-full text-gray-400 hover:text-white">
-                    Смотреть заявки
-                  </Button>
-                </a>
-              </div>
-            </div>
-          ) : (
-            <form onSubmit={handleMasterSubmit} className="space-y-4 mt-2">
-              <div>
-                <label className="text-sm text-gray-400 mb-1.5 block">Ваше имя *</label>
-                <input
-                  required
-                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-violet-500 transition-colors"
-                  placeholder="Иван Иванов"
-                  value={masterForm.name}
-                  onChange={(e) => setMasterForm({ ...masterForm, name: e.target.value })}
-                />
-              </div>
-              <div>
-                <label className="text-sm text-gray-400 mb-1.5 block">Номер телефона (для связи с клиентами)</label>
-                <input
-                  type="tel"
-                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-violet-500 transition-colors"
-                  placeholder="+7 (999) 000-00-00"
-                  value={masterForm.phone}
-                  onChange={(e) => setMasterForm({ ...masterForm, phone: e.target.value })}
-                />
-              </div>
-              <div>
-                <label className="text-sm text-gray-400 mb-1.5 block">Email *</label>
-                <input
-                  type="email"
-                  required
-                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-violet-500 transition-colors"
-                  placeholder="you@example.com"
-                  value={masterForm.email}
-                  onChange={(e) => setMasterForm({ ...masterForm, email: e.target.value })}
-                />
-              </div>
-              <div>
-                <label className="text-sm text-gray-400 mb-1.5 block">Город *</label>
-                <CitySelect
-                  value={masterForm.city || ""}
-                  onChange={(c) => setMasterForm({ ...masterForm, city: c })}
-                  required
-                />
-              </div>
-              <div>
-                <label className="text-sm text-gray-400 mb-1.5 block">Категория услуг *</label>
-                <select
-                  required
-                  className="w-full bg-[#0f1117] border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-violet-500 transition-colors"
-                  style={{ colorScheme: "dark" }}
-                  value={masterForm.category}
-                  onChange={(e) => setMasterForm({ ...masterForm, category: e.target.value })}
-                >
-                  <option value="" disabled style={{ background: "#0f1117", color: "#9ca3af" }}>Выберите категорию</option>
-                  {categories.map((c) => (
-                    <option key={c.name} value={c.name} style={{ background: "#0f1117", color: "#fff" }}>{c.name}</option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="text-sm text-gray-400 mb-1.5 block">Статус</label>
-                <div className="flex gap-3">
-                  {["Самозанятый / ИП / Компания", "Без статуса"].map((s) => (
-                    <button
-                      key={s}
-                      type="button"
-                      onClick={() => setMasterForm({ ...masterForm, status: s })}
-                      className={`flex-1 py-2 rounded-xl text-sm border transition-all ${
-                        masterForm.status === s
-                          ? "bg-violet-600/20 border-violet-500/50 text-violet-300"
-                          : "bg-white/4 border-white/10 text-gray-400 hover:border-white/20"
-                      }`}
-                    >
-                      {s}
-                    </button>
-                  ))}
-                </div>
-
-              </div>
-              <div>
-                <label className="text-sm text-gray-400 mb-1.5 block">О себе</label>
-                <textarea
-                  rows={3}
-                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-violet-500 transition-colors resize-none"
-                  placeholder="Опыт работы, специализация, достижения..."
-                  value={masterForm.about}
-                  onChange={(e) => setMasterForm({ ...masterForm, about: e.target.value })}
-                />
-              </div>
-              {masterError && <p className="text-red-400 text-sm">{masterError}</p>}
-              <Button
-                type="submit"
-                disabled={masterLoading}
-                className="w-full bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white py-2.5 rounded-xl text-sm font-medium disabled:opacity-60"
-              >
-                {masterLoading ? "Регистрация..." : "Зарегистрироваться"}
-                {!masterLoading && <Icon name="ArrowRight" size={16} className="ml-2" />}
-              </Button>
-            </form>
-          )}
-        </DialogContent>
-      </Dialog>
-
-      {/* Модальное окно создания заявки */}
-      <Dialog open={orderModalOpen} onOpenChange={(v) => { setOrderModalOpen(v); if (!v) { setOrderSent(false); setOrderError(""); } }}>
-        <DialogContent className="bg-[#1a1d27] border border-white/10 text-white max-w-md w-full">
-          <DialogHeader>
-            <DialogTitle className="text-xl font-bold text-white">
-              {orderSent ? "Заявка опубликована!" : "Создать заявку"}
-            </DialogTitle>
-          </DialogHeader>
-
-          {orderSent ? (
-            <div className="py-6 text-center">
-              <div className="w-16 h-16 rounded-full bg-emerald-500/15 flex items-center justify-center mx-auto mb-4">
-                <Icon name="CheckCircle" size={32} className="text-emerald-400" />
-              </div>
-              <p className="text-gray-300 mb-2">Заявка опубликована, <span className="text-white font-semibold">{orderForm.contact_name}</span>!</p>
-              <p className="text-gray-500 text-sm">Мастера увидят вашу заявку и начнут откликаться. Мы сообщим вам об откликах.</p>
-              <Button
-                className="mt-6 w-full bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white"
-                onClick={() => { setOrderModalOpen(false); setOrderSent(false); }}
-              >
-                Отлично!
-              </Button>
-            </div>
-          ) : (
-            <form onSubmit={handleOrderSubmit} className="space-y-4 mt-2">
-              <div>
-                <label className="text-sm text-gray-400 mb-1.5 block">Что нужно сделать? *</label>
-                <input
-                  required
-                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-violet-500 transition-colors"
-                  placeholder="Например: починить кран на кухне"
-                  value={orderForm.title}
-                  onChange={(e) => setOrderForm({ ...orderForm, title: e.target.value })}
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="text-sm text-gray-400 mb-1.5 block">Категория *</label>
-                  <select
-                    required
-                    className="w-full bg-[#0f1117] border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-violet-500 transition-colors"
-                    style={{ colorScheme: "dark" }}
-                    value={orderForm.category}
-                    onChange={(e) => setOrderForm({ ...orderForm, category: e.target.value })}
-                  >
-                    <option value="" disabled style={{ background: "#0f1117", color: "#9ca3af" }}>Выберите</option>
-                    {categories.map((c) => (
-                      <option key={c.name} value={c.name} style={{ background: "#0f1117", color: "#fff" }}>{c.name}</option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="text-sm text-gray-400 mb-1.5 block">Город *</label>
-                  <CitySelect
-                    value={orderForm.city}
-                    onChange={(c) => setOrderForm({ ...orderForm, city: c })}
-                    required
-                  />
-                </div>
-              </div>
-              <div>
-                <label className="text-sm text-gray-400 mb-1.5 block">Подробное описание *</label>
-                <textarea
-                  required
-                  rows={3}
-                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-violet-500 transition-colors resize-none"
-                  placeholder="Опишите задачу подробнее: объём работ, адрес, особые пожелания..."
-                  value={orderForm.description}
-                  onChange={(e) => setOrderForm({ ...orderForm, description: e.target.value })}
-                />
-              </div>
-              <div>
-                <label className="text-sm text-gray-400 mb-1.5 block">Бюджет, ₽</label>
-                <input
-                  type="number"
-                  min="0"
-                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-violet-500 transition-colors"
-                  placeholder="Оставьте пустым, если не знаете"
-                  value={orderForm.budget}
-                  onChange={(e) => setOrderForm({ ...orderForm, budget: e.target.value })}
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="text-sm text-gray-400 mb-1.5 block">Ваше имя *</label>
-                  <input
-                    required
-                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-violet-500 transition-colors"
-                    placeholder="Иван"
-                    value={orderForm.contact_name}
-                    onChange={(e) => setOrderForm({ ...orderForm, contact_name: e.target.value })}
-                  />
-                </div>
-                <div>
-                  <label className="text-sm text-gray-400 mb-1.5 block">Телефон *</label>
-                  <input
-                    required
-                    type="tel"
-                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-violet-500 transition-colors"
-                    placeholder="+7 (999) 000-00-00"
-                    value={orderForm.contact_phone}
-                    onChange={(e) => setOrderForm({ ...orderForm, contact_phone: e.target.value })}
-                  />
-                </div>
-              </div>
-              <div>
-                <label className="text-sm text-gray-400 mb-1.5 block">Email</label>
-                <input
-                  type="email"
-                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-violet-500 transition-colors"
-                  placeholder="для уведомлений об откликах"
-                  value={orderForm.contact_email}
-                  onChange={(e) => setOrderForm({ ...orderForm, contact_email: e.target.value })}
-                />
-              </div>
-              {orderError && (
-                <p className="text-red-400 text-sm">{orderError}</p>
-              )}
-              <Button
-                type="submit"
-                disabled={orderLoading}
-                className="w-full bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white py-2.5 rounded-xl text-sm font-medium disabled:opacity-60"
-              >
-                {orderLoading ? "Публикуем..." : "Опубликовать заявку"}
-                {!orderLoading && <Icon name="ArrowRight" size={16} className="ml-2" />}
-              </Button>
-            </form>
-          )}
-        </DialogContent>
-      </Dialog>
-
-      {/* Модалка выбора роли при регистрации */}
-      <Dialog open={registerModalOpen} onOpenChange={setRegisterModalOpen}>
-        <DialogContent className="bg-[#0f1117] border border-white/10 text-white max-w-sm">
-          <DialogHeader>
-            <DialogTitle className="text-xl font-bold text-center">Кто вы?</DialogTitle>
-          </DialogHeader>
-          <p className="text-gray-400 text-sm text-center -mt-2">Выберите роль для регистрации</p>
-          <div className="flex flex-col gap-3 mt-2">
-            <a href="/master" onClick={() => setRegisterModalOpen(false)}>
-              <div className="group flex items-center gap-4 p-4 rounded-xl border border-white/10 bg-white/4 hover:bg-violet-600/10 hover:border-violet-500/40 transition-all cursor-pointer">
-                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-violet-600 to-indigo-600 flex items-center justify-center flex-shrink-0">
-                  <Icon name="Wrench" size={22} className="text-white" />
-                </div>
-                <div>
-                  <p className="font-semibold text-white">Я мастер</p>
-                  <p className="text-gray-400 text-xs mt-0.5">Принимаю заказы и зарабатываю</p>
-                </div>
-                <Icon name="ChevronRight" size={18} className="text-gray-500 group-hover:text-violet-400 ml-auto transition-colors" />
-              </div>
-            </a>
-            <button onClick={() => { setRegisterModalOpen(false); setOrderModalOpen(true); }}>
-              <div className="group flex items-center gap-4 p-4 rounded-xl border border-white/10 bg-white/4 hover:bg-indigo-600/10 hover:border-indigo-500/40 transition-all cursor-pointer">
-                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-indigo-500 to-blue-600 flex items-center justify-center flex-shrink-0">
-                  <Icon name="ClipboardList" size={22} className="text-white" />
-                </div>
-                <div>
-                  <p className="font-semibold text-white">Я заказчик</p>
-                  <p className="text-gray-400 text-xs mt-0.5">Размещаю заявку и нахожу специалиста</p>
-                </div>
-                <Icon name="ChevronRight" size={18} className="text-gray-500 group-hover:text-indigo-400 ml-auto transition-colors" />
-              </div>
-            </button>
-          </div>
-        </DialogContent>
-      </Dialog>
+      <HomeModals
+        registerModalOpen={registerModalOpen}
+        setRegisterModalOpen={setRegisterModalOpen}
+        masterModalOpen={masterModalOpen}
+        setMasterModalOpen={setMasterModalOpen}
+        masterForm={masterForm}
+        setMasterForm={setMasterForm}
+        masterSent={masterSent}
+        setMasterSent={setMasterSent}
+        masterLoading={masterLoading}
+        masterError={masterError}
+        handleMasterSubmit={handleMasterSubmit}
+        orderModalOpen={orderModalOpen}
+        setOrderModalOpen={setOrderModalOpen}
+        orderForm={orderForm}
+        setOrderForm={setOrderForm}
+        orderSent={orderSent}
+        setOrderSent={setOrderSent}
+        orderLoading={orderLoading}
+        orderError={orderError}
+        setOrderError={setOrderError}
+        handleOrderSubmit={handleOrderSubmit}
+      />
     </div>
   );
 };
