@@ -3,9 +3,34 @@ import { Button } from "@/components/ui/button";
 import Icon from "@/components/ui/icon";
 
 const CATEGORIES = [
-  "Авторемонт","Ремонт жилья","Строительство","Бьюти","IT-помощь",
-  "Сантехника","Электрика","Перевозки","Няня","Клининг","Прочее",
+  { name: "Авторемонт", subcategories: ["Кузовной ремонт", "Автоэлектрика", "Шиномонтаж", "Детейлинг", "Диагностика", "Техническое обслуживание"] },
+  { name: "Ремонт жилья", subcategories: ["Отделка и штукатурка", "Укладка плитки", "Укладка полов", "Покраска стен", "Натяжные потолки", "Демонтаж"] },
+  { name: "Строительство", subcategories: ["Фундамент", "Кровля", "Забор и ворота", "Баня и беседка", "Кирпичная кладка", "Каркасный дом"] },
+  { name: "Бьюти", subcategories: ["Маникюр и педикюр", "Стрижка и окрашивание", "Брови и ресницы", "Макияж", "Эпиляция", "Наращивание волос"] },
+  { name: "Массаж", subcategories: ["Классический массаж", "Спортивный массаж", "Детский массаж", "Антицеллюлитный", "Лимфодренаж", "Массаж лица"] },
+  { name: "IT-помощь", subcategories: ["Ремонт компьютеров", "Настройка ПО", "Разработка сайтов", "1С и бухгалтерия", "Настройка сетей", "Восстановление данных"] },
+  { name: "Сантехника", subcategories: ["Установка сантехники", "Устранение засоров", "Монтаж труб", "Водонагреватели", "Канализация", "Тёплый пол"] },
+  { name: "Электрика", subcategories: ["Монтаж проводки", "Установка розеток", "Электрощиты", "Подключение техники", "Освещение", "Аварийный вызов"] },
+  { name: "Клининг", subcategories: ["Уборка квартиры", "Уборка офиса", "После ремонта", "Мойка окон", "Химчистка мебели", "Генеральная уборка"] },
+  { name: "Перевозки", subcategories: ["Квартирный переезд", "Офисный переезд", "Грузовое такси", "Доставка мебели", "Эвакуатор", "Межгород"] },
+  { name: "Няня", subcategories: ["Няня на день", "Ночная няня", "Няня-гувернантка", "Присмотр за пожилыми", "Помощь по хозяйству", "Сиделка"] },
+  { name: "Репетиторство", subcategories: ["Математика", "Английский язык", "Подготовка к ЕГЭ/ОГЭ", "Другие языки", "Физика и химия", "Подготовка к школе"] },
+  { name: "Озеленение", subcategories: ["Ландшафтный дизайн", "Посадка растений", "Стрижка газона", "Уборка листьев", "Полив и уход", "Вырубка деревьев"] },
+  { name: "Зоопомощь", subcategories: ["Выгул собак", "Стрижка животных", "Ветеринар на дом", "Передержка", "Дрессировка", "Зоотакси"] },
+  { name: "Сборка мебели", subcategories: ["Сборка из ИКЕА", "Корпусная мебель", "Кухни", "Шкафы-купе", "Детская мебель", "Разборка и перестановка"] },
+  { name: "Дизайн интерьера", subcategories: ["Дизайн-проект", "3D-визуализация", "Авторский надзор", "Подбор материалов", "Декорирование", "Планировка"] },
+  { name: "Фото/Видео", subcategories: ["Свадебная съёмка", "Семейная фотосессия", "Коммерческая съёмка", "Видеомонтаж", "Аэросъёмка", "Репортаж"] },
+  { name: "Уборка снега", subcategories: ["Уборка кровли", "Чистка двора", "Посыпка песком", "Вывоз снега", "Расчистка дорожек", "Коммерческие объекты"] },
+  { name: "Повар на мероприятие", subcategories: ["Банкет", "День рождения", "Корпоратив", "Барбекю", "Суши-мастер", "Детский праздник"] },
+  { name: "Тренер", subcategories: ["Персональный тренинг", "Йога", "Пилатес", "Бокс и единоборства", "Плавание", "Онлайн-тренировки"] },
+  { name: "Аниматор", subcategories: ["Детский праздник", "Аниматор в костюме", "Фокусник", "Клоун", "Ведущий праздника", "Корпоратив"] },
+  { name: "Юрист", subcategories: ["Консультация", "Составление договоров", "Семейное право", "Недвижимость", "Трудовые споры", "Представительство в суде"] },
+  { name: "Бухгалтер", subcategories: ["Бухгалтерский учёт", "Налоговая отчётность", "УСН и ИП", "Расчёт зарплат", "1С-сопровождение", "Аудит"] },
+  { name: "Прочее", subcategories: [] },
 ];
+
+const getParentCategory = (value: string) =>
+  CATEGORIES.find(c => c.subcategories.includes(value))?.name ?? (CATEGORIES.some(c => c.name === value) ? value : "");
 
 interface Master {
   id: number;
@@ -82,10 +107,16 @@ export default function MasterTabServices({
   const [editService, setEditService] = useState<MyService | null>(null);
   const [editForm, setEditForm] = useState<ServiceForm>({ title: "", description: "", category: "", city: "", price: "" });
   const [editLoading, setEditLoading] = useState(false);
+  const [editMainCat, setEditMainCat] = useState("");
+  const [addMainCat, setAddMainCat] = useState("");
+
+  const editSubcategories = CATEGORIES.find(c => c.name === editMainCat)?.subcategories ?? [];
+  const addSubcategories = CATEGORIES.find(c => c.name === addMainCat)?.subcategories ?? [];
 
   const openEditService = (s: MyService) => {
     setEditService(s);
     setEditForm({ title: s.title, description: s.description, category: s.category, city: s.city, price: s.price ? String(s.price) : "" });
+    setEditMainCat(getParentCategory(s.category) || s.category);
   };
 
   const handleEditSubmit = async (e: React.FormEvent) => {
@@ -152,13 +183,13 @@ export default function MasterTabServices({
                   <label className="text-xs text-gray-400 mb-1.5 block">Категория *</label>
                   <select
                     required
-                    value={editForm.category}
-                    onChange={e => setEditForm(f => ({ ...f, category: e.target.value }))}
+                    value={editMainCat}
+                    onChange={e => { setEditMainCat(e.target.value); setEditForm(f => ({ ...f, category: e.target.value })); }}
                     className="w-full bg-[#0f1117] border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-violet-500"
                     style={{ colorScheme: "dark" }}
                   >
                     <option value="" disabled>Выберите</option>
-                    {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+                    {CATEGORIES.map(c => <option key={c.name} value={c.name}>{c.name}</option>)}
                   </select>
                 </div>
                 <div>
@@ -171,6 +202,32 @@ export default function MasterTabServices({
                   />
                 </div>
               </div>
+              {editSubcategories.length > 0 && (
+                <div>
+                  <label className="text-xs text-gray-400 mb-2 block">
+                    Подкатегория
+                    {editForm.category && editForm.category !== editMainCat && (
+                      <span className="ml-2 text-violet-400 font-medium">— {editForm.category}</span>
+                    )}
+                  </label>
+                  <div className="flex flex-wrap gap-2">
+                    {editSubcategories.map(sub => (
+                      <button
+                        key={sub}
+                        type="button"
+                        onClick={() => setEditForm(f => ({ ...f, category: sub }))}
+                        className={`px-2.5 py-1 rounded-lg text-xs border transition-all ${
+                          editForm.category === sub
+                            ? "bg-violet-600/20 border-violet-500/50 text-violet-300"
+                            : "bg-white/5 border-white/10 text-gray-400 hover:border-violet-500/30 hover:text-gray-200"
+                        }`}
+                      >
+                        {sub}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
               <div>
                 <label className="text-xs text-gray-400 mb-1.5 block">Цена от, ₽</label>
                 <input
@@ -265,12 +322,13 @@ export default function MasterTabServices({
           />
           <div className="grid grid-cols-2 gap-3">
             <select
-              value={serviceForm.category || master?.category || ""}
-              onChange={e => setServiceForm(f => ({ ...f, category: e.target.value }))}
-              className="bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-violet-500"
+              value={addMainCat || getParentCategory(serviceForm.category) || (CATEGORIES.some(c => c.name === serviceForm.category) ? serviceForm.category : "")}
+              onChange={e => { setAddMainCat(e.target.value); setServiceForm(f => ({ ...f, category: e.target.value })); }}
+              className="bg-[#0f1117] border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-violet-500"
+              style={{ colorScheme: "dark" }}
             >
               <option value="" disabled>Категория *</option>
-              {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+              {CATEGORIES.map(c => <option key={c.name} value={c.name}>{c.name}</option>)}
             </select>
             <input
               placeholder={`Город (${master?.city || "укажите"})`}
@@ -279,6 +337,32 @@ export default function MasterTabServices({
               className="bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-violet-500"
             />
           </div>
+          {addSubcategories.length > 0 && (
+            <div>
+              <label className="text-xs text-gray-400 mb-2 block">
+                Подкатегория
+                {serviceForm.category && serviceForm.category !== addMainCat && (
+                  <span className="ml-2 text-violet-400 font-medium">— {serviceForm.category}</span>
+                )}
+              </label>
+              <div className="flex flex-wrap gap-2">
+                {addSubcategories.map(sub => (
+                  <button
+                    key={sub}
+                    type="button"
+                    onClick={() => setServiceForm(f => ({ ...f, category: sub }))}
+                    className={`px-2.5 py-1 rounded-lg text-xs border transition-all ${
+                      serviceForm.category === sub
+                        ? "bg-violet-600/20 border-violet-500/50 text-violet-300"
+                        : "bg-white/5 border-white/10 text-gray-400 hover:border-violet-500/30 hover:text-gray-200"
+                    }`}
+                  >
+                    {sub}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
           <input
             type="number"
             placeholder="Цена от (₽)"
