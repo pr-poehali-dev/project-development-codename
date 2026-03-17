@@ -225,7 +225,7 @@ export default function MasterCabinet() {
   if (!master && !loading) {
     return (
       <MasterLoginForm
-        onEmailLogin={(p) => { setPhone(p); setInputPhone(p); loadProfile(p); }}
+        onLogin={(p) => { setPhone(p); setInputPhone(p); loadProfile(p); }}
       />
     );
   }

@@ -5,6 +5,7 @@ import Icon from "@/components/ui/icon";
 
 const MY_ORDERS_URL = "https://functions.poehali.dev/458454d0-900d-46a1-9bff-15ecce0839e0";
 const PROFILE_URL = "https://functions.poehali.dev/de274bd5-3f08-42d8-9aac-b373bb34b900";
+const AUTH_URL = MY_ORDERS_URL;
 
 const STATUS_LABELS: Record<string, { label: string; color: string }> = {
   new: { label: "Новая", color: "bg-blue-600/15 text-blue-400 border-blue-500/20" },
@@ -95,11 +96,15 @@ export default function Cabinet() {
   const [expandedOrder, setExpandedOrder] = useState<number | null>(null);
 
   // Форма входа
-  const [loginPhone, setLoginPhone] = useState("");
+  const [loginMode, setLoginMode] = useState<"login" | "register">("login");
+  const [loginIdentifier, setLoginIdentifier] = useState("");
+  const [loginPassword, setLoginPassword] = useState("");
   const [loginName, setLoginName] = useState("");
-  const [isNewUser, setIsNewUser] = useState(false);
+  const [loginPhone, setLoginPhone] = useState("");
+  const [loginEmail, setLoginEmail] = useState("");
   const [loginError, setLoginError] = useState("");
   const [loginLoading, setLoginLoading] = useState(false);
+  const [registerSent, setRegisterSent] = useState(false);
 
   const [statusLoading, setStatusLoading] = useState<number | null>(null);
   const [selectMasterLoading, setSelectMasterLoading] = useState<number | null>(null);
@@ -137,10 +142,7 @@ export default function Cabinet() {
 
   useEffect(() => {
     const saved = localStorage.getItem("customer_phone");
-    if (saved) {
-      setLoginPhone(saved);
-      loadProfile(saved);
-    }
+    if (saved) loadProfile(saved);
   }, []);
 
   const loadProfile = async (phone: string) => {
@@ -152,7 +154,7 @@ export default function Cabinet() {
       if (parsed.customer) {
         setCustomer(parsed.customer);
         setOrders(parsed.orders || []);
-        localStorage.setItem("customer_phone", phone);
+        localStorage.setItem("customer_phone", parsed.customer.phone);
       }
     } finally {
       setLoading(false);
@@ -164,29 +166,41 @@ export default function Cabinet() {
     setLoginLoading(true);
     setLoginError("");
     try {
-      const body: Record<string, string> = { phone: loginPhone };
-      if (isNewUser) body.name = loginName;
-
-      const res = await fetch(MY_ORDERS_URL, {
+      const res = await fetch(AUTH_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
+        body: JSON.stringify({ action: "auth_login", email: loginIdentifier.includes("@") ? loginIdentifier : undefined, phone: !loginIdentifier.includes("@") ? loginIdentifier : undefined, password: loginPassword }),
       });
       const data = await res.json();
       const parsed = typeof data === "string" ? JSON.parse(data) : data;
-
-      if (parsed.not_found) {
-        setIsNewUser(true);
-        setLoginError("Аккаунт не найден. Введите имя для регистрации.");
-        return;
+      if (parsed.error) { setLoginError(parsed.error); return; }
+      if (parsed.success) {
+        localStorage.setItem("customer_phone", parsed.user.phone);
+        await loadProfile(parsed.user.phone);
       }
+    } finally {
+      setLoginLoading(false);
+    }
+  };
+
+  const handleRegister = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoginLoading(true);
+    setLoginError("");
+    try {
+      const res = await fetch(AUTH_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "register", email: loginEmail, phone: loginPhone, name: loginName, user_type: "customer" }),
+      });
+      const data = await res.json();
+      const parsed = typeof data === "string" ? JSON.parse(data) : data;
       if (parsed.error) {
+        if (parsed.already_exists) setLoginMode("login");
         setLoginError(parsed.error);
         return;
       }
-      setCustomer(parsed.customer);
-      setOrders(parsed.orders || []);
-      localStorage.setItem("customer_phone", loginPhone);
+      if (parsed.success) setRegisterSent(true);
     } finally {
       setLoginLoading(false);
     }
@@ -196,8 +210,8 @@ export default function Cabinet() {
     localStorage.removeItem("customer_phone");
     setCustomer(null);
     setOrders([]);
-    setLoginPhone("");
-    setIsNewUser(false);
+    setLoginIdentifier("");
+    setLoginPassword("");
   };
 
   const handleReview = async (e: React.FormEvent) => {
@@ -243,6 +257,7 @@ export default function Cabinet() {
 
   // Экран входа
   if (!customer && !loading) {
+    const inputCls = "w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-violet-500 transition-colors";
     return (
       <div className="min-h-screen bg-[#0f1117] flex items-center justify-center px-4">
         <div className="w-full max-w-md">
@@ -254,39 +269,75 @@ export default function Cabinet() {
             <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-violet-600 to-indigo-600 flex items-center justify-center mx-auto mb-4">
               <Icon name="LayoutDashboard" size={28} className="text-white" />
             </div>
-            <h1 className="text-2xl font-bold text-white mb-2">Мои заявки</h1>
-            <p className="text-gray-400 text-sm">Войдите по номеру телефона, который указывали при создании заявки</p>
+            <h1 className="text-2xl font-bold text-white mb-2">Кабинет заказчика</h1>
           </div>
-          <form onSubmit={handleLogin} className="bg-white/4 border border-white/8 rounded-2xl p-6 flex flex-col gap-4">
-            <div>
-              <label className="text-sm text-gray-400 mb-1.5 block">Номер телефона</label>
-              <input
-                type="tel"
-                required
-                value={loginPhone}
-                onChange={(e) => setLoginPhone(e.target.value)}
-                placeholder="+7 (999) 000-00-00"
-                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-violet-500 transition-colors"
-              />
+
+          {/* Табы */}
+          <div className="flex gap-1 bg-white/5 rounded-xl p-1 mb-5">
+            <button onClick={() => { setLoginMode("login"); setLoginError(""); setRegisterSent(false); }}
+              className={`flex-1 py-2 text-sm rounded-lg transition-colors font-medium ${loginMode === "login" ? "bg-violet-600 text-white" : "text-gray-400 hover:text-white"}`}>
+              Войти
+            </button>
+            <button onClick={() => { setLoginMode("register"); setLoginError(""); setRegisterSent(false); }}
+              className={`flex-1 py-2 text-sm rounded-lg transition-colors font-medium ${loginMode === "register" ? "bg-violet-600 text-white" : "text-gray-400 hover:text-white"}`}>
+              Регистрация
+            </button>
+          </div>
+
+          {loginMode === "login" ? (
+            <form onSubmit={handleLogin} className="bg-white/4 border border-white/8 rounded-2xl p-6 flex flex-col gap-4">
+              <div>
+                <label className="text-sm text-gray-400 mb-1.5 block">Email или телефон</label>
+                <input type="text" required value={loginIdentifier} onChange={e => setLoginIdentifier(e.target.value)}
+                  placeholder="email@example.com или +7..." className={inputCls} />
+              </div>
+              <div>
+                <label className="text-sm text-gray-400 mb-1.5 block">Пароль</label>
+                <input type="password" required value={loginPassword} onChange={e => setLoginPassword(e.target.value)}
+                  placeholder="Ваш пароль" className={inputCls} />
+              </div>
+              {loginError && <p className="text-amber-400 text-sm">{loginError}</p>}
+              <Button type="submit" disabled={loginLoading} className="bg-gradient-to-r from-violet-600 to-indigo-600 text-white w-full">
+                {loginLoading ? "Вход..." : "Войти"}
+              </Button>
+              <p className="text-center text-gray-500 text-xs">Нет аккаунта?{" "}
+                <button type="button" onClick={() => setLoginMode("register")} className="text-violet-400 hover:underline">Зарегистрироваться</button>
+              </p>
+            </form>
+          ) : registerSent ? (
+            <div className="bg-emerald-600/10 border border-emerald-500/30 rounded-2xl p-8 text-center">
+              <div className="w-14 h-14 rounded-2xl bg-emerald-600/20 flex items-center justify-center mx-auto mb-4">
+                <Icon name="Mail" size={26} className="text-emerald-400" />
+              </div>
+              <h2 className="text-white font-semibold mb-2">Проверьте почту</h2>
+              <p className="text-gray-400 text-sm">Мы отправили письмо на <span className="text-white">{loginEmail}</span>.<br />Перейдите по ссылке в письме, чтобы подтвердить email и задать пароль.</p>
             </div>
-            {isNewUser && (
+          ) : (
+            <form onSubmit={handleRegister} className="bg-white/4 border border-white/8 rounded-2xl p-6 flex flex-col gap-4">
               <div>
                 <label className="text-sm text-gray-400 mb-1.5 block">Ваше имя</label>
-                <input
-                  type="text"
-                  required
-                  value={loginName}
-                  onChange={(e) => setLoginName(e.target.value)}
-                  placeholder="Как вас зовут?"
-                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-violet-500 transition-colors"
-                />
+                <input type="text" required value={loginName} onChange={e => setLoginName(e.target.value)}
+                  placeholder="Иван Иванов" className={inputCls} />
               </div>
-            )}
-            {loginError && <p className="text-amber-400 text-sm">{loginError}</p>}
-            <Button type="submit" disabled={loginLoading} className="bg-gradient-to-r from-violet-600 to-indigo-600 text-white w-full">
-              {loginLoading ? "Загрузка..." : isNewUser ? "Зарегистрироваться" : "Войти"}
-            </Button>
-          </form>
+              <div>
+                <label className="text-sm text-gray-400 mb-1.5 block">Email</label>
+                <input type="email" required value={loginEmail} onChange={e => setLoginEmail(e.target.value)}
+                  placeholder="email@example.com" className={inputCls} />
+              </div>
+              <div>
+                <label className="text-sm text-gray-400 mb-1.5 block">Телефон</label>
+                <input type="tel" required value={loginPhone} onChange={e => setLoginPhone(e.target.value)}
+                  placeholder="+7 (999) 000-00-00" className={inputCls} />
+              </div>
+              {loginError && <p className="text-amber-400 text-sm">{loginError}</p>}
+              <Button type="submit" disabled={loginLoading} className="bg-gradient-to-r from-violet-600 to-indigo-600 text-white w-full">
+                {loginLoading ? "Отправка..." : "Зарегистрироваться"}
+              </Button>
+              <p className="text-center text-gray-500 text-xs">Уже есть аккаунт?{" "}
+                <button type="button" onClick={() => setLoginMode("login")} className="text-violet-400 hover:underline">Войти</button>
+              </p>
+            </form>
+          )}
         </div>
       </div>
     );

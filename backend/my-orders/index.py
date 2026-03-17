@@ -1,12 +1,20 @@
 import json
 import os
+import secrets
+import hashlib
+import smtplib
 import psycopg2
 from psycopg2.extras import RealDictCursor
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
+
+SCHEMA = os.environ.get("MAIN_DB_SCHEMA", "public")
 
 HEADERS = {
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
     'Access-Control-Allow-Headers': 'Content-Type',
+    'Content-Type': 'application/json',
 }
 
 
@@ -14,17 +22,62 @@ def get_conn():
     return psycopg2.connect(os.environ['DATABASE_URL'], cursor_factory=RealDictCursor)
 
 
+def hash_password(password: str) -> str:
+    salt = secrets.token_hex(16)
+    h = hashlib.sha256((salt + password).encode()).hexdigest()
+    return f"{salt}:{h}"
+
+
+def verify_password(password: str, stored_hash: str) -> bool:
+    parts = stored_hash.split(":")
+    if len(parts) != 2:
+        return False
+    salt, h = parts
+    return hashlib.sha256((salt + password).encode()).hexdigest() == h
+
+
+def send_verification_email(to_email: str, token: str, user_type: str):
+    smtp_host = os.environ["SMTP_HOST"]
+    smtp_port = int(os.environ["SMTP_PORT"])
+    smtp_user = os.environ["SMTP_USER"]
+    smtp_pass = os.environ["SMTP_PASS"]
+
+    verify_url = f"https://handyman.poehali.dev/verify-email?token={token}&type={user_type}"
+
+    msg = MIMEMultipart("alternative")
+    msg["Subject"] = "Подтверждение email — HandyMan"
+    msg["From"] = smtp_user
+    msg["To"] = to_email
+
+    html = f"""
+    <div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:24px;">
+      <h2 style="color:#7c3aed;">Подтверждение email</h2>
+      <p>Нажмите кнопку ниже, чтобы подтвердить вашу почту и задать пароль:</p>
+      <a href="{verify_url}"
+         style="display:inline-block;background:#7c3aed;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:bold;">
+        Подтвердить email
+      </a>
+      <p style="color:#888;font-size:13px;margin-top:16px;">Ссылка действительна 1 час. Если вы не регистрировались — проигнорируйте это письмо.</p>
+    </div>
+    """
+    msg.attach(MIMEText(html, "html"))
+
+    with smtplib.SMTP_SSL(smtp_host, smtp_port) as server:
+        server.login(smtp_user, smtp_pass)
+        server.sendmail(smtp_user, to_email, msg.as_string())
+
+
 def get_orders(cur, customer_id=None, phone=None):
     if customer_id:
         cur.execute(
             "SELECT id, title, description, category, city, budget, status, accepted_response_id, created_at "
-            "FROM orders WHERE customer_id = %s ORDER BY created_at DESC",
+            f"FROM {SCHEMA}.orders WHERE customer_id = %s ORDER BY created_at DESC",
             (customer_id,)
         )
     else:
         cur.execute(
             "SELECT id, title, description, category, city, budget, status, accepted_response_id, created_at "
-            "FROM orders WHERE contact_phone = %s ORDER BY created_at DESC",
+            f"FROM {SCHEMA}.orders WHERE contact_phone = %s ORDER BY created_at DESC",
             (phone,)
         )
     orders = cur.fetchall()
@@ -33,8 +86,8 @@ def get_orders(cur, customer_id=None, phone=None):
         cur.execute(
             "SELECT r.id, r.master_name, r.master_phone, r.master_category, r.message, r.created_at, r.master_id, "
             "rv.id as review_id, rv.rating, rv.comment "
-            "FROM responses r "
-            "LEFT JOIN reviews rv ON rv.order_id = r.order_id AND rv.master_name = r.master_name "
+            f"FROM {SCHEMA}.responses r "
+            f"LEFT JOIN {SCHEMA}.reviews rv ON rv.order_id = r.order_id AND rv.master_name = r.master_name "
             "WHERE r.order_id = %s ORDER BY r.created_at ASC",
             (o['id'],)
         )
@@ -64,7 +117,7 @@ def get_orders(cur, customer_id=None, phone=None):
 
 
 def handler(event: dict, context) -> dict:
-    """Кабинет заказчика: вход/регистрация по телефону, заявки с откликами, отзывы о мастерах."""
+    """Кабинет заказчика: регистрация/вход по email+пароль, заявки с откликами, отзывы."""
 
     if event.get('httpMethod') == 'OPTIONS':
         return {'statusCode': 200, 'headers': HEADERS, 'body': ''}
@@ -75,6 +128,131 @@ def handler(event: dict, context) -> dict:
         body = json.loads(event.get('body') or '{}')
         action = body.get('action', 'login')
 
+        # ── РЕГИСТРАЦИЯ ЗАКАЗЧИКА ──
+        if action == 'register':
+            email = (body.get('email') or '').strip().lower()
+            phone = (body.get('phone') or '').strip()
+            name = (body.get('name') or '').strip()
+            if not email:
+                return {'statusCode': 400, 'headers': HEADERS, 'body': json.dumps({'error': 'Укажите email'})}
+            if not name:
+                return {'statusCode': 400, 'headers': HEADERS, 'body': json.dumps({'error': 'Укажите имя'})}
+            if not phone:
+                return {'statusCode': 400, 'headers': HEADERS, 'body': json.dumps({'error': 'Укажите телефон'})}
+
+            conn = get_conn()
+            cur = conn.cursor()
+            cur.execute(f"SELECT id, password_hash, email_verified FROM {SCHEMA}.customers WHERE email=%s", (email,))
+            row = cur.fetchone()
+            if row and row['email_verified'] and row['password_hash']:
+                cur.close(); conn.close()
+                return {'statusCode': 400, 'headers': HEADERS,
+                        'body': json.dumps({'error': 'Этот email уже зарегистрирован. Войдите с паролем.', 'already_exists': True})}
+
+            if not row:
+                cur.execute(
+                    f"INSERT INTO {SCHEMA}.customers (name, phone, email, email_verified) VALUES (%s,%s,%s,FALSE) RETURNING id",
+                    (name, phone, email)
+                )
+            else:
+                cur.execute(f"UPDATE {SCHEMA}.customers SET name=%s, phone=%s WHERE email=%s", (name, phone, email))
+
+            token = secrets.token_urlsafe(40)
+            cur.execute(
+                f"INSERT INTO {SCHEMA}.verification_tokens (email, token, user_type) VALUES (%s,%s,'customer')",
+                (email, token)
+            )
+            conn.commit()
+            cur.close(); conn.close()
+
+            send_verification_email(email, token, 'customer')
+            return {'statusCode': 200, 'headers': HEADERS, 'body': json.dumps({'success': True, 'message': 'Письмо отправлено. Проверьте почту.'})}
+
+        # ── ВЕРИФИКАЦИЯ ТОКЕНА ──
+        if action == 'verify_token':
+            token = (body.get('token') or '').strip()
+            if not token:
+                return {'statusCode': 400, 'headers': HEADERS, 'body': json.dumps({'error': 'Токен не указан'})}
+            conn = get_conn()
+            cur = conn.cursor()
+            cur.execute(
+                f"SELECT email, user_type, used, expires_at FROM {SCHEMA}.verification_tokens WHERE token=%s ORDER BY id DESC LIMIT 1",
+                (token,)
+            )
+            row = cur.fetchone()
+            if not row:
+                cur.close(); conn.close()
+                return {'statusCode': 400, 'headers': HEADERS, 'body': json.dumps({'error': 'Ссылка недействительна'})}
+            if row['used']:
+                cur.close(); conn.close()
+                return {'statusCode': 400, 'headers': HEADERS, 'body': json.dumps({'error': 'Ссылка уже использована'})}
+            cur.execute("SELECT NOW()")
+            now = cur.fetchone()['now']
+            if row['expires_at'] and now > row['expires_at']:
+                cur.close(); conn.close()
+                return {'statusCode': 400, 'headers': HEADERS, 'body': json.dumps({'error': 'Ссылка истекла. Зарегистрируйтесь снова.'})}
+            cur.close(); conn.close()
+            return {'statusCode': 200, 'headers': HEADERS,
+                    'body': json.dumps({'success': True, 'email': row['email'], 'user_type': row['user_type'], 'token': token})}
+
+        # ── УСТАНОВКА ПАРОЛЯ ──
+        if action == 'set_password':
+            token = (body.get('token') or '').strip()
+            password = body.get('password', '')
+            if len(password) < 6:
+                return {'statusCode': 400, 'headers': HEADERS, 'body': json.dumps({'error': 'Пароль минимум 6 символов'})}
+            conn = get_conn()
+            cur = conn.cursor()
+            cur.execute(
+                f"SELECT email, user_type, used, expires_at FROM {SCHEMA}.verification_tokens WHERE token=%s ORDER BY id DESC LIMIT 1",
+                (token,)
+            )
+            row = cur.fetchone()
+            if not row or row['used']:
+                cur.close(); conn.close()
+                return {'statusCode': 400, 'headers': HEADERS, 'body': json.dumps({'error': 'Ссылка недействительна или уже использована'})}
+            email = row['email']
+            user_type = row['user_type']
+            pw_hash = hash_password(password)
+            table = 'masters' if user_type == 'master' else 'customers'
+            cur.execute(
+                f"UPDATE {SCHEMA}.{table} SET password_hash=%s, email_verified=TRUE WHERE email=%s RETURNING id, name, phone, email",
+                (pw_hash, email)
+            )
+            user_row = cur.fetchone()
+            if not user_row:
+                cur.close(); conn.close()
+                return {'statusCode': 400, 'headers': HEADERS, 'body': json.dumps({'error': 'Пользователь не найден'})}
+            cur.execute(f"UPDATE {SCHEMA}.verification_tokens SET used=TRUE WHERE token=%s", (token,))
+            conn.commit()
+            cur.close(); conn.close()
+            return {'statusCode': 200, 'headers': HEADERS,
+                    'body': json.dumps({'success': True, 'user_type': user_type,
+                                        'user': {'id': user_row['id'], 'name': user_row['name'], 'phone': user_row['phone'], 'email': user_row['email'] or ''}})}
+
+        # ── ВХОД ЗАКАЗЧИКА ──
+        if action == 'auth_login':
+            identifier = (body.get('email') or body.get('phone') or '').strip()
+            password = body.get('password', '')
+            if not identifier or not password:
+                return {'statusCode': 400, 'headers': HEADERS, 'body': json.dumps({'error': 'Введите логин и пароль'})}
+            conn = get_conn()
+            cur = conn.cursor()
+            if '@' in identifier:
+                cur.execute(f"SELECT id, name, phone, email, password_hash, email_verified FROM {SCHEMA}.customers WHERE email=%s", (identifier.lower(),))
+            else:
+                cur.execute(f"SELECT id, name, phone, email, password_hash, email_verified FROM {SCHEMA}.customers WHERE phone=%s", (identifier,))
+            row = cur.fetchone()
+            cur.close(); conn.close()
+            if not row:
+                return {'statusCode': 401, 'headers': HEADERS, 'body': json.dumps({'error': 'Пользователь не найден'})}
+            if not row['email_verified'] or not row['password_hash']:
+                return {'statusCode': 401, 'headers': HEADERS, 'body': json.dumps({'error': 'Email не подтверждён. Завершите регистрацию.'})}
+            if not verify_password(password, row['password_hash']):
+                return {'statusCode': 401, 'headers': HEADERS, 'body': json.dumps({'error': 'Неверный пароль'})}
+            return {'statusCode': 200, 'headers': HEADERS,
+                    'body': json.dumps({'success': True, 'user': {'id': row['id'], 'name': row['name'], 'phone': row['phone'], 'email': row['email'] or ''}})}
+
         if action == 'select_master':
             order_id = body.get('order_id')
             response_id = body.get('response_id')
@@ -84,7 +262,7 @@ def handler(event: dict, context) -> dict:
             conn = get_conn()
             cur = conn.cursor()
             cur.execute(
-                "UPDATE orders SET accepted_response_id = %s, status = 'in_progress' WHERE id = %s AND customer_id = %s",
+                f"UPDATE {SCHEMA}.orders SET accepted_response_id = %s, status = 'in_progress' WHERE id = %s AND customer_id = %s",
                 (int(response_id), int(order_id), int(customer_id))
             )
             conn.commit()
@@ -98,17 +276,15 @@ def handler(event: dict, context) -> dict:
             master_id = body.get('master_id')
             rating = body.get('rating')
             comment = (body.get('comment') or '').strip()
-
             if not all([customer_id, order_id, master_name, rating]):
                 return {'statusCode': 400, 'headers': HEADERS, 'body': json.dumps({'error': 'Заполните все обязательные поля'})}
             if not (1 <= int(rating) <= 5):
                 return {'statusCode': 400, 'headers': HEADERS, 'body': json.dumps({'error': 'Оценка от 1 до 5'})}
-
             conn = get_conn()
             cur = conn.cursor()
             try:
                 cur.execute(
-                    "INSERT INTO reviews (order_id, customer_id, master_id, master_name, rating, comment) VALUES (%s, %s, %s, %s, %s, %s) RETURNING id",
+                    f"INSERT INTO {SCHEMA}.reviews (order_id, customer_id, master_id, master_name, rating, comment) VALUES (%s, %s, %s, %s, %s, %s) RETURNING id",
                     (int(order_id), int(customer_id), int(master_id) if master_id else None, master_name, int(rating), comment)
                 )
                 review_id = cur.fetchone()['id']
@@ -120,19 +296,16 @@ def handler(event: dict, context) -> dict:
             cur.close(); conn.close()
             return {'statusCode': 200, 'headers': HEADERS, 'body': json.dumps({'success': True, 'review_id': review_id})}
 
-        # Вход / регистрация
+        # Старый вход по телефону (обратная совместимость)
         phone = (body.get('phone') or '').strip()
         name = (body.get('name') or '').strip()
         email = (body.get('email') or '').strip()
-
         if not phone:
             return {'statusCode': 400, 'headers': HEADERS, 'body': json.dumps({'error': 'Укажите телефон'})}
-
         conn = get_conn()
         cur = conn.cursor()
-        cur.execute("SELECT * FROM customers WHERE phone = %s", (phone,))
+        cur.execute(f"SELECT * FROM {SCHEMA}.customers WHERE phone = %s", (phone,))
         customer = cur.fetchone()
-
         if customer:
             updates = []
             vals = []
@@ -142,58 +315,38 @@ def handler(event: dict, context) -> dict:
                 updates.append("email = %s"); vals.append(email)
             if updates:
                 vals.append(phone)
-                cur.execute(f"UPDATE customers SET {', '.join(updates)} WHERE phone = %s", vals)
+                cur.execute(f"UPDATE {SCHEMA}.customers SET {', '.join(updates)} WHERE phone = %s", vals)
                 conn.commit()
-                cur.execute("SELECT * FROM customers WHERE phone = %s", (phone,))
+                cur.execute(f"SELECT * FROM {SCHEMA}.customers WHERE phone = %s", (phone,))
                 customer = cur.fetchone()
         else:
             if not name:
                 cur.close(); conn.close()
                 return {'statusCode': 404, 'headers': HEADERS, 'body': json.dumps({'error': 'Заказчик не найден', 'not_found': True})}
-            cur.execute("INSERT INTO customers (name, phone, email) VALUES (%s, %s, %s) RETURNING *", (name, phone, email or None))
+            cur.execute(f"INSERT INTO {SCHEMA}.customers (name, phone, email) VALUES (%s, %s, %s) RETURNING *", (name, phone, email or None))
             customer = cur.fetchone()
             conn.commit()
-
-        cur.execute("UPDATE orders SET customer_id = %s WHERE contact_phone = %s AND customer_id IS NULL", (customer['id'], phone))
+        cur.execute(f"UPDATE {SCHEMA}.orders SET customer_id = %s WHERE contact_phone = %s AND customer_id IS NULL", (customer['id'], phone))
         conn.commit()
-
         orders_data = get_orders(cur, customer_id=customer['id'])
         cur.close(); conn.close()
-
-        return {
-            'statusCode': 200,
-            'headers': HEADERS,
-            'body': json.dumps({
-                'customer': {'id': customer['id'], 'name': customer['name'], 'phone': customer['phone'], 'email': customer.get('email') or ''},
-                'orders': orders_data
-            }, ensure_ascii=False)
-        }
+        return {'statusCode': 200, 'headers': HEADERS,
+                'body': json.dumps({'customer': {'id': customer['id'], 'name': customer['name'], 'phone': customer['phone'], 'email': customer.get('email') or ''}, 'orders': orders_data}, ensure_ascii=False)}
 
     if method == 'GET':
         params = event.get('queryStringParameters') or {}
         phone = (params.get('phone') or '').strip()
-
         if not phone:
             return {'statusCode': 400, 'headers': HEADERS, 'body': json.dumps({'error': 'Укажите номер телефона'})}
-
         conn = get_conn()
         cur = conn.cursor()
-        cur.execute("SELECT * FROM customers WHERE phone = %s", (phone,))
+        cur.execute(f"SELECT * FROM {SCHEMA}.customers WHERE phone = %s", (phone,))
         customer = cur.fetchone()
-
         if customer:
             orders_data = get_orders(cur, customer_id=customer['id'])
             cur.close(); conn.close()
-            return {
-                'statusCode': 200,
-                'headers': HEADERS,
-                'body': json.dumps({
-                    'customer': {'id': customer['id'], 'name': customer['name'], 'phone': customer['phone'], 'email': customer.get('email') or ''},
-                    'orders': orders_data
-                }, ensure_ascii=False)
-            }
-
-        # Fallback: старый поиск по телефону в заявках
+            return {'statusCode': 200, 'headers': HEADERS,
+                    'body': json.dumps({'customer': {'id': customer['id'], 'name': customer['name'], 'phone': customer['phone'], 'email': customer.get('email') or ''}, 'orders': orders_data}, ensure_ascii=False)}
         orders_data = get_orders(cur, phone=phone)
         cur.close(); conn.close()
         return {'statusCode': 200, 'headers': HEADERS, 'body': json.dumps({'orders': orders_data}, ensure_ascii=False)}
