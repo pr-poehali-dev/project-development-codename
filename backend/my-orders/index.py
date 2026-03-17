@@ -152,10 +152,21 @@ def handler(event: dict, context) -> dict:
                         'body': json.dumps({'error': 'Этот email уже зарегистрирован. Войдите с паролем.', 'already_exists': True})}
 
             if not row:
-                cur.execute(
-                    f"INSERT INTO {SCHEMA}.customers (name, phone, email, email_verified) VALUES (%s,%s,%s,FALSE) RETURNING id",
-                    (name, phone, email)
-                )
+                # Проверяем не занят ли телефон другим пользователем
+                cur.execute(f"SELECT id, email_verified, password_hash FROM {SCHEMA}.customers WHERE phone=%s", (phone,))
+                phone_row = cur.fetchone()
+                if phone_row and phone_row['email_verified'] and phone_row['password_hash']:
+                    cur.close(); conn.close()
+                    return {'statusCode': 400, 'headers': HEADERS,
+                            'body': json.dumps({'error': 'Этот номер телефона уже зарегистрирован. Войдите с паролем.', 'already_exists': True})}
+                if phone_row:
+                    # Телефон есть, но аккаунт не завершён — обновляем
+                    cur.execute(f"UPDATE {SCHEMA}.customers SET name=%s, email=%s WHERE phone=%s", (name, email, phone))
+                else:
+                    cur.execute(
+                        f"INSERT INTO {SCHEMA}.customers (name, phone, email, email_verified) VALUES (%s,%s,%s,FALSE) RETURNING id",
+                        (name, phone, email)
+                    )
             else:
                 cur.execute(f"UPDATE {SCHEMA}.customers SET name=%s, phone=%s WHERE email=%s", (name, phone, email))
 
