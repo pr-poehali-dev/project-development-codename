@@ -61,6 +61,10 @@ export default function MasterLoginForm({ onEmailLogin }: MasterLoginFormProps) 
 
   return (
     <div className="min-h-screen bg-[#080b12] flex items-center justify-center px-4">
+      <a href="/" className="absolute top-5 left-5 flex items-center gap-2 text-gray-400 hover:text-white text-sm transition-colors">
+        <Icon name="ArrowLeft" size={16} />
+        На главную
+      </a>
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-violet-600 to-indigo-600 flex items-center justify-center mx-auto mb-4">
