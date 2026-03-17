@@ -1,175 +1,13 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import Icon from "@/components/ui/icon";
-import CitySelect from "@/components/ui/city-select";
+import OrdersFilters from "@/pages/OrdersFilters";
+import OrderCard from "@/pages/OrderCard";
+import OrderResponseModal from "@/pages/OrderResponseModal";
 
 const ORDERS_URL = "https://functions.poehali.dev/34db9bab-e58a-479e-b1cc-c27fb8e0b728";
 const RESPONSES_URL = "https://functions.poehali.dev/889ae9dd-c29e-4b5b-b05e-1110dc8e5eaa";
-
-const categoryColors: Record<string, string> = {
-  "Авторемонт": "bg-blue-600/15 text-blue-400 border-blue-500/20",
-  "Кузовной ремонт": "bg-blue-600/15 text-blue-400 border-blue-500/20",
-  "Автоэлектрика": "bg-blue-600/15 text-blue-400 border-blue-500/20",
-  "Шиномонтаж": "bg-blue-600/15 text-blue-400 border-blue-500/20",
-  "Детейлинг": "bg-blue-600/15 text-blue-400 border-blue-500/20",
-  "Диагностика": "bg-blue-600/15 text-blue-400 border-blue-500/20",
-  "Техническое обслуживание": "bg-blue-600/15 text-blue-400 border-blue-500/20",
-  "Ремонт жилья": "bg-amber-600/15 text-amber-400 border-amber-500/20",
-  "Отделка и штукатурка": "bg-amber-600/15 text-amber-400 border-amber-500/20",
-  "Укладка плитки": "bg-amber-600/15 text-amber-400 border-amber-500/20",
-  "Укладка полов": "bg-amber-600/15 text-amber-400 border-amber-500/20",
-  "Покраска стен": "bg-amber-600/15 text-amber-400 border-amber-500/20",
-  "Натяжные потолки": "bg-amber-600/15 text-amber-400 border-amber-500/20",
-  "Демонтаж": "bg-amber-600/15 text-amber-400 border-amber-500/20",
-  "Строительство": "bg-orange-600/15 text-orange-400 border-orange-500/20",
-  "Фундамент": "bg-orange-600/15 text-orange-400 border-orange-500/20",
-  "Кровля": "bg-orange-600/15 text-orange-400 border-orange-500/20",
-  "Забор и ворота": "bg-orange-600/15 text-orange-400 border-orange-500/20",
-  "Баня и беседка": "bg-orange-600/15 text-orange-400 border-orange-500/20",
-  "Кирпичная кладка": "bg-orange-600/15 text-orange-400 border-orange-500/20",
-  "Каркасный дом": "bg-orange-600/15 text-orange-400 border-orange-500/20",
-  "Бьюти": "bg-pink-600/15 text-pink-400 border-pink-500/20",
-  "Маникюр и педикюр": "bg-pink-600/15 text-pink-400 border-pink-500/20",
-  "Стрижка и окрашивание": "bg-pink-600/15 text-pink-400 border-pink-500/20",
-  "Брови и ресницы": "bg-pink-600/15 text-pink-400 border-pink-500/20",
-  "Макияж": "bg-pink-600/15 text-pink-400 border-pink-500/20",
-  "Эпиляция": "bg-pink-600/15 text-pink-400 border-pink-500/20",
-  "Наращивание волос": "bg-pink-600/15 text-pink-400 border-pink-500/20",
-  "Массаж": "bg-rose-600/15 text-rose-400 border-rose-500/20",
-  "Классический массаж": "bg-rose-600/15 text-rose-400 border-rose-500/20",
-  "Спортивный массаж": "bg-rose-600/15 text-rose-400 border-rose-500/20",
-  "Детский массаж": "bg-rose-600/15 text-rose-400 border-rose-500/20",
-  "Антицеллюлитный": "bg-rose-600/15 text-rose-400 border-rose-500/20",
-  "Лимфодренаж": "bg-rose-600/15 text-rose-400 border-rose-500/20",
-  "Массаж лица": "bg-rose-600/15 text-rose-400 border-rose-500/20",
-  "IT-помощь": "bg-violet-600/15 text-violet-400 border-violet-500/20",
-  "Ремонт компьютеров": "bg-violet-600/15 text-violet-400 border-violet-500/20",
-  "Настройка ПО": "bg-violet-600/15 text-violet-400 border-violet-500/20",
-  "Разработка сайтов": "bg-violet-600/15 text-violet-400 border-violet-500/20",
-  "1С и бухгалтерия": "bg-violet-600/15 text-violet-400 border-violet-500/20",
-  "Настройка сетей": "bg-violet-600/15 text-violet-400 border-violet-500/20",
-  "Восстановление данных": "bg-violet-600/15 text-violet-400 border-violet-500/20",
-  "Сантехника": "bg-cyan-600/15 text-cyan-400 border-cyan-500/20",
-  "Установка сантехники": "bg-cyan-600/15 text-cyan-400 border-cyan-500/20",
-  "Устранение засоров": "bg-cyan-600/15 text-cyan-400 border-cyan-500/20",
-  "Монтаж труб": "bg-cyan-600/15 text-cyan-400 border-cyan-500/20",
-  "Водонагреватели": "bg-cyan-600/15 text-cyan-400 border-cyan-500/20",
-  "Канализация": "bg-cyan-600/15 text-cyan-400 border-cyan-500/20",
-  "Тёплый пол": "bg-cyan-600/15 text-cyan-400 border-cyan-500/20",
-  "Электрика": "bg-yellow-600/15 text-yellow-400 border-yellow-500/20",
-  "Монтаж проводки": "bg-yellow-600/15 text-yellow-400 border-yellow-500/20",
-  "Установка розеток": "bg-yellow-600/15 text-yellow-400 border-yellow-500/20",
-  "Электрощиты": "bg-yellow-600/15 text-yellow-400 border-yellow-500/20",
-  "Подключение техники": "bg-yellow-600/15 text-yellow-400 border-yellow-500/20",
-  "Освещение": "bg-yellow-600/15 text-yellow-400 border-yellow-500/20",
-  "Аварийный вызов": "bg-yellow-600/15 text-yellow-400 border-yellow-500/20",
-  "Клининг": "bg-teal-600/15 text-teal-400 border-teal-500/20",
-  "Уборка квартиры": "bg-teal-600/15 text-teal-400 border-teal-500/20",
-  "Уборка офиса": "bg-teal-600/15 text-teal-400 border-teal-500/20",
-  "После ремонта": "bg-teal-600/15 text-teal-400 border-teal-500/20",
-  "Мойка окон": "bg-teal-600/15 text-teal-400 border-teal-500/20",
-  "Химчистка мебели": "bg-teal-600/15 text-teal-400 border-teal-500/20",
-  "Генеральная уборка": "bg-teal-600/15 text-teal-400 border-teal-500/20",
-  "Перевозки": "bg-red-600/15 text-red-400 border-red-500/20",
-  "Квартирный переезд": "bg-red-600/15 text-red-400 border-red-500/20",
-  "Офисный переезд": "bg-red-600/15 text-red-400 border-red-500/20",
-  "Грузовое такси": "bg-red-600/15 text-red-400 border-red-500/20",
-  "Доставка мебели": "bg-red-600/15 text-red-400 border-red-500/20",
-  "Эвакуатор": "bg-red-600/15 text-red-400 border-red-500/20",
-  "Межгород": "bg-red-600/15 text-red-400 border-red-500/20",
-  "Няня": "bg-emerald-600/15 text-emerald-400 border-emerald-500/20",
-  "Няня на день": "bg-emerald-600/15 text-emerald-400 border-emerald-500/20",
-  "Ночная няня": "bg-emerald-600/15 text-emerald-400 border-emerald-500/20",
-  "Няня-гувернантка": "bg-emerald-600/15 text-emerald-400 border-emerald-500/20",
-  "Присмотр за пожилыми": "bg-emerald-600/15 text-emerald-400 border-emerald-500/20",
-  "Помощь по хозяйству": "bg-emerald-600/15 text-emerald-400 border-emerald-500/20",
-  "Сиделка": "bg-emerald-600/15 text-emerald-400 border-emerald-500/20",
-  "Репетиторство": "bg-indigo-600/15 text-indigo-400 border-indigo-500/20",
-  "Математика": "bg-indigo-600/15 text-indigo-400 border-indigo-500/20",
-  "Английский язык": "bg-indigo-600/15 text-indigo-400 border-indigo-500/20",
-  "Подготовка к ЕГЭ/ОГЭ": "bg-indigo-600/15 text-indigo-400 border-indigo-500/20",
-  "Другие языки": "bg-indigo-600/15 text-indigo-400 border-indigo-500/20",
-  "Физика и химия": "bg-indigo-600/15 text-indigo-400 border-indigo-500/20",
-  "Подготовка к школе": "bg-indigo-600/15 text-indigo-400 border-indigo-500/20",
-  "Озеленение": "bg-green-600/15 text-green-400 border-green-500/20",
-  "Ландшафтный дизайн": "bg-green-600/15 text-green-400 border-green-500/20",
-  "Посадка растений": "bg-green-600/15 text-green-400 border-green-500/20",
-  "Стрижка газона": "bg-green-600/15 text-green-400 border-green-500/20",
-  "Уборка листьев": "bg-green-600/15 text-green-400 border-green-500/20",
-  "Полив и уход": "bg-green-600/15 text-green-400 border-green-500/20",
-  "Вырубка деревьев": "bg-green-600/15 text-green-400 border-green-500/20",
-  "Зоопомощь": "bg-lime-600/15 text-lime-400 border-lime-500/20",
-  "Выгул собак": "bg-lime-600/15 text-lime-400 border-lime-500/20",
-  "Стрижка животных": "bg-lime-600/15 text-lime-400 border-lime-500/20",
-  "Ветеринар на дом": "bg-lime-600/15 text-lime-400 border-lime-500/20",
-  "Передержка": "bg-lime-600/15 text-lime-400 border-lime-500/20",
-  "Дрессировка": "bg-lime-600/15 text-lime-400 border-lime-500/20",
-  "Зоотакси": "bg-lime-600/15 text-lime-400 border-lime-500/20",
-  "Сборка мебели": "bg-orange-600/15 text-orange-400 border-orange-500/20",
-  "Сборка из ИКЕА": "bg-orange-600/15 text-orange-400 border-orange-500/20",
-  "Корпусная мебель": "bg-orange-600/15 text-orange-400 border-orange-500/20",
-  "Кухни": "bg-orange-600/15 text-orange-400 border-orange-500/20",
-  "Шкафы-купе": "bg-orange-600/15 text-orange-400 border-orange-500/20",
-  "Детская мебель": "bg-orange-600/15 text-orange-400 border-orange-500/20",
-  "Разборка и перестановка": "bg-orange-600/15 text-orange-400 border-orange-500/20",
-  "Дизайн интерьера": "bg-fuchsia-600/15 text-fuchsia-400 border-fuchsia-500/20",
-  "Дизайн-проект": "bg-fuchsia-600/15 text-fuchsia-400 border-fuchsia-500/20",
-  "3D-визуализация": "bg-fuchsia-600/15 text-fuchsia-400 border-fuchsia-500/20",
-  "Авторский надзор": "bg-fuchsia-600/15 text-fuchsia-400 border-fuchsia-500/20",
-  "Подбор материалов": "bg-fuchsia-600/15 text-fuchsia-400 border-fuchsia-500/20",
-  "Декорирование": "bg-fuchsia-600/15 text-fuchsia-400 border-fuchsia-500/20",
-  "Планировка": "bg-fuchsia-600/15 text-fuchsia-400 border-fuchsia-500/20",
-  "Фото/Видео": "bg-sky-600/15 text-sky-400 border-sky-500/20",
-  "Свадебная съёмка": "bg-sky-600/15 text-sky-400 border-sky-500/20",
-  "Семейная фотосессия": "bg-sky-600/15 text-sky-400 border-sky-500/20",
-  "Коммерческая съёмка": "bg-sky-600/15 text-sky-400 border-sky-500/20",
-  "Видеомонтаж": "bg-sky-600/15 text-sky-400 border-sky-500/20",
-  "Аэросъёмка": "bg-sky-600/15 text-sky-400 border-sky-500/20",
-  "Репортаж": "bg-sky-600/15 text-sky-400 border-sky-500/20",
-  "Уборка снега": "bg-blue-600/15 text-blue-400 border-blue-500/20",
-  "Уборка кровли": "bg-blue-600/15 text-blue-400 border-blue-500/20",
-  "Чистка двора": "bg-blue-600/15 text-blue-400 border-blue-500/20",
-  "Посыпка песком": "bg-blue-600/15 text-blue-400 border-blue-500/20",
-  "Вывоз снега": "bg-blue-600/15 text-blue-400 border-blue-500/20",
-  "Расчистка дорожек": "bg-blue-600/15 text-blue-400 border-blue-500/20",
-  "Коммерческие объекты": "bg-blue-600/15 text-blue-400 border-blue-500/20",
-  "Повар на мероприятие": "bg-amber-600/15 text-amber-400 border-amber-500/20",
-  "Банкет": "bg-amber-600/15 text-amber-400 border-amber-500/20",
-  "День рождения": "bg-amber-600/15 text-amber-400 border-amber-500/20",
-  "Корпоратив": "bg-amber-600/15 text-amber-400 border-amber-500/20",
-  "Барбекю": "bg-amber-600/15 text-amber-400 border-amber-500/20",
-  "Суши-мастер": "bg-amber-600/15 text-amber-400 border-amber-500/20",
-  "Детский праздник": "bg-amber-600/15 text-amber-400 border-amber-500/20",
-  "Тренер": "bg-purple-600/15 text-purple-400 border-purple-500/20",
-  "Персональный тренинг": "bg-purple-600/15 text-purple-400 border-purple-500/20",
-  "Йога": "bg-purple-600/15 text-purple-400 border-purple-500/20",
-  "Пилатес": "bg-purple-600/15 text-purple-400 border-purple-500/20",
-  "Бокс и единоборства": "bg-purple-600/15 text-purple-400 border-purple-500/20",
-  "Плавание": "bg-purple-600/15 text-purple-400 border-purple-500/20",
-  "Онлайн-тренировки": "bg-purple-600/15 text-purple-400 border-purple-500/20",
-  "Аниматор": "bg-yellow-600/15 text-yellow-400 border-yellow-500/20",
-  "Аниматор в костюме": "bg-yellow-600/15 text-yellow-400 border-yellow-500/20",
-  "Фокусник": "bg-yellow-600/15 text-yellow-400 border-yellow-500/20",
-  "Клоун": "bg-yellow-600/15 text-yellow-400 border-yellow-500/20",
-  "Ведущий праздника": "bg-yellow-600/15 text-yellow-400 border-yellow-500/20",
-  "Юрист": "bg-slate-600/15 text-slate-400 border-slate-500/20",
-  "Консультация": "bg-slate-600/15 text-slate-400 border-slate-500/20",
-  "Составление договоров": "bg-slate-600/15 text-slate-400 border-slate-500/20",
-  "Семейное право": "bg-slate-600/15 text-slate-400 border-slate-500/20",
-  "Недвижимость": "bg-slate-600/15 text-slate-400 border-slate-500/20",
-  "Трудовые споры": "bg-slate-600/15 text-slate-400 border-slate-500/20",
-  "Представительство в суде": "bg-slate-600/15 text-slate-400 border-slate-500/20",
-  "Бухгалтер": "bg-emerald-600/15 text-emerald-400 border-emerald-500/20",
-  "Бухгалтерский учёт": "bg-emerald-600/15 text-emerald-400 border-emerald-500/20",
-  "Налоговая отчётность": "bg-emerald-600/15 text-emerald-400 border-emerald-500/20",
-  "УСН и ИП": "bg-emerald-600/15 text-emerald-400 border-emerald-500/20",
-  "Расчёт зарплат": "bg-emerald-600/15 text-emerald-400 border-emerald-500/20",
-  "1С-сопровождение": "bg-emerald-600/15 text-emerald-400 border-emerald-500/20",
-  "Аудит": "bg-emerald-600/15 text-emerald-400 border-emerald-500/20",
-  "Прочее": "bg-gray-600/15 text-gray-400 border-gray-500/20",
-};
+const PROFILE_URL = "https://functions.poehali.dev/de274bd5-3f08-42d8-9aac-b373bb34b900";
 
 interface Order {
   id: number;
@@ -182,8 +20,6 @@ interface Order {
   status: string;
   created_at: string;
 }
-
-const PROFILE_URL = "https://functions.poehali.dev/de274bd5-3f08-42d8-9aac-b373bb34b900";
 
 const Orders = () => {
   const [orders, setOrders] = useState<Order[]>([]);
@@ -304,88 +140,22 @@ const Orders = () => {
         </div>
       </nav>
 
-      {/* Заголовок */}
+      {/* Основной контент */}
       <section className="py-12 px-4">
         <div className="max-w-7xl mx-auto">
-          <div className="mb-6">
-            <h1 className="text-3xl sm:text-4xl font-extrabold mb-2">Лента заявок</h1>
-            <p className="text-gray-400 mb-5">Найди подходящий заказ и откликнись бесплатно — токены списываются только если заказчик выбрал тебя исполнителем</p>
-            <div className="relative max-w-lg">
-              <Icon name="Search" size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500" />
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={e => setSearchQuery(e.target.value)}
-                placeholder="Поиск по заявкам..."
-                className="w-full bg-white/5 border border-white/10 rounded-xl pl-10 pr-4 py-2.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-violet-500 transition-colors"
-              />
-              {searchQuery && (
-                <button onClick={() => setSearchQuery("")} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-300 transition-colors">
-                  <Icon name="X" size={14} />
-                </button>
-              )}
-            </div>
-          </div>
-
-          {/* Основные табы */}
-          <div className="flex gap-2 mb-6 bg-white/4 rounded-xl p-1 w-fit">
-            <button
-              onClick={() => setMainTab("all")}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${mainTab === "all" ? "bg-violet-600 text-white" : "text-gray-400 hover:text-white"}`}
-            >
-              Все заявки
-            </button>
-            {masterId && (
-              <>
-                <button
-                  onClick={() => setMainTab("active")}
-                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${mainTab === "active" ? "bg-violet-600 text-white" : "text-gray-400 hover:text-white"}`}
-                >
-                  Активные
-                </button>
-                <button
-                  onClick={() => setMainTab("done")}
-                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${mainTab === "done" ? "bg-violet-600 text-white" : "text-gray-400 hover:text-white"}`}
-                >
-                  Завершённые
-                </button>
-              </>
-            )}
-          </div>
-
-          {/* Фильтр по городу */}
-          <div className={`flex items-center gap-3 mb-5 flex-wrap ${mainTab !== "all" ? "hidden" : ""}`}>
-            <CitySelect
-              value={selectedCity}
-              onChange={setSelectedCity}
-              allCitiesLabel="Все города"
-              variant="glass"
-              cities={cities.filter(c => c !== "Все")}
-            />
-            {selectedCity && (
-              <button onClick={() => setSelectedCity("")} className="text-gray-500 hover:text-gray-300 text-sm flex items-center gap-1 transition-colors">
-                <Icon name="X" size={14} />
-                Сбросить
-              </button>
-            )}
-          </div>
-
-          {/* Фильтр по категориям */}
-          <div className={`flex gap-2 flex-wrap mb-8 ${mainTab !== "all" ? "hidden" : ""}`}>
-            {categories.map((cat) => (
-              <button
-                key={cat}
-                onClick={() => setActiveCategory(cat)}
-                className={`px-4 py-1.5 rounded-full text-sm border transition-all ${
-                  activeCategory === cat
-                    ? "bg-violet-600/20 border-violet-500/50 text-violet-300"
-                    : "bg-white/3 border-white/10 text-gray-400 hover:border-white/20 hover:text-white"
-                }`}
-              >
-                {cat}
-              </button>
-            ))}
-          </div>
+          <OrdersFilters
+            mainTab={mainTab}
+            setMainTab={setMainTab}
+            masterId={masterId}
+            searchQuery={searchQuery}
+            setSearchQuery={setSearchQuery}
+            selectedCity={selectedCity}
+            setSelectedCity={setSelectedCity}
+            activeCategory={activeCategory}
+            setActiveCategory={setActiveCategory}
+            categories={categories}
+            cities={cities}
+          />
 
           {/* Список заявок */}
           {loading ? (
@@ -414,11 +184,12 @@ const Orders = () => {
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
               {filtered.map((order) => (
-                <div
+                <OrderCard
                   key={order.id}
-                  className="group bg-white/4 border border-white/8 rounded-2xl p-5 hover:border-violet-500/40 hover:bg-white/6 transition-all cursor-pointer flex flex-col"
-                  onClick={() => {
-                    setSelectedOrder(order);
+                  order={order}
+                  formatDate={formatDate}
+                  onClick={(o) => {
+                    setSelectedOrder(o);
                     setResponseSent(false);
                     setResponseError("");
                     setResponseForm({
@@ -428,166 +199,29 @@ const Orders = () => {
                       message: "",
                     });
                   }}
-                >
-                  <div className="flex items-start justify-between mb-3">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <Badge className={`text-xs px-2.5 py-1 rounded-lg border ${categoryColors[order.category] || "bg-violet-600/15 text-violet-400 border-violet-500/20"}`}>
-                        {order.category}
-                      </Badge>
-                      {order.city && (
-                        <span className="flex items-center gap-1 text-gray-500 text-xs">
-                          <Icon name="MapPin" size={11} />
-                          {order.city}
-                        </span>
-                      )}
-                    </div>
-                    <span className="text-gray-600 text-xs flex-shrink-0">{formatDate(order.created_at)}</span>
-                  </div>
-
-                  <h3 className="text-white font-semibold text-base mb-2 leading-snug group-hover:text-violet-200 transition-colors">
-                    {order.title}
-                  </h3>
-
-                  <p className="text-gray-400 text-sm leading-relaxed line-clamp-2 flex-1 mb-4">
-                    {order.description}
-                  </p>
-
-                  <div className="flex items-center justify-between pt-4 border-t border-white/6">
-                    <div>
-                      {order.budget ? (
-                        <span className="text-white font-bold">
-                          до {order.budget.toLocaleString("ru-RU")} ₽
-                        </span>
-                      ) : (
-                        <span className="text-gray-500 text-sm">Бюджет не указан</span>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-1.5 text-gray-500 text-xs">
-                      <Icon name="User" size={13} />
-                      {order.contact_name}
-                    </div>
-                  </div>
-                </div>
+                />
               ))}
             </div>
           )}
         </div>
       </section>
 
-      {/* Модалка с деталями заявки и формой отклика */}
-      <Dialog open={!!selectedOrder} onOpenChange={(v) => {
-        if (!v) { setSelectedOrder(null); setResponseSent(false); setResponseError(""); }
-        if (v && masterData) {
-          setResponseForm(f => ({ ...f, master_name: masterData.name, master_phone: masterData.phone, master_category: masterData.category }));
-        }
-      }}>
-        <DialogContent className="bg-[#1a1d27] border border-white/10 text-white max-w-lg w-full">
-          <DialogHeader>
-            <DialogTitle className="text-xl font-bold text-white">
-              {responseSent ? "Отклик отправлен!" : selectedOrder?.title}
-            </DialogTitle>
-          </DialogHeader>
-
-          {responseSent ? (
-            <div className="py-6 text-center">
-              <div className="w-16 h-16 rounded-full bg-emerald-500/15 flex items-center justify-center mx-auto mb-4">
-                <Icon name="CheckCircle" size={32} className="text-emerald-400" />
-              </div>
-              <p className="text-gray-300 mb-2">Ваш отклик отправлен заказчику!</p>
-              <p className="text-gray-500 text-sm">Заказчик рассмотрит все отклики и свяжется с вами.</p>
-              <Button
-                className="mt-6 w-full bg-gradient-to-r from-violet-600 to-indigo-600 text-white"
-                onClick={() => setSelectedOrder(null)}
-              >
-                Вернуться к заявкам
-              </Button>
-            </div>
-          ) : selectedOrder && (
-            <div className="space-y-4">
-              {/* Детали заявки */}
-              <div className="bg-white/4 rounded-xl p-4 space-y-2">
-                <div className="flex items-center gap-2">
-                  <Badge className={`text-xs px-2.5 py-1 rounded-lg border ${categoryColors[selectedOrder.category] || "bg-violet-600/15 text-violet-400 border-violet-500/20"}`}>
-                    {selectedOrder.category}
-                  </Badge>
-                  {selectedOrder.budget && (
-                    <span className="text-emerald-400 text-sm font-semibold">до {selectedOrder.budget.toLocaleString("ru-RU")} ₽</span>
-                  )}
-                </div>
-                <p className="text-gray-300 text-sm leading-relaxed">{selectedOrder.description}</p>
-                <div className="flex items-center gap-1.5 text-gray-500 text-xs pt-1">
-                  <Icon name="User" size={13} />
-                  {selectedOrder.contact_name} · {formatDate(selectedOrder.created_at)}
-                </div>
-              </div>
-
-              {/* Баланс мастера */}
-              {masterId !== null && (
-                <div className={`flex items-center justify-between rounded-xl px-4 py-3 ${masterBalance && masterBalance > 0 ? "bg-violet-600/10 border border-violet-500/20" : "bg-red-600/10 border border-red-500/20"}`}>
-                  <div className="flex items-center gap-2">
-                    <Icon name="Zap" size={15} className={masterBalance && masterBalance > 0 ? "text-violet-400" : "text-red-400"} />
-                    <span className="text-sm text-gray-300">Откликов на балансе: <strong className={masterBalance && masterBalance > 0 ? "text-violet-300" : "text-red-400"}>{masterBalance}</strong></span>
-                  </div>
-                  <a href="/master" className="text-xs text-violet-400 hover:text-violet-300 transition-colors">Пополнить →</a>
-                </div>
-              )}
-              {masterId === null && (
-                <div className="bg-amber-600/10 border border-amber-500/20 rounded-xl px-4 py-3 flex items-center justify-between">
-                  <span className="text-amber-300/80 text-sm">Войдите в кабинет мастера для отклика</span>
-                  <a href="/master" className="text-xs text-violet-400 hover:text-violet-300 transition-colors">Войти →</a>
-                </div>
-              )}
-
-              {/* Форма отклика */}
-              <form onSubmit={handleRespond} className="space-y-3">
-                <p className="text-sm font-semibold text-white">Ваш отклик</p>
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="text-xs text-gray-400 mb-1 block">Имя *</label>
-                    <input
-                      required
-                      className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-violet-500 transition-colors"
-                      placeholder="Ваше имя"
-                      value={responseForm.master_name}
-                      onChange={(e) => setResponseForm({ ...responseForm, master_name: e.target.value })}
-                    />
-                  </div>
-                  <div>
-                    <label className="text-xs text-gray-400 mb-1 block">Телефон *</label>
-                    <input
-                      required
-                      type="tel"
-                      className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-violet-500 transition-colors"
-                      placeholder="+7 (999) 000-00-00"
-                      value={responseForm.master_phone}
-                      onChange={(e) => setResponseForm({ ...responseForm, master_phone: e.target.value })}
-                    />
-                  </div>
-                </div>
-                <div>
-                  <label className="text-xs text-gray-400 mb-1 block">Сообщение заказчику</label>
-                  <textarea
-                    rows={3}
-                    className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-violet-500 transition-colors resize-none"
-                    placeholder="Расскажите об опыте, когда сможете приступить и ваша цена..."
-                    value={responseForm.message}
-                    onChange={(e) => setResponseForm({ ...responseForm, message: e.target.value })}
-                  />
-                </div>
-                {responseError && <p className="text-red-400 text-sm">{responseError}</p>}
-                <Button
-                  type="submit"
-                  disabled={responseLoading}
-                  className="w-full bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white py-2.5 rounded-xl text-sm font-medium disabled:opacity-60"
-                >
-                  {responseLoading ? "Отправляем..." : "Откликнуться на заявку"}
-                  {!responseLoading && <Icon name="ArrowRight" size={16} className="ml-2" />}
-                </Button>
-              </form>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
+      <OrderResponseModal
+        selectedOrder={selectedOrder}
+        setSelectedOrder={setSelectedOrder}
+        masterData={masterData}
+        masterId={masterId}
+        masterBalance={masterBalance}
+        responseForm={responseForm}
+        setResponseForm={setResponseForm}
+        responseSent={responseSent}
+        setResponseSent={setResponseSent}
+        responseLoading={responseLoading}
+        responseError={responseError}
+        setResponseError={setResponseError}
+        onSubmit={handleRespond}
+        formatDate={formatDate}
+      />
     </div>
   );
 };
