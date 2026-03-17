@@ -85,9 +85,17 @@ export default function MasterCabinet() {
   const [buyingId, setBuyingId] = useState<number | null>(null);
   const [buySuccess, setBuySuccess] = useState("");
   const initialTab = new URLSearchParams(window.location.search).get("tab");
-  const [tab, setTab] = useState<"balance" | "history" | "responses" | "services">(
-    initialTab === "services" || initialTab === "responses" || initialTab === "history" ? initialTab : "balance"
+  const [tab, setTab] = useState<"balance" | "history" | "responses" | "services" | "profile">(
+    initialTab === "services" || initialTab === "responses" || initialTab === "history" || initialTab === "profile" ? initialTab as "services" | "responses" | "history" | "profile" : "balance"
   );
+
+  // Смена пароля
+  const [pwOld, setPwOld] = useState("");
+  const [pwNew, setPwNew] = useState("");
+  const [pwConfirm, setPwConfirm] = useState("");
+  const [pwLoading, setPwLoading] = useState(false);
+  const [pwError, setPwError] = useState("");
+  const [pwSuccess, setPwSuccess] = useState("");
 
   const [showServiceForm, setShowServiceForm] = useState(false);
   const [serviceForm, setServiceForm] = useState({ title: "", description: "", category: "", city: "", price: "" });
@@ -222,6 +230,26 @@ export default function MasterCabinet() {
     }
   };
 
+  const handleChangePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (pwNew !== pwConfirm) { setPwError("Пароли не совпадают"); return; }
+    if (pwNew.length < 6) { setPwError("Минимум 6 символов"); return; }
+    setPwLoading(true); setPwError(""); setPwSuccess("");
+    try {
+      const res = await fetch(PROFILE_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "change_password", master_id: master?.id, old_password: pwOld, new_password: pwNew }),
+      });
+      const data = await res.json();
+      const d = typeof data === "string" ? JSON.parse(data) : data;
+      if (d.error) { setPwError(d.error); return; }
+      setPwSuccess("Пароль изменён!");
+      setPwOld(""); setPwNew(""); setPwConfirm("");
+      setTimeout(() => setPwSuccess(""), 3000);
+    } finally { setPwLoading(false); }
+  };
+
   if (!master && !loading) {
     return (
       <MasterLoginForm
@@ -299,7 +327,7 @@ export default function MasterCabinet() {
         )}
 
         {/* Вкладки */}
-        <div className="grid grid-cols-4 gap-1 bg-white/4 rounded-xl p-1 mb-6">
+        <div className="grid grid-cols-5 gap-1 bg-white/4 rounded-xl p-1 mb-6">
           <button onClick={() => setTab("balance")} className={`py-2 rounded-lg text-xs font-medium transition-all ${tab === "balance" ? "bg-violet-600 text-white" : "text-gray-400 hover:text-white"}`}>
             Баланс
           </button>
@@ -313,6 +341,9 @@ export default function MasterCabinet() {
           </button>
           <button onClick={() => setTab("history")} className={`py-2 rounded-lg text-xs font-medium transition-all ${tab === "history" ? "bg-violet-600 text-white" : "text-gray-400 hover:text-white"}`}>
             История
+          </button>
+          <button onClick={() => setTab("profile")} className={`py-2 rounded-lg text-xs font-medium transition-all ${tab === "profile" ? "bg-violet-600 text-white" : "text-gray-400 hover:text-white"}`}>
+            Профиль
           </button>
         </div>
 
@@ -571,6 +602,54 @@ export default function MasterCabinet() {
                 </Badge>
               </div>
             ))}
+          </div>
+        )}
+
+        {tab === "profile" && (
+          <div className="flex flex-col gap-6 max-w-md">
+            {/* Инфо */}
+            <div className="bg-white/4 border border-white/8 rounded-2xl p-5 flex flex-col gap-3">
+              <h3 className="text-white font-semibold text-sm mb-1">Данные аккаунта</h3>
+              {[
+                { label: "Имя", value: master?.name },
+                { label: "Телефон", value: master?.phone },
+                { label: "Категория", value: master?.category },
+                { label: "Город", value: master?.city },
+              ].map(({ label, value }) => (
+                <div key={label} className="flex items-center justify-between py-1 border-b border-white/6 last:border-0">
+                  <span className="text-gray-500 text-sm">{label}</span>
+                  <span className="text-white text-sm">{value || "—"}</span>
+                </div>
+              ))}
+            </div>
+
+            {/* Смена пароля */}
+            <div className="bg-white/4 border border-white/8 rounded-2xl p-5">
+              <h3 className="text-white font-semibold text-sm mb-4">Изменить пароль</h3>
+              {pwSuccess && (
+                <div className="bg-emerald-600/15 border border-emerald-500/30 rounded-xl px-4 py-2.5 mb-4 flex items-center gap-2 text-emerald-400 text-sm">
+                  <Icon name="CheckCircle" size={15} />{pwSuccess}
+                </div>
+              )}
+              <form onSubmit={handleChangePassword} className="flex flex-col gap-3">
+                {["Текущий пароль", "Новый пароль", "Повторите новый"].map((label, i) => {
+                  const vals = [pwOld, pwNew, pwConfirm];
+                  const setters = [setPwOld, setPwNew, setPwConfirm];
+                  return (
+                    <div key={label}>
+                      <label className="text-xs text-gray-400 mb-1.5 block">{label}</label>
+                      <input type="password" required value={vals[i]} onChange={e => setters[i](e.target.value)}
+                        placeholder="••••••••"
+                        className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-violet-500 transition-colors" />
+                    </div>
+                  );
+                })}
+                {pwError && <p className="text-amber-400 text-sm">{pwError}</p>}
+                <Button type="submit" disabled={pwLoading} className="bg-violet-600 hover:bg-violet-500 text-white w-full mt-1">
+                  {pwLoading ? "Сохранение..." : "Изменить пароль"}
+                </Button>
+              </form>
+            </div>
           </div>
         )}
       </div>

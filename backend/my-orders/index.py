@@ -271,6 +271,31 @@ def handler(event: dict, context) -> dict:
                                         'user': {'id': user_row['id'], 'name': user_row['name'],
                                                  'phone': user_row['phone'], 'email': user_row['email'] or ''}})}
 
+        # ── СМЕНА ПАРОЛЯ (из кабинета) ──
+        if action == 'change_password':
+            customer_id = body.get('customer_id')
+            old_password = body.get('old_password', '')
+            new_password = body.get('new_password', '')
+            if not customer_id:
+                return {'statusCode': 400, 'headers': HEADERS, 'body': json.dumps({'error': 'Не авторизован'})}
+            if len(new_password) < 6:
+                return {'statusCode': 400, 'headers': HEADERS, 'body': json.dumps({'error': 'Новый пароль минимум 6 символов'})}
+            conn = get_conn()
+            cur = conn.cursor()
+            cur.execute(f"SELECT password_hash FROM {SCHEMA}.customers WHERE id=%s", (int(customer_id),))
+            row = cur.fetchone()
+            if not row:
+                cur.close(); conn.close()
+                return {'statusCode': 404, 'headers': HEADERS, 'body': json.dumps({'error': 'Пользователь не найден'})}
+            if row['password_hash'] and not verify_password(old_password, row['password_hash']):
+                cur.close(); conn.close()
+                return {'statusCode': 400, 'headers': HEADERS, 'body': json.dumps({'error': 'Текущий пароль неверен'})}
+            pw_hash = hash_password(new_password)
+            cur.execute(f"UPDATE {SCHEMA}.customers SET password_hash=%s WHERE id=%s", (pw_hash, int(customer_id)))
+            conn.commit()
+            cur.close(); conn.close()
+            return {'statusCode': 200, 'headers': HEADERS, 'body': json.dumps({'success': True})}
+
         # ── ВХОД ЗАКАЗЧИКА ──
         if action == 'auth_login':
             identifier = (body.get('email') or body.get('phone') or '').strip()

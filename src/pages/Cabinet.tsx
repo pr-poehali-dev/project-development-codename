@@ -331,9 +331,39 @@ export default function Cabinet() {
 
   const [activeTab, setActiveTab] = useState<"active" | "done">("active");
 
+  // Смена пароля
+  const [showPwForm, setShowPwForm] = useState(false);
+  const [pwOld, setPwOld] = useState("");
+  const [pwNew, setPwNew] = useState("");
+  const [pwConfirm, setPwConfirm] = useState("");
+  const [pwLoading, setPwLoading] = useState(false);
+  const [pwError, setPwError] = useState("");
+  const [pwSuccess, setPwSuccess] = useState("");
+
   const activeOrders = orders.filter(o => o.status !== "done" && o.status !== "cancelled");
   const doneOrders = orders.filter(o => o.status === "done" || o.status === "cancelled");
   const visibleOrders = activeTab === "active" ? activeOrders : doneOrders;
+
+  const handleChangePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (pwNew !== pwConfirm) { setPwError("Пароли не совпадают"); return; }
+    if (pwNew.length < 6) { setPwError("Минимум 6 символов"); return; }
+    setPwLoading(true); setPwError(""); setPwSuccess("");
+    try {
+      const res = await fetch(AUTH_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "change_password", customer_id: customer?.id, old_password: pwOld, new_password: pwNew }),
+      });
+      const data = await res.json();
+      const d = typeof data === "string" ? JSON.parse(data) : data;
+      if (d.error) { setPwError(d.error); return; }
+      setPwSuccess("Пароль изменён!");
+      setPwOld(""); setPwNew(""); setPwConfirm("");
+      setShowPwForm(false);
+      setTimeout(() => setPwSuccess(""), 3000);
+    } finally { setPwLoading(false); }
+  };
 
   const totalResponses = orders.reduce((s, o) => s + o.responses.length, 0);
 
@@ -549,6 +579,11 @@ export default function Cabinet() {
               </div>
               <span className="text-gray-300 text-sm hidden sm:block">{customer?.name}</span>
             </div>
+            <button onClick={() => { setShowPwForm(v => !v); setPwError(""); }}
+              className="text-gray-500 hover:text-gray-300 text-sm flex items-center gap-1.5 transition-colors hidden sm:flex">
+              <Icon name="KeyRound" size={15} />
+              Пароль
+            </button>
             <button onClick={handleLogout} className="text-gray-500 hover:text-gray-300 text-sm flex items-center gap-1.5 transition-colors">
               <Icon name="LogOut" size={15} />
               Выйти
@@ -581,6 +616,42 @@ export default function Cabinet() {
             </div>
           ))}
         </div>
+
+        {/* Уведомление о смене пароля */}
+        {pwSuccess && (
+          <div className="bg-emerald-600/15 border border-emerald-500/30 rounded-xl px-4 py-3 mb-4 flex items-center gap-2 text-emerald-400 text-sm">
+            <Icon name="CheckCircle" size={15} />{pwSuccess}
+          </div>
+        )}
+
+        {/* Форма смены пароля */}
+        {showPwForm && (
+          <div className="bg-white/4 border border-white/8 rounded-2xl p-5 mb-6 max-w-md">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-white font-semibold text-sm">Изменить пароль</h3>
+              <button onClick={() => { setShowPwForm(false); setPwError(""); }} className="text-gray-500 hover:text-gray-300 transition-colors">
+                <Icon name="X" size={16} />
+              </button>
+            </div>
+            <form onSubmit={handleChangePassword} className="flex flex-col gap-3">
+              {[
+                { label: "Текущий пароль", val: pwOld, set: setPwOld },
+                { label: "Новый пароль", val: pwNew, set: setPwNew },
+                { label: "Повторите новый", val: pwConfirm, set: setPwConfirm },
+              ].map(({ label, val, set }) => (
+                <div key={label}>
+                  <label className="text-xs text-gray-400 mb-1.5 block">{label}</label>
+                  <input type="password" required value={val} onChange={e => set(e.target.value)} placeholder="••••••••"
+                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-violet-500 transition-colors" />
+                </div>
+              ))}
+              {pwError && <p className="text-amber-400 text-sm">{pwError}</p>}
+              <Button type="submit" disabled={pwLoading} className="bg-violet-600 hover:bg-violet-500 text-white w-full">
+                {pwLoading ? "Сохранение..." : "Изменить пароль"}
+              </Button>
+            </form>
+          </div>
+        )}
 
         {/* Форма отзыва */}
         {reviewForm && (
