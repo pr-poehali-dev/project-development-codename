@@ -1,0 +1,1 @@
+ALTER TABLE t_p86314354_project_development_.customers ADD COLUMN IF NOT EXISTS email VARCHAR(255);

@@ -61,6 +61,7 @@ interface Customer {
   id: number;
   name: string;
   phone: string;
+  email: string;
 }
 
 function StarRating({ value, onChange }: { value: number; onChange?: (v: number) => void }) {

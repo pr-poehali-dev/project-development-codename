@@ -123,6 +123,7 @@ def handler(event: dict, context) -> dict:
         # Вход / регистрация
         phone = (body.get('phone') or '').strip()
         name = (body.get('name') or '').strip()
+        email = (body.get('email') or '').strip()
 
         if not phone:
             return {'statusCode': 400, 'headers': HEADERS, 'body': json.dumps({'error': 'Укажите телефон'})}
@@ -133,8 +134,15 @@ def handler(event: dict, context) -> dict:
         customer = cur.fetchone()
 
         if customer:
+            updates = []
+            vals = []
             if name:
-                cur.execute("UPDATE customers SET name = %s WHERE phone = %s", (name, phone))
+                updates.append("name = %s"); vals.append(name)
+            if email:
+                updates.append("email = %s"); vals.append(email)
+            if updates:
+                vals.append(phone)
+                cur.execute(f"UPDATE customers SET {', '.join(updates)} WHERE phone = %s", vals)
                 conn.commit()
                 cur.execute("SELECT * FROM customers WHERE phone = %s", (phone,))
                 customer = cur.fetchone()
@@ -142,7 +150,7 @@ def handler(event: dict, context) -> dict:
             if not name:
                 cur.close(); conn.close()
                 return {'statusCode': 404, 'headers': HEADERS, 'body': json.dumps({'error': 'Заказчик не найден', 'not_found': True})}
-            cur.execute("INSERT INTO customers (name, phone) VALUES (%s, %s) RETURNING *", (name, phone))
+            cur.execute("INSERT INTO customers (name, phone, email) VALUES (%s, %s, %s) RETURNING *", (name, phone, email or None))
             customer = cur.fetchone()
             conn.commit()
 
@@ -156,7 +164,7 @@ def handler(event: dict, context) -> dict:
             'statusCode': 200,
             'headers': HEADERS,
             'body': json.dumps({
-                'customer': {'id': customer['id'], 'name': customer['name'], 'phone': customer['phone']},
+                'customer': {'id': customer['id'], 'name': customer['name'], 'phone': customer['phone'], 'email': customer.get('email') or ''},
                 'orders': orders_data
             }, ensure_ascii=False)
         }
@@ -180,7 +188,7 @@ def handler(event: dict, context) -> dict:
                 'statusCode': 200,
                 'headers': HEADERS,
                 'body': json.dumps({
-                    'customer': {'id': customer['id'], 'name': customer['name'], 'phone': customer['phone']},
+                    'customer': {'id': customer['id'], 'name': customer['name'], 'phone': customer['phone'], 'email': customer.get('email') or ''},
                     'orders': orders_data
                 }, ensure_ascii=False)
             }

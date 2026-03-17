@@ -104,6 +104,7 @@ const Index = () => {
             ...f,
             contact_name: parsed.customer.name || "",
             contact_phone: parsed.customer.phone || "",
+            contact_email: parsed.customer.email || "",
           }));
         }
       });
