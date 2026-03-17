@@ -17,13 +17,13 @@ def get_conn():
 def get_orders(cur, customer_id=None, phone=None):
     if customer_id:
         cur.execute(
-            "SELECT id, title, description, category, city, budget, status, created_at "
+            "SELECT id, title, description, category, city, budget, status, accepted_response_id, created_at "
             "FROM orders WHERE customer_id = %s ORDER BY created_at DESC",
             (customer_id,)
         )
     else:
         cur.execute(
-            "SELECT id, title, description, category, city, budget, status, created_at "
+            "SELECT id, title, description, category, city, budget, status, accepted_response_id, created_at "
             "FROM orders WHERE contact_phone = %s ORDER BY created_at DESC",
             (phone,)
         )
@@ -47,6 +47,7 @@ def get_orders(cur, customer_id=None, phone=None):
             'city': o['city'] or '',
             'budget': o['budget'],
             'status': o['status'],
+            'accepted_response_id': o.get('accepted_response_id'),
             'created_at': o['created_at'].isoformat() if o['created_at'] else None,
             'responses': [{
                 'id': r['id'],
@@ -73,6 +74,22 @@ def handler(event: dict, context) -> dict:
     if method == 'POST':
         body = json.loads(event.get('body') or '{}')
         action = body.get('action', 'login')
+
+        if action == 'select_master':
+            order_id = body.get('order_id')
+            response_id = body.get('response_id')
+            customer_id = body.get('customer_id')
+            if not all([order_id, response_id, customer_id]):
+                return {'statusCode': 400, 'headers': HEADERS, 'body': json.dumps({'error': 'Недостаточно данных'})}
+            conn = get_conn()
+            cur = conn.cursor()
+            cur.execute(
+                "UPDATE orders SET accepted_response_id = %s, status = 'in_progress' WHERE id = %s AND customer_id = %s",
+                (int(response_id), int(order_id), int(customer_id))
+            )
+            conn.commit()
+            cur.close(); conn.close()
+            return {'statusCode': 200, 'headers': HEADERS, 'body': json.dumps({'success': True})}
 
         if action == 'review':
             customer_id = body.get('customer_id')

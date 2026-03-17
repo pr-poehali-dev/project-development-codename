@@ -52,6 +52,7 @@ interface Order {
   city: string;
   budget: number | null;
   status: string;
+  accepted_response_id: number | null;
   created_at: string;
   responses: Response[];
 }
@@ -100,6 +101,19 @@ export default function Cabinet() {
   const [loginLoading, setLoginLoading] = useState(false);
 
   const [statusLoading, setStatusLoading] = useState<number | null>(null);
+  const [selectMasterLoading, setSelectMasterLoading] = useState<number | null>(null);
+
+  const handleSelectMaster = async (orderId: number, responseId: number) => {
+    if (!customer) return;
+    setSelectMasterLoading(responseId);
+    await fetch(MY_ORDERS_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "select_master", order_id: orderId, response_id: responseId, customer_id: customer.id }),
+    });
+    await loadProfile(customer.phone);
+    setSelectMasterLoading(null);
+  };
 
   const handleStatusChange = async (orderId: number, status: string) => {
     if (!customer) return;
@@ -472,43 +486,90 @@ export default function Cabinet() {
                       <p className="text-gray-600 text-sm">Откликов пока нет — мастера скоро увидят вашу заявку</p>
                     ) : (
                       <div className="space-y-3">
-                        <p className="text-gray-500 text-xs font-medium uppercase tracking-wide">Отклики мастеров</p>
-                        {order.responses.map((r) => (
-                          <div key={r.id} className="bg-white/3 border border-white/6 rounded-xl p-4">
-                            <div className="flex items-start justify-between gap-3 mb-2">
-                              <div>
-                                <div className="flex items-center gap-2">
-                                  <p className="text-white font-semibold text-sm">{r.master_name}</p>
-                                  {r.master_id && (
-                                    <a href={`/master-page?id=${r.master_id}`} className="text-violet-400 hover:text-violet-300 text-xs flex items-center gap-1 transition-colors">
-                                      <Icon name="ExternalLink" size={11} />профиль
-                                    </a>
-                                  )}
+                        <p className="text-gray-500 text-xs font-medium uppercase tracking-wide">
+                          {order.accepted_response_id ? "Выбранный исполнитель" : `Отклики мастеров · ${order.responses.length}`}
+                        </p>
+                        {order.responses
+                          .filter(r => !order.accepted_response_id || r.id === order.accepted_response_id)
+                          .map((r) => {
+                            const isAccepted = order.accepted_response_id === r.id;
+                            return (
+                              <div key={r.id} className={`border rounded-xl p-4 ${isAccepted ? "bg-emerald-600/8 border-emerald-500/25" : "bg-white/3 border-white/6"}`}>
+                                <div className="flex items-start justify-between gap-3 mb-2">
+                                  <div>
+                                    <div className="flex items-center gap-2 flex-wrap">
+                                      <p className="text-white font-semibold text-sm">{r.master_name}</p>
+                                      {isAccepted && (
+                                        <span className="text-emerald-400 text-xs flex items-center gap-1 bg-emerald-600/15 border border-emerald-500/20 px-2 py-0.5 rounded-lg">
+                                          <Icon name="CheckCircle" size={11} /> Выбран
+                                        </span>
+                                      )}
+                                      {r.master_id && (
+                                        <a href={`/master-page?id=${r.master_id}`} className="text-violet-400 hover:text-violet-300 text-xs flex items-center gap-1 transition-colors">
+                                          <Icon name="ExternalLink" size={11} />профиль
+                                        </a>
+                                      )}
+                                    </div>
+                                    {r.master_category && <p className="text-gray-500 text-xs mt-0.5">{r.master_category}</p>}
+                                  </div>
+                                  <a href={`tel:${r.master_phone}`} className="flex items-center gap-1.5 text-emerald-400 text-sm font-medium hover:text-emerald-300 transition-colors flex-shrink-0">
+                                    <Icon name="Phone" size={13} />
+                                    {r.master_phone}
+                                  </a>
                                 </div>
-                                {r.master_category && <p className="text-gray-500 text-xs">{r.master_category}</p>}
+                                {r.message && <p className="text-gray-300 text-sm mb-3">{r.message}</p>}
+                                <div className="flex items-center gap-3 flex-wrap">
+                                  {/* Кнопка выбора — только если исполнитель ещё не выбран */}
+                                  {!order.accepted_response_id && order.status === "new" && (
+                                    <button
+                                      disabled={selectMasterLoading === r.id}
+                                      onClick={() => handleSelectMaster(order.id, r.id)}
+                                      className="text-xs px-3 py-1.5 rounded-lg bg-violet-600/20 text-violet-300 border border-violet-500/30 hover:bg-violet-600/30 transition-colors flex items-center gap-1.5"
+                                    >
+                                      <Icon name="UserCheck" size={13} />
+                                      {selectMasterLoading === r.id ? "Выбираем..." : "Выбрать исполнителем"}
+                                    </button>
+                                  )}
+                                  {/* Отзыв — только после выполнения */}
+                                  {r.review ? (
+                                    <div className="bg-amber-600/10 border border-amber-500/15 rounded-lg px-3 py-2 flex items-center gap-2">
+                                      <StarRating value={r.review.rating} />
+                                      {r.review.comment && <p className="text-gray-400 text-xs ml-1">{r.review.comment}</p>}
+                                    </div>
+                                  ) : order.status === "done" && isAccepted ? (
+                                    <button
+                                      onClick={() => { setReviewForm({ orderId: order.id, masterName: r.master_name, masterId: r.master_id }); setReviewRating(5); setReviewComment(""); }}
+                                      className="text-amber-400 hover:text-amber-300 text-xs flex items-center gap-1.5 transition-colors"
+                                    >
+                                      <Icon name="Star" size={13} />
+                                      Оставить отзыв
+                                    </button>
+                                  ) : order.status !== "done" && isAccepted ? (
+                                    <span className="text-gray-600 text-xs flex items-center gap-1">
+                                      <Icon name="Lock" size={12} />
+                                      Отзыв после выполнения
+                                    </span>
+                                  ) : null}
+                                </div>
                               </div>
-                              <a href={`tel:${r.master_phone}`} className="flex items-center gap-1.5 text-emerald-400 text-sm font-medium hover:text-emerald-300 transition-colors">
-                                <Icon name="Phone" size={13} />
-                                {r.master_phone}
-                              </a>
+                            );
+                          })}
+                        {/* Показать остальных если исполнитель выбран */}
+                        {order.accepted_response_id && order.responses.filter(r => r.id !== order.accepted_response_id).length > 0 && (
+                          <details className="text-xs text-gray-600 cursor-pointer">
+                            <summary className="hover:text-gray-400 transition-colors">
+                              Ещё {order.responses.length - 1} {order.responses.length - 1 === 1 ? "отклик" : "отклика"}
+                            </summary>
+                            <div className="space-y-2 mt-2">
+                              {order.responses.filter(r => r.id !== order.accepted_response_id).map(r => (
+                                <div key={r.id} className="bg-white/2 border border-white/5 rounded-xl p-3 text-gray-500">
+                                  <p className="text-sm text-gray-400">{r.master_name}</p>
+                                  {r.master_category && <p className="text-xs">{r.master_category}</p>}
+                                </div>
+                              ))}
                             </div>
-                            {r.message && <p className="text-gray-300 text-sm mb-3">{r.message}</p>}
-                            {r.review ? (
-                              <div className="bg-amber-600/10 border border-amber-500/15 rounded-lg px-3 py-2 flex items-center gap-2">
-                                <StarRating value={r.review.rating} />
-                                {r.review.comment && <p className="text-gray-400 text-xs ml-1">{r.review.comment}</p>}
-                              </div>
-                            ) : (
-                              <button
-                                onClick={() => { setReviewForm({ orderId: order.id, masterName: r.master_name, masterId: r.master_id }); setReviewRating(5); setReviewComment(""); }}
-                                className="text-violet-400 hover:text-violet-300 text-xs flex items-center gap-1.5 transition-colors"
-                              >
-                                <Icon name="Star" size={13} />
-                                Оставить отзыв
-                              </button>
-                            )}
-                          </div>
-                        ))}
+                          </details>
+                        )}
                       </div>
                     )}
                   </div>

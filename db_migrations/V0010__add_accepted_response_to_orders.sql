@@ -1,0 +1,1 @@
+ALTER TABLE t_p86314354_project_development_.orders ADD COLUMN IF NOT EXISTS accepted_response_id INTEGER REFERENCES t_p86314354_project_development_.responses(id);
