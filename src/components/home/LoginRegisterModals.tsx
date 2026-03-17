@@ -74,7 +74,7 @@ const LoginRegisterModals = ({
                 <Icon name="ChevronRight" size={18} className="text-gray-500 group-hover:text-violet-400 ml-auto transition-colors" />
               </div>
             </a>
-            <button onClick={() => { setRegisterModalOpen(false); setOrderModalOpen(true); }}>
+            <a href="/cabinet" onClick={() => setRegisterModalOpen(false)}>
               <div className="group flex items-center gap-4 p-4 rounded-xl border border-white/10 bg-white/4 hover:bg-indigo-600/10 hover:border-indigo-500/40 transition-all cursor-pointer">
                 <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-indigo-500 to-blue-600 flex items-center justify-center flex-shrink-0">
                   <Icon name="ClipboardList" size={22} className="text-white" />
@@ -85,7 +85,7 @@ const LoginRegisterModals = ({
                 </div>
                 <Icon name="ChevronRight" size={18} className="text-gray-500 group-hover:text-indigo-400 ml-auto transition-colors" />
               </div>
-            </button>
+            </a>
           </div>
         </DialogContent>
       </Dialog>
