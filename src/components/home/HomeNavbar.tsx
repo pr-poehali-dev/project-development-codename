@@ -8,6 +8,7 @@ interface HomeNavbarProps {
   isInstalled: boolean;
   handleInstall: () => void;
   isMaster: boolean;
+  isCustomer: boolean;
   masterBannerDismissed: boolean;
   setMasterBannerDismissed: (v: boolean) => void;
   setRegisterModalOpen: (v: boolean) => void;
@@ -21,11 +22,14 @@ const HomeNavbar = ({
   isInstalled,
   handleInstall,
   isMaster,
+  isCustomer,
   masterBannerDismissed,
   setMasterBannerDismissed,
   setRegisterModalOpen,
   setMasterModalOpen,
 }: HomeNavbarProps) => {
+  const isLoggedIn = isMaster || isCustomer;
+
   return (
     <>
       {/* Навигация */}
@@ -55,20 +59,38 @@ const HomeNavbar = ({
                 Приложение
               </Button>
             )}
-            <Button
-              variant="ghost"
-              onClick={() => setRegisterModalOpen(true)}
-              className="text-gray-300 hover:text-white hover:bg-white/8 text-sm gap-2"
-            >
-              <Icon name="UserPlus" size={15} />
-              Зарегистрироваться
-            </Button>
-            <a href="/master">
-              <Button className="bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white text-sm px-4">
-                <Icon name="Briefcase" size={15} className="mr-2" />
-                Кабинет мастера
+
+            {/* Кнопка «Зарегистрироваться» — только если не залогинен */}
+            {!isLoggedIn && (
+              <Button
+                variant="ghost"
+                onClick={() => setRegisterModalOpen(true)}
+                className="text-gray-300 hover:text-white hover:bg-white/8 text-sm gap-2"
+              >
+                <Icon name="UserPlus" size={15} />
+                Зарегистрироваться
               </Button>
-            </a>
+            )}
+
+            {/* Кабинет заказчика — если залогинен как заказчик */}
+            {isCustomer && (
+              <a href="/cabinet">
+                <Button variant="ghost" className="text-gray-300 hover:text-white hover:bg-white/8 text-sm gap-2">
+                  <Icon name="LayoutDashboard" size={15} />
+                  Мой кабинет
+                </Button>
+              </a>
+            )}
+
+            {/* Кабинет мастера — если мастер, или никто не залогинен */}
+            {(isMaster || !isLoggedIn) && (
+              <a href="/master">
+                <Button className="bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white text-sm px-4">
+                  <Icon name="Briefcase" size={15} className="mr-2" />
+                  Кабинет мастера
+                </Button>
+              </a>
+            )}
           </div>
 
           <Button
@@ -85,17 +107,36 @@ const HomeNavbar = ({
             <a href="#categories" className="block text-gray-400 hover:text-white text-sm">Категории</a>
             <a href="/orders" className="block text-gray-400 hover:text-white text-sm">Лента заявок</a>
             <a href="#pricing" className="block text-gray-400 hover:text-white text-sm">Тарифы</a>
-            <Button
-              variant="ghost"
-              onClick={() => { setRegisterModalOpen(true); setMobileMenuOpen(false); }}
-              className="w-full text-gray-300 hover:text-white hover:bg-white/10 text-sm gap-2 border border-white/10"
-            >
-              <Icon name="UserPlus" size={15} />
-              Зарегистрироваться
-            </Button>
-            <Button onClick={() => setMasterModalOpen(true)} className="w-full bg-gradient-to-r from-violet-600 to-indigo-600 text-white text-sm mt-2">
-              Кабинет мастера
-            </Button>
+
+            {!isLoggedIn && (
+              <Button
+                variant="ghost"
+                onClick={() => { setRegisterModalOpen(true); setMobileMenuOpen(false); }}
+                className="w-full text-gray-300 hover:text-white hover:bg-white/10 text-sm gap-2 border border-white/10"
+              >
+                <Icon name="UserPlus" size={15} />
+                Зарегистрироваться
+              </Button>
+            )}
+
+            {isCustomer && (
+              <a href="/cabinet" onClick={() => setMobileMenuOpen(false)}>
+                <Button variant="ghost" className="w-full text-gray-300 hover:text-white hover:bg-white/10 text-sm gap-2 border border-white/10">
+                  <Icon name="LayoutDashboard" size={15} />
+                  Мой кабинет
+                </Button>
+              </a>
+            )}
+
+            {(isMaster || !isCustomer) && (
+              <Button
+                onClick={() => { setMasterModalOpen(true); setMobileMenuOpen(false); }}
+                className="w-full bg-gradient-to-r from-violet-600 to-indigo-600 text-white text-sm mt-2"
+              >
+                Кабинет мастера
+              </Button>
+            )}
+
             {installPrompt && !isInstalled && (
               <Button
                 variant="ghost"

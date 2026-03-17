@@ -87,6 +87,7 @@ const Index = () => {
   }, []);
 
   const isMaster = typeof window !== "undefined" && !!localStorage.getItem("master_phone");
+  const isCustomer = typeof window !== "undefined" && !!localStorage.getItem("customer_phone");
   const [masterBannerDismissed, setMasterBannerDismissed] = useState(
     typeof window !== "undefined" && localStorage.getItem("master_banner_dismissed") === "1"
   );
@@ -173,6 +174,7 @@ const Index = () => {
         isInstalled={isInstalled}
         handleInstall={handleInstall}
         isMaster={isMaster}
+        isCustomer={isCustomer}
         masterBannerDismissed={masterBannerDismissed}
         setMasterBannerDismissed={setMasterBannerDismissed}
         setRegisterModalOpen={setRegisterModalOpen}
