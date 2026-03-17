@@ -57,6 +57,7 @@ const Orders = () => {
   const [responseSent, setResponseSent] = useState(false);
   const [responseLoading, setResponseLoading] = useState(false);
   const [responseError, setResponseError] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
   const [masterBalance, setMasterBalance] = useState<number | null>(null);
   const [masterId, setMasterId] = useState<number | null>(null);
   const [masterData, setMasterData] = useState<{ name: string; phone: string; category: string } | null>(null);
@@ -95,8 +96,10 @@ const Orders = () => {
 
   const cities = ["Все", ...Array.from(new Set(orders.map((o) => o.city).filter(Boolean)))];
   const categories = ["Все", ...Array.from(new Set(orders.map((o) => o.category)))];
+  const q = searchQuery.trim().toLowerCase();
   const filtered = orders.filter((o) =>
-    (activeCategory === "Все" || o.category === activeCategory)
+    (activeCategory === "Все" || o.category === activeCategory) &&
+    (!q || o.title.toLowerCase().includes(q) || o.description.toLowerCase().includes(q) || o.category.toLowerCase().includes(q))
   );
 
   const handleRespond = async (e: React.FormEvent) => {
@@ -164,9 +167,24 @@ const Orders = () => {
       {/* Заголовок */}
       <section className="py-12 px-4">
         <div className="max-w-7xl mx-auto">
-          <div className="mb-8">
+          <div className="mb-6">
             <h1 className="text-3xl sm:text-4xl font-extrabold mb-2">Лента заявок</h1>
-            <p className="text-gray-400">Найди подходящий заказ и откликнись бесплатно — токены списываются только если заказчик выбрал тебя исполнителем</p>
+            <p className="text-gray-400 mb-5">Найди подходящий заказ и откликнись бесплатно — токены списываются только если заказчик выбрал тебя исполнителем</p>
+            <div className="relative max-w-lg">
+              <Icon name="Search" size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+                placeholder="Поиск по заявкам..."
+                className="w-full bg-white/5 border border-white/10 rounded-xl pl-10 pr-4 py-2.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-violet-500 transition-colors"
+              />
+              {searchQuery && (
+                <button onClick={() => setSearchQuery("")} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-300 transition-colors">
+                  <Icon name="X" size={14} />
+                </button>
+              )}
+            </div>
           </div>
 
           {/* Основные табы */}
@@ -246,11 +264,12 @@ const Orders = () => {
                 <Icon name="ClipboardList" size={28} className="text-gray-600" />
               </div>
               <p className="text-gray-500 text-lg">
-                {mainTab === "active" ? "Нет активных заявок" : mainTab === "done" ? "Нет завершённых заявок" : "Заявок пока нет"}
+                {q ? "Ничего не найдено" : mainTab === "active" ? "Нет активных заявок" : mainTab === "done" ? "Нет завершённых заявок" : "Заявок пока нет"}
               </p>
               <p className="text-gray-600 text-sm mt-1">
-                {mainTab === "active" ? "Здесь появятся заявки, которые ты принял в работу" : mainTab === "done" ? "Здесь будут отображаться выполненные заказы" : "Новые заявки появятся здесь автоматически"}
+                {q ? `По запросу «${searchQuery}» заявок не найдено` : mainTab === "active" ? "Здесь появятся заявки, которые ты принял в работу" : mainTab === "done" ? "Здесь будут отображаться выполненные заказы" : "Новые заявки появятся здесь автоматически"}
               </p>
+              {q && <button onClick={() => setSearchQuery("")} className="mt-4 text-violet-400 hover:text-violet-300 text-sm transition-colors">Сбросить поиск</button>}
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
