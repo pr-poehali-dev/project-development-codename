@@ -94,7 +94,7 @@ export default function Offer() {
               <p><span className="text-gray-500">Сервис:</span> HandyMan</p>
               <p><span className="text-gray-500">Почтовый адрес:</span> Тюменская область, ХМАО-Югра, пгт. Белый Яр, ДНТ «Птицевод Севера», 6 проезд, уч. 261</p>
               <p><span className="text-gray-500">Телефон:</span> <a href="tel:+79966869812" className="text-violet-400 hover:text-violet-300 transition-colors">+7 (996) 686-98-12</a></p>
-              <p><span className="text-gray-500">Электронная почта:</span> <a href="mailto:HandyMan@yandex.ru" className="text-violet-400 hover:text-violet-300 transition-colors">HandyMan@yandex.ru</a></p>
+              <p><span className="text-gray-500">Электронная почта:</span> <a href="mailto:handymanbusiness@yandex.ru" className="text-violet-400 hover:text-violet-300 transition-colors">handymanbusiness@yandex.ru</a></p>
             </div>
           </section>
 
