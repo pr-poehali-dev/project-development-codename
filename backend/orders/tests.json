@@ -5,7 +5,7 @@
       "method": "GET",
       "path": "/",
       "expectedStatus": 200,
-      "expectedBody": {"orders": []},
+      "expectedBody": {"orders": [{"id": 1}]},
       "bodyMatcher": "partial"
     },
     {
@@ -13,14 +13,14 @@
       "method": "POST",
       "path": "/",
       "body": {
-        "title": "Нужен сантехник",
-        "description": "Течёт кран на кухне",
+        "title": "Тест заявка",
+        "description": "Описание тестовой заявки",
         "category": "Сантехника",
         "city": "Москва",
-        "budget": 2000,
-        "contact_name": "Иван",
-        "contact_phone": "+79001234567",
-        "contact_email": "ivan@test.ru"
+        "budget": 1000,
+        "contact_name": "Тест",
+        "contact_phone": "+79000000000",
+        "contact_email": "test@test.ru"
       },
       "expectedStatus": 200,
       "expectedBody": {"success": true},

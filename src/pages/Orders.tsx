@@ -51,6 +51,7 @@ const Orders = () => {
   const initialCategory = new URLSearchParams(window.location.search).get("category") || "Все";
   const [activeCategory, setActiveCategory] = useState(initialCategory);
   const [selectedCity, setSelectedCity] = useState("");
+  const [mainTab, setMainTab] = useState<"all" | "active" | "done">("all");
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [responseForm, setResponseForm] = useState({ master_name: "", master_phone: "", master_category: "", message: "" });
   const [responseSent, setResponseSent] = useState(false);
@@ -76,16 +77,18 @@ const Orders = () => {
   }, []);
 
   useEffect(() => {
-    const url = selectedCity ? `${ORDERS_URL}?city=${encodeURIComponent(selectedCity)}` : ORDERS_URL;
     setLoading(true);
-    fetch(url)
+    const params = new URLSearchParams({ tab: mainTab });
+    if (mainTab === "all" && selectedCity) params.set("city", selectedCity);
+    if ((mainTab === "active" || mainTab === "done") && masterId) params.set("master_id", String(masterId));
+    fetch(`${ORDERS_URL}?${params}`)
       .then((r) => r.json())
       .then((data) => {
         const raw = typeof data === "string" ? JSON.parse(data) : data;
         setOrders(raw.orders || []);
       })
       .finally(() => setLoading(false));
-  }, [selectedCity]);
+  }, [selectedCity, mainTab, masterId]);
 
   const cities = ["Все", ...Array.from(new Set(orders.map((o) => o.city).filter(Boolean)))];
   const categories = ["Все", ...Array.from(new Set(orders.map((o) => o.category)))];
@@ -155,8 +158,34 @@ const Orders = () => {
             <p className="text-gray-400">Найди подходящий заказ и откликнись — заказчик выберет лучшего мастера</p>
           </div>
 
+          {/* Основные табы */}
+          <div className="flex gap-2 mb-6 bg-white/4 rounded-xl p-1 w-fit">
+            <button
+              onClick={() => setMainTab("all")}
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${mainTab === "all" ? "bg-violet-600 text-white" : "text-gray-400 hover:text-white"}`}
+            >
+              Все заявки
+            </button>
+            {masterId && (
+              <>
+                <button
+                  onClick={() => setMainTab("active")}
+                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${mainTab === "active" ? "bg-violet-600 text-white" : "text-gray-400 hover:text-white"}`}
+                >
+                  Активные
+                </button>
+                <button
+                  onClick={() => setMainTab("done")}
+                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${mainTab === "done" ? "bg-violet-600 text-white" : "text-gray-400 hover:text-white"}`}
+                >
+                  Завершённые
+                </button>
+              </>
+            )}
+          </div>
+
           {/* Фильтр по городу */}
-          <div className="flex items-center gap-3 mb-5 flex-wrap">
+          <div className={`flex items-center gap-3 mb-5 flex-wrap ${mainTab !== "all" ? "hidden" : ""}`}>
             <CitySelect
               value={selectedCity}
               onChange={setSelectedCity}
@@ -173,7 +202,7 @@ const Orders = () => {
           </div>
 
           {/* Фильтр по категориям */}
-          <div className="flex gap-2 flex-wrap mb-8">
+          <div className={`flex gap-2 flex-wrap mb-8 ${mainTab !== "all" ? "hidden" : ""}`}>
             {categories.map((cat) => (
               <button
                 key={cat}
@@ -205,8 +234,12 @@ const Orders = () => {
               <div className="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center mx-auto mb-4">
                 <Icon name="ClipboardList" size={28} className="text-gray-600" />
               </div>
-              <p className="text-gray-500 text-lg">Заявок пока нет</p>
-              <p className="text-gray-600 text-sm mt-1">Новые заявки появятся здесь автоматически</p>
+              <p className="text-gray-500 text-lg">
+                {mainTab === "active" ? "Нет активных заявок" : mainTab === "done" ? "Нет завершённых заявок" : "Заявок пока нет"}
+              </p>
+              <p className="text-gray-600 text-sm mt-1">
+                {mainTab === "active" ? "Здесь появятся заявки, которые ты принял в работу" : mainTab === "done" ? "Здесь будут отображаться выполненные заказы" : "Новые заявки появятся здесь автоматически"}
+              </p>
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">

@@ -62,20 +62,40 @@ def handler(event: dict, context) -> dict:
     if method == 'GET':
         params = event.get('queryStringParameters') or {}
         city_filter = params.get('city', '').strip()
+        master_id = params.get('master_id', '').strip()
+        tab = params.get('tab', 'all').strip()
 
         conn = get_conn()
         cur = conn.cursor()
 
-        if city_filter:
+        if tab == 'active' and master_id:
+            cur.execute(
+                "SELECT o.id, o.title, o.description, o.category, o.city, o.budget, o.contact_name, o.status, o.created_at "
+                "FROM orders o "
+                "JOIN responses r ON r.order_id = o.id "
+                "WHERE r.master_id = %s AND o.status = 'in_progress' "
+                "ORDER BY o.created_at DESC LIMIT 50",
+                (int(master_id),)
+            )
+        elif tab == 'done' and master_id:
+            cur.execute(
+                "SELECT o.id, o.title, o.description, o.category, o.city, o.budget, o.contact_name, o.status, o.created_at "
+                "FROM orders o "
+                "JOIN responses r ON r.order_id = o.id "
+                "WHERE r.master_id = %s AND o.status = 'done' "
+                "ORDER BY o.created_at DESC LIMIT 50",
+                (int(master_id),)
+            )
+        elif city_filter:
             cur.execute(
                 "SELECT id, title, description, category, city, budget, contact_name, status, created_at "
-                "FROM orders WHERE city = %s ORDER BY created_at DESC LIMIT 50",
+                "FROM orders WHERE city = %s AND status = 'new' ORDER BY created_at DESC LIMIT 50",
                 (city_filter,)
             )
         else:
             cur.execute(
                 "SELECT id, title, description, category, city, budget, contact_name, status, created_at "
-                "FROM orders ORDER BY created_at DESC LIMIT 50"
+                "FROM orders WHERE status = 'new' ORDER BY created_at DESC LIMIT 50"
             )
 
         rows = cur.fetchall()
