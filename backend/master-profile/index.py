@@ -63,7 +63,7 @@ def master_to_dict(m):
 
 
 def handler(event: dict, context) -> dict:
-    """Профиль мастера: вход/регистрация, публичный профиль с рейтингом и отзывами, смена статуса заявки."""
+    """Профиль мастера: вход/регистрация, публичный профиль с рейтингом и отзывами, смена статуса заявки. v2"""
 
     if event.get('httpMethod') == 'OPTIONS':
         return {'statusCode': 200, 'headers': HEADERS, 'body': ''}
