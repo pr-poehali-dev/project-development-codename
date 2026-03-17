@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import Icon from "@/components/ui/icon";
+import MasterLoginForm from "@/pages/master-cabinet/MasterLoginForm";
 
 const PROFILE_URL = "https://functions.poehali.dev/de274bd5-3f08-42d8-9aac-b373bb34b900";
 const PACKAGES_URL = "https://functions.poehali.dev/a097fcb4-fb63-44d8-9784-e4fa20009cb4";
@@ -220,39 +221,13 @@ export default function MasterCabinet() {
 
   if (!master && !loading) {
     return (
-      <div className="min-h-screen bg-[#080b12] flex items-center justify-center px-4">
-        <div className="w-full max-w-md">
-          <div className="text-center mb-8">
-            <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-violet-600 to-indigo-600 flex items-center justify-center mx-auto mb-4">
-              <Icon name="Wrench" size={28} className="text-white" />
-            </div>
-            <h1 className="text-2xl font-bold text-white mb-2">Кабинет мастера</h1>
-            <p className="text-gray-400 text-sm">Войдите по номеру телефона</p>
-          </div>
-          <form onSubmit={handleLogin} className="bg-white/4 border border-white/8 rounded-2xl p-6 flex flex-col gap-4">
-            <div>
-              <label className="text-sm text-gray-400 mb-1.5 block">Номер телефона</label>
-              <input
-                type="tel"
-                value={inputPhone}
-                onChange={(e) => setInputPhone(e.target.value)}
-                placeholder="+7 (999) 000-00-00"
-                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-violet-500 transition-colors"
-              />
-            </div>
-            {error && <p className="text-red-400 text-sm">{error}</p>}
-            <Button type="submit" className="bg-violet-600 hover:bg-violet-500 text-white w-full">
-              Войти
-            </Button>
-            <p className="text-gray-500 text-xs text-center">
-              Нет аккаунта?{" "}
-              <a href="/" className="text-violet-400 hover:text-violet-300 transition-colors">
-                Зарегистрируйтесь на главной
-              </a>
-            </p>
-          </form>
-        </div>
-      </div>
+      <MasterLoginForm
+        inputPhone={inputPhone}
+        setInputPhone={setInputPhone}
+        error={error}
+        onSubmit={handleLogin}
+        onEmailLogin={(p) => { setPhone(p); setInputPhone(p); loadProfile(p); }}
+      />
     );
   }
 
