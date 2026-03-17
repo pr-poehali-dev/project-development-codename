@@ -194,7 +194,7 @@ const Index = () => {
             </Button>
             <a href="/master">
               <Button className="bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white text-sm px-5">
-                Я мастер
+                Кабинет мастера
               </Button>
             </a>
           </div>
@@ -222,7 +222,7 @@ const Index = () => {
               Зарегистрироваться
             </Button>
             <Button onClick={() => setMasterModalOpen(true)} className="w-full bg-gradient-to-r from-violet-600 to-indigo-600 text-white text-sm mt-2">
-              Я мастер
+              Кабинет мастера
             </Button>
           </div>
         )}
