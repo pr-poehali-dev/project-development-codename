@@ -51,6 +51,7 @@ const stats = [
 
 const ORDERS_URL = "https://functions.poehali.dev/34db9bab-e58a-479e-b1cc-c27fb8e0b728";
 const MASTER_URL = "https://functions.poehali.dev/de274bd5-3f08-42d8-9aac-b373bb34b900";
+const MY_ORDERS_URL = "https://functions.poehali.dev/458454d0-900d-46a1-9bff-15ecce0839e0";
 
 const Index = () => {
   const [activeCategory, setActiveCategory] = useState("Все");
@@ -90,6 +91,23 @@ const Index = () => {
   };
 
   useEffect(() => { loadServices(activeCategory, selectedCity); }, [activeCategory, selectedCity]);
+
+  useEffect(() => {
+    const phone = localStorage.getItem("customer_phone");
+    if (!phone) return;
+    fetch(`${MY_ORDERS_URL}?phone=${encodeURIComponent(phone)}`)
+      .then(r => r.json())
+      .then(data => {
+        const parsed = typeof data === "string" ? JSON.parse(data) : data;
+        if (parsed.customer) {
+          setOrderForm(f => ({
+            ...f,
+            contact_name: parsed.customer.name || "",
+            contact_phone: parsed.customer.phone || "",
+          }));
+        }
+      });
+  }, []);
 
   const isMaster = typeof window !== "undefined" && !!localStorage.getItem("master_phone");
   const [masterBannerDismissed, setMasterBannerDismissed] = useState(
