@@ -503,9 +503,9 @@ const Index = () => {
                   <Icon name="Phone" size={13} />
                   +7 (996) 686-98-12
                 </a>
-                <a href="mailto:HandyMan@yandex.ru" className="flex items-center gap-2 text-gray-600 hover:text-gray-400 text-sm transition-colors">
+                <a href="mailto:handymanbusiness@yandex.ru" className="flex items-center gap-2 text-gray-600 hover:text-gray-400 text-sm transition-colors">
                   <Icon name="Mail" size={13} />
-                  HandyMan@yandex.ru
+                  handymanbusiness@yandex.ru
                 </a>
                 <p className="flex items-start gap-2 text-gray-600 text-sm">
                   <Icon name="MapPin" size={13} className="mt-0.5 flex-shrink-0" />
