@@ -143,6 +143,14 @@ const Orders = () => {
             </a>
           </div>
           <div className="flex items-center gap-3">
+            {masterData && (
+              <a href="/master" className="flex items-center gap-2 text-sm text-gray-300 hover:text-white transition-colors">
+                <div className="w-7 h-7 rounded-lg bg-violet-600/30 flex items-center justify-center text-violet-400 font-bold text-xs">
+                  {masterData.name[0]?.toUpperCase()}
+                </div>
+                <span className="hidden sm:block">{masterData.name}</span>
+              </a>
+            )}
             <a href="/">
               <Button variant="ghost" className="text-gray-400 hover:text-white text-sm gap-2">
                 <Icon name="ArrowLeft" size={16} />
