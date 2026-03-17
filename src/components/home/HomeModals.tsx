@@ -1,29 +1,34 @@
+import React from "react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import Icon from "@/components/ui/icon";
 import CitySelect from "@/components/ui/city-select";
 
 const categories = [
-  { name: "Авторемонт" },
-  { name: "Ремонт жилья" },
-  { name: "Строительство" },
-  { name: "Бьюти" },
-  { name: "IT-помощь" },
-  { name: "Сантехника" },
-  { name: "Электрика" },
-  { name: "Перевозки" },
-  { name: "Няня" },
-  { name: "Клининг" },
-  { name: "Озеленение" },
-  { name: "Зоопомощь" },
-  { name: "Сборка мебели" },
-  { name: "Дизайн интерьера" },
-  { name: "Фото/Видео" },
-  { name: "Уборка снега" },
-  { name: "Репетиторство" },
-  { name: "Массаж" },
-  { name: "Повар на мероприятие" },
-  { name: "Прочее" },
+  { name: "Авторемонт", subcategories: ["Кузовной ремонт", "Автоэлектрика", "Шиномонтаж", "Детейлинг", "Диагностика", "Техническое обслуживание"] },
+  { name: "Ремонт жилья", subcategories: ["Отделка и штукатурка", "Укладка плитки", "Укладка полов", "Покраска стен", "Натяжные потолки", "Демонтаж"] },
+  { name: "Строительство", subcategories: ["Фундамент", "Кровля", "Забор и ворота", "Баня и беседка", "Кирпичная кладка", "Каркасный дом"] },
+  { name: "Бьюти", subcategories: ["Маникюр и педикюр", "Стрижка и окрашивание", "Брови и ресницы", "Макияж", "Эпиляция", "Наращивание волос"] },
+  { name: "Массаж", subcategories: ["Классический массаж", "Спортивный массаж", "Детский массаж", "Антицеллюлитный", "Лимфодренаж", "Массаж лица"] },
+  { name: "IT-помощь", subcategories: ["Ремонт компьютеров", "Настройка ПО", "Разработка сайтов", "1С и бухгалтерия", "Настройка сетей", "Восстановление данных"] },
+  { name: "Сантехника", subcategories: ["Установка сантехники", "Устранение засоров", "Монтаж труб", "Водонагреватели", "Канализация", "Тёплый пол"] },
+  { name: "Электрика", subcategories: ["Монтаж проводки", "Установка розеток", "Электрощиты", "Подключение техники", "Освещение", "Аварийный вызов"] },
+  { name: "Клининг", subcategories: ["Уборка квартиры", "Уборка офиса", "После ремонта", "Мойка окон", "Химчистка мебели", "Генеральная уборка"] },
+  { name: "Перевозки", subcategories: ["Квартирный переезд", "Офисный переезд", "Грузовое такси", "Доставка мебели", "Эвакуатор", "Межгород"] },
+  { name: "Няня", subcategories: ["Няня на день", "Ночная няня", "Няня-гувернантка", "Присмотр за пожилыми", "Помощь по хозяйству", "Сиделка"] },
+  { name: "Репетиторство", subcategories: ["Математика", "Английский язык", "Подготовка к ЕГЭ/ОГЭ", "Другие языки", "Физика и химия", "Подготовка к школе"] },
+  { name: "Озеленение", subcategories: ["Ландшафтный дизайн", "Посадка растений", "Стрижка газона", "Уборка листьев", "Полив и уход", "Вырубка деревьев"] },
+  { name: "Зоопомощь", subcategories: ["Выгул собак", "Стрижка животных", "Ветеринар на дом", "Передержка", "Дрессировка", "Зоотакси"] },
+  { name: "Сборка мебели", subcategories: ["Сборка из ИКЕА", "Корпусная мебель", "Кухни", "Шкафы-купе", "Детская мебель", "Разборка и перестановка"] },
+  { name: "Дизайн интерьера", subcategories: ["Дизайн-проект", "3D-визуализация", "Авторский надзор", "Подбор материалов", "Декорирование", "Планировка"] },
+  { name: "Фото/Видео", subcategories: ["Свадебная съёмка", "Семейная фотосессия", "Коммерческая съёмка", "Видеомонтаж", "Аэросъёмка", "Репортаж"] },
+  { name: "Уборка снега", subcategories: ["Уборка кровли", "Чистка двора", "Посыпка песком", "Вывоз снега", "Расчистка дорожек", "Коммерческие объекты"] },
+  { name: "Повар на мероприятие", subcategories: ["Банкет", "День рождения", "Корпоратив", "Барбекю", "Суши-мастер", "Детский праздник"] },
+  { name: "Тренер", subcategories: ["Персональный тренинг", "Йога", "Пилатес", "Бокс и единоборства", "Плавание", "Онлайн-тренировки"] },
+  { name: "Аниматор", subcategories: ["Детский праздник", "Аниматор в костюме", "Фокусник", "Клоун", "Ведущий праздника", "Корпоратив"] },
+  { name: "Юрист", subcategories: ["Консультация", "Составление договоров", "Семейное право", "Недвижимость", "Трудовые споры", "Представительство в суде"] },
+  { name: "Бухгалтер", subcategories: ["Бухгалтерский учёт", "Налоговая отчётность", "УСН и ИП", "Расчёт зарплат", "1С-сопровождение", "Аудит"] },
+  { name: "Прочее", subcategories: [] },
 ];
 
 interface MasterForm {
@@ -105,6 +110,33 @@ const HomeModals = ({
   setOrderError,
   handleOrderSubmit,
 }: HomeModalsProps) => {
+  const [selectedMainCat, setSelectedMainCat] = React.useState("");
+
+  React.useEffect(() => {
+    if (orderModalOpen && orderForm.category) {
+      const isMain = categories.some(c => c.name === orderForm.category);
+      if (isMain) {
+        setSelectedMainCat(orderForm.category);
+      } else {
+        const parent = categories.find(c => c.subcategories.includes(orderForm.category));
+        if (parent) setSelectedMainCat(parent.name);
+      }
+    }
+    if (!orderModalOpen) setSelectedMainCat("");
+  }, [orderModalOpen]);
+
+  const mainCatObj = categories.find(c => c.name === selectedMainCat);
+  const subcategories = mainCatObj?.subcategories ?? [];
+
+  const handleMainCatChange = (name: string) => {
+    setSelectedMainCat(name);
+    setOrderForm({ ...orderForm, category: name });
+  };
+
+  const handleSubcatSelect = (sub: string) => {
+    setOrderForm({ ...orderForm, category: sub });
+  };
+
   return (
     <>
       {/* Модальное окно регистрации мастера */}
@@ -239,7 +271,7 @@ const HomeModals = ({
       </Dialog>
 
       {/* Модальное окно создания заявки */}
-      <Dialog open={orderModalOpen} onOpenChange={(v) => { setOrderModalOpen(v); if (!v) { setOrderSent(false); setOrderError(""); } }}>
+      <Dialog open={orderModalOpen} onOpenChange={(v) => { setOrderModalOpen(v); if (!v) { setOrderSent(false); setOrderError(""); setSelectedMainCat(""); } }}>
         <DialogContent className="bg-[#1a1d27] border border-white/10 text-white max-w-md w-full">
           <DialogHeader>
             <DialogTitle className="text-xl font-bold text-white">
@@ -280,8 +312,8 @@ const HomeModals = ({
                     required
                     className="w-full bg-[#0f1117] border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-violet-500 transition-colors"
                     style={{ colorScheme: "dark" }}
-                    value={orderForm.category}
-                    onChange={(e) => setOrderForm({ ...orderForm, category: e.target.value })}
+                    value={selectedMainCat}
+                    onChange={(e) => handleMainCatChange(e.target.value)}
                   >
                     <option value="" disabled style={{ background: "#0f1117", color: "#9ca3af" }}>Выберите</option>
                     {categories.map((c) => (
@@ -298,6 +330,35 @@ const HomeModals = ({
                   />
                 </div>
               </div>
+
+              {/* Подкатегории */}
+              {subcategories.length > 0 && (
+                <div>
+                  <label className="text-sm text-gray-400 mb-2 block">
+                    Уточните подкатегорию
+                    {orderForm.category && orderForm.category !== selectedMainCat && (
+                      <span className="ml-2 text-violet-400 font-medium">— {orderForm.category}</span>
+                    )}
+                  </label>
+                  <div className="flex flex-wrap gap-2">
+                    {subcategories.map((sub) => (
+                      <button
+                        key={sub}
+                        type="button"
+                        onClick={() => handleSubcatSelect(sub)}
+                        className={`px-3 py-1.5 rounded-lg text-xs border transition-all ${
+                          orderForm.category === sub
+                            ? "bg-violet-600/20 border-violet-500/50 text-violet-300"
+                            : "bg-white/5 border-white/10 text-gray-400 hover:border-violet-500/30 hover:text-gray-200"
+                        }`}
+                      >
+                        {sub}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               <div>
                 <label className="text-sm text-gray-400 mb-1.5 block">Подробное описание *</label>
                 <textarea
