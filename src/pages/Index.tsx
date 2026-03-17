@@ -181,7 +181,7 @@ const Index = () => {
             <a href="/cabinet">
               <Button variant="ghost" className="text-gray-300 hover:text-white hover:bg-white/10 text-sm gap-2">
                 <Icon name="LayoutDashboard" size={15} />
-                Мои заявки
+                Кабинет заказчика
               </Button>
             </a>
             <Button
