@@ -380,66 +380,77 @@ const Index = () => {
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
               {filtered.map((service) => (
-                <a
+                <div
                   key={service.id}
-                  href={`/master-page?id=${service.master_id}`}
-                  className="group bg-white/4 border border-white/8 rounded-2xl p-5 hover:border-violet-500/40 hover:bg-white/6 transition-all block"
+                  className="group bg-white/4 border border-white/8 rounded-2xl p-5 hover:border-violet-500/40 hover:bg-white/6 transition-all flex flex-col"
                 >
-                  <div className="flex items-start justify-between mb-4">
-                    <Badge
-                      className="text-xs px-2.5 py-1 rounded-lg"
-                      style={{ backgroundColor: "rgba(99,102,241,0.15)", color: "#a5b4fc", border: "1px solid rgba(99,102,241,0.2)" }}
-                    >
-                      {service.category}
-                    </Badge>
-                    {service.rating ? (
-                      <div className="flex items-center gap-1 text-amber-400 text-sm">
-                        <Icon name="Star" size={13} />
-                        <span>{service.rating}</span>
-                        <span className="text-gray-600 text-xs">({service.reviews_count})</span>
-                      </div>
-                    ) : (
-                      <span className="text-gray-600 text-xs">Новый</span>
-                    )}
-                  </div>
-
-                  <h3 className="text-white font-semibold text-base mb-4 leading-snug group-hover:text-violet-200 transition-colors">
-                    {service.title}
-                  </h3>
-
-                  <div className="flex items-center gap-3 mb-4">
-                    <div
-                      className="w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-bold flex-shrink-0"
-                      style={{ backgroundColor: service.avatar_color }}
-                    >
-                      {service.master_name?.[0]?.toUpperCase()}
-                    </div>
-                    <div className="min-w-0">
-                      <div className="text-sm text-gray-300 font-medium truncate">{service.master_name}</div>
-                      {service.city && (
-                        <div className="text-xs text-gray-600 flex items-center gap-1 mt-0.5">
-                          <Icon name="MapPin" size={10} />{service.city}
+                  <a href={`/master-page?id=${service.master_id}`} className="block flex-1">
+                    <div className="flex items-start justify-between mb-4">
+                      <Badge
+                        className="text-xs px-2.5 py-1 rounded-lg"
+                        style={{ backgroundColor: "rgba(99,102,241,0.15)", color: "#a5b4fc", border: "1px solid rgba(99,102,241,0.2)" }}
+                      >
+                        {service.category}
+                      </Badge>
+                      {service.rating ? (
+                        <div className="flex items-center gap-1 text-amber-400 text-sm">
+                          <Icon name="Star" size={13} />
+                          <span>{service.rating}</span>
+                          <span className="text-gray-600 text-xs">({service.reviews_count})</span>
                         </div>
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="flex items-center justify-between pt-4 border-t border-white/6">
-                    <div>
-                      {service.price ? (
-                        <>
-                          <span className="text-gray-500 text-xs">от</span>
-                          <span className="text-white font-bold text-lg ml-1">{service.price.toLocaleString("ru-RU")} ₽</span>
-                        </>
                       ) : (
-                        <span className="text-gray-500 text-sm">Цена по договору</span>
+                        <span className="text-gray-600 text-xs">Новый</span>
                       )}
                     </div>
-                    <Button size="sm" className="bg-violet-600/20 hover:bg-violet-600 text-violet-300 hover:text-white border border-violet-500/30 hover:border-violet-500 rounded-lg text-xs transition-all">
-                      Профиль
-                    </Button>
-                  </div>
-                </a>
+
+                    <h3 className="text-white font-semibold text-base mb-4 leading-snug group-hover:text-violet-200 transition-colors">
+                      {service.title}
+                    </h3>
+
+                    <div className="flex items-center gap-3 mb-4">
+                      <div
+                        className="w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-bold flex-shrink-0"
+                        style={{ backgroundColor: service.avatar_color }}
+                      >
+                        {service.master_name?.[0]?.toUpperCase()}
+                      </div>
+                      <div className="min-w-0">
+                        <div className="text-sm text-gray-300 font-medium truncate">{service.master_name}</div>
+                        {service.city && (
+                          <div className="text-xs text-gray-600 flex items-center gap-1 mt-0.5">
+                            <Icon name="MapPin" size={10} />{service.city}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-between pt-4 border-t border-white/6 mb-3">
+                      <div>
+                        {service.price ? (
+                          <>
+                            <span className="text-gray-500 text-xs">от</span>
+                            <span className="text-white font-bold text-lg ml-1">{service.price.toLocaleString("ru-RU")} ₽</span>
+                          </>
+                        ) : (
+                          <span className="text-gray-500 text-sm">Цена по договору</span>
+                        )}
+                      </div>
+                      <span className="text-violet-400 text-xs hover:text-violet-300 transition-colors">Профиль →</span>
+                    </div>
+                  </a>
+
+                  <Button
+                    size="sm"
+                    className="w-full bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white text-xs rounded-xl"
+                    onClick={() => {
+                      setOrderForm(f => ({ ...f, category: service.category, city: service.city || "" }));
+                      setOrderModalOpen(true);
+                    }}
+                  >
+                    <Icon name="Send" size={13} className="mr-1.5" />
+                    Оставить заявку
+                  </Button>
+                </div>
               ))}
             </div>
           )}
