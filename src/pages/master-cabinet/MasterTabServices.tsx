@@ -51,6 +51,7 @@ interface MasterTabServicesProps {
   onToggleService: (serviceId: number, isActive: boolean) => void;
   onBoostService: (serviceId: number) => void;
   onUpdateService: (serviceId: number, data: ServiceForm) => Promise<void>;
+  onDeleteService: (serviceId: number) => Promise<void>;
 }
 
 export default function MasterTabServices({
@@ -65,7 +66,19 @@ export default function MasterTabServices({
   onToggleService,
   onBoostService,
   onUpdateService,
+  onDeleteService,
 }: MasterTabServicesProps) {
+  const [deleteServiceId, setDeleteServiceId] = useState<number | null>(null);
+  const [deleteServiceLoading, setDeleteServiceLoading] = useState(false);
+
+  const handleDeleteService = async () => {
+    if (!deleteServiceId) return;
+    setDeleteServiceLoading(true);
+    await onDeleteService(deleteServiceId);
+    setDeleteServiceLoading(false);
+    setDeleteServiceId(null);
+  };
+
   const [editService, setEditService] = useState<MyService | null>(null);
   const [editForm, setEditForm] = useState<ServiceForm>({ title: "", description: "", category: "", city: "", price: "" });
   const [editLoading, setEditLoading] = useState(false);
@@ -86,6 +99,25 @@ export default function MasterTabServices({
 
   return (
     <div>
+      {/* Модальное окно подтверждения удаления */}
+      {deleteServiceId && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 px-4">
+          <div className="bg-[#1a1d27] border border-white/10 rounded-2xl p-6 w-full max-w-sm text-center">
+            <div className="w-14 h-14 rounded-full bg-red-600/15 flex items-center justify-center mx-auto mb-4">
+              <Icon name="Trash2" size={24} className="text-red-400" />
+            </div>
+            <h3 className="text-white font-semibold text-lg mb-2">Удалить услугу?</h3>
+            <p className="text-gray-400 text-sm mb-6">Услуга будет удалена с сайта навсегда.</p>
+            <div className="flex gap-3">
+              <Button variant="ghost" className="flex-1 text-gray-400" onClick={() => setDeleteServiceId(null)}>Отмена</Button>
+              <Button disabled={deleteServiceLoading} onClick={handleDeleteService} className="flex-1 bg-red-600 hover:bg-red-500 text-white">
+                {deleteServiceLoading ? "Удаление..." : "Удалить"}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Модальное окно редактирования услуги */}
       {editService && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 px-4">
@@ -295,6 +327,12 @@ export default function MasterTabServices({
                       className="text-xs px-2.5 py-1.5 rounded-lg border bg-white/8 text-gray-300 border-white/10 hover:bg-white/15 transition-colors flex items-center gap-1"
                     >
                       <Icon name="Pencil" size={11}/>Изменить
+                    </button>
+                    <button
+                      onClick={() => setDeleteServiceId(s.id)}
+                      className="text-xs px-2.5 py-1.5 rounded-lg border bg-red-600/10 text-red-400 border-red-500/20 hover:bg-red-600/20 transition-colors flex items-center gap-1"
+                    >
+                      <Icon name="Trash2" size={11}/>Удалить
                     </button>
                     <button
                       onClick={() => onBoostService(s.id)}

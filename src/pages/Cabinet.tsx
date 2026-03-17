@@ -227,6 +227,16 @@ export default function Cabinet() {
     setLoginPassword("");
   };
 
+  const handleDeleteOrder = async (orderId: number) => {
+    if (!customer) return;
+    await fetch(MY_ORDERS_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "delete_order", order_id: orderId, customer_id: customer.id }),
+    });
+    setOrders(prev => prev.filter(o => o.id !== orderId));
+  };
+
   const handleUpdateOrder = async (orderId: number, data: { title: string; description: string; category: string; city: string; budget: string }) => {
     if (!customer) return;
     await fetch(MY_ORDERS_URL, {
@@ -390,6 +400,7 @@ export default function Cabinet() {
         onSelectMaster={handleSelectMaster}
         onReviewSubmit={handleReview}
         onUpdateOrder={handleUpdateOrder}
+        onDeleteOrder={handleDeleteOrder}
       />
     </div>
   );

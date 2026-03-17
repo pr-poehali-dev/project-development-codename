@@ -100,12 +100,13 @@ interface CabinetOrderListProps {
   onSelectMaster: (orderId: number, responseId: number) => void;
   onReviewSubmit: (e: React.FormEvent, form: { orderId: number; masterName: string; masterId: number | null }, rating: number, comment: string) => void;
   onUpdateOrder: (orderId: number, data: { title: string; description: string; category: string; city: string; budget: string }) => Promise<void>;
+  onDeleteOrder: (orderId: number) => Promise<void>;
 }
 
 export default function CabinetOrderList({
   orders, customer, reviewSuccess,
   statusLoading, selectMasterLoading,
-  onStatusChange, onSelectMaster, onReviewSubmit, onUpdateOrder,
+  onStatusChange, onSelectMaster, onReviewSubmit, onUpdateOrder, onDeleteOrder,
 }: CabinetOrderListProps) {
   const [expandedOrder, setExpandedOrder] = useState<number | null>(null);
   const [activeTab, setActiveTab] = useState<"active" | "done">("active");
@@ -113,6 +114,17 @@ export default function CabinetOrderList({
   const [reviewRating, setReviewRating] = useState(5);
   const [reviewComment, setReviewComment] = useState("");
   const [reviewLoading, setReviewLoading] = useState(false);
+
+  const [deleteOrderId, setDeleteOrderId] = useState<number | null>(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
+
+  const handleDeleteOrder = async () => {
+    if (!deleteOrderId) return;
+    setDeleteLoading(true);
+    await onDeleteOrder(deleteOrderId);
+    setDeleteLoading(false);
+    setDeleteOrderId(null);
+  };
 
   const [editOrder, setEditOrder] = useState<Order | null>(null);
   const [editForm, setEditForm] = useState({ title: "", description: "", category: "", city: "", budget: "" });
@@ -176,6 +188,24 @@ export default function CabinetOrderList({
           </div>
         ))}
       </div>
+
+      {deleteOrderId && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 px-4">
+          <div className="bg-[#1a1d27] border border-white/10 rounded-2xl p-6 w-full max-w-sm text-center">
+            <div className="w-14 h-14 rounded-full bg-red-600/15 flex items-center justify-center mx-auto mb-4">
+              <Icon name="Trash2" size={24} className="text-red-400" />
+            </div>
+            <h3 className="text-white font-semibold text-lg mb-2">Удалить заявку?</h3>
+            <p className="text-gray-400 text-sm mb-6">Это действие нельзя отменить. Заявка и все отклики будут удалены.</p>
+            <div className="flex gap-3">
+              <Button variant="ghost" className="flex-1 text-gray-400" onClick={() => setDeleteOrderId(null)}>Отмена</Button>
+              <Button disabled={deleteLoading} onClick={handleDeleteOrder} className="flex-1 bg-red-600 hover:bg-red-500 text-white">
+                {deleteLoading ? "Удаление..." : "Удалить"}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {editOrder && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 px-4">
@@ -361,6 +391,7 @@ export default function CabinetOrderList({
                           Редактировать
                         </button>
                       )}
+
                       {order.status !== "in_progress" && (
                         <button
                           disabled={statusLoading === order.id}
@@ -383,6 +414,18 @@ export default function CabinetOrderList({
                         className="text-xs px-3 py-1.5 rounded-lg bg-gray-600/15 text-gray-500 border border-gray-500/20 hover:bg-gray-600/25 transition-colors"
                       >
                         Отменить
+                      </button>
+                    </div>
+                  )}
+
+                  {(order.status === "new" || order.status === "cancelled") && (
+                    <div className="flex mb-4">
+                      <button
+                        onClick={() => setDeleteOrderId(order.id)}
+                        className="text-xs px-3 py-1.5 rounded-lg bg-red-600/10 text-red-400 border border-red-500/20 hover:bg-red-600/20 transition-colors flex items-center gap-1.5"
+                      >
+                        <Icon name="Trash2" size={12} />
+                        Удалить заявку
                       </button>
                     </div>
                   )}

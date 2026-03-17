@@ -322,6 +322,26 @@ def handler(event: dict, context) -> dict:
                                         'user': {'id': row['id'], 'name': row['name'],
                                                  'phone': row['phone'], 'email': row['email'] or ''}})}
 
+        if action == 'delete_order':
+            order_id = body.get('order_id')
+            customer_id = body.get('customer_id')
+            if not order_id or not customer_id:
+                return {'statusCode': 400, 'headers': HEADERS, 'body': json.dumps({'error': 'Недостаточно данных'})}
+            conn = get_conn()
+            cur = conn.cursor()
+            cur.execute(f"SELECT status FROM {SCHEMA}.orders WHERE id=%s AND customer_id=%s", (int(order_id), int(customer_id)))
+            row = cur.fetchone()
+            if not row:
+                cur.close(); conn.close()
+                return {'statusCode': 404, 'headers': HEADERS, 'body': json.dumps({'error': 'Заявка не найдена'})}
+            if row['status'] not in ('new', 'cancelled'):
+                cur.close(); conn.close()
+                return {'statusCode': 400, 'headers': HEADERS, 'body': json.dumps({'error': 'Нельзя удалить заявку в работе или выполненную'})}
+            cur.execute(f"DELETE FROM {SCHEMA}.orders WHERE id=%s AND customer_id=%s", (int(order_id), int(customer_id)))
+            conn.commit()
+            cur.close(); conn.close()
+            return {'statusCode': 200, 'headers': HEADERS, 'body': json.dumps({'success': True})}
+
         if action == 'update_order':
             order_id = body.get('order_id')
             customer_id = body.get('customer_id')

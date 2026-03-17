@@ -211,6 +211,16 @@ export default function MasterCabinet() {
     setMyServices(prev => prev.map(s => s.id === serviceId ? { ...s, is_active: isActive } : s));
   };
 
+  const handleDeleteService = async (serviceId: number) => {
+    if (!master) return;
+    await fetch(PROFILE_URL, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "delete_service", service_id: serviceId, master_id: master.id }),
+    });
+    setMyServices(prev => prev.filter(s => s.id !== serviceId));
+  };
+
   const handleUpdateService = async (serviceId: number, data: { title: string; description: string; category: string; city: string; price: string }) => {
     if (!master) return;
     await fetch(PROFILE_URL, {
@@ -347,6 +357,7 @@ export default function MasterCabinet() {
             onToggleService={handleToggleService}
             onBoostService={handleBoostService}
             onUpdateService={handleUpdateService}
+            onDeleteService={handleDeleteService}
           />
         )}
 

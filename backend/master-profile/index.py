@@ -498,6 +498,19 @@ def handler(event: dict, context) -> dict:
             cur.close(); conn.close()
             return {'statusCode': 200, 'headers': HEADERS, 'body': json.dumps({'success': True, 'id': new_id})}
 
+        # PUT: удаление услуги мастером
+        if body.get('action') == 'delete_service':
+            service_id = body.get('service_id')
+            master_id = body.get('master_id')
+            if not service_id or not master_id:
+                return {'statusCode': 400, 'headers': HEADERS, 'body': json.dumps({'error': 'Недостаточно данных'})}
+            conn = get_conn()
+            cur = conn.cursor()
+            cur.execute("DELETE FROM master_services WHERE id=%s AND master_id=%s", (int(service_id), int(master_id)))
+            conn.commit()
+            cur.close(); conn.close()
+            return {'statusCode': 200, 'headers': HEADERS, 'body': json.dumps({'success': True})}
+
         # PUT: редактирование услуги мастером
         if body.get('action') == 'update_service':
             service_id = body.get('service_id')
