@@ -1,0 +1,105 @@
+import { Button } from "@/components/ui/button";
+import Icon from "@/components/ui/icon";
+
+interface Customer {
+  id: number;
+  name: string;
+  phone: string;
+  email: string;
+}
+
+interface CabinetNavProps {
+  customer: Customer;
+  showPwForm: boolean;
+  setShowPwForm: (v: boolean | ((prev: boolean) => boolean)) => void;
+  pwOld: string;
+  setPwOld: (v: string) => void;
+  pwNew: string;
+  setPwNew: (v: string) => void;
+  pwConfirm: string;
+  setPwConfirm: (v: string) => void;
+  pwLoading: boolean;
+  pwError: string;
+  setPwError: (v: string) => void;
+  pwSuccess: string;
+  onChangePassword: (e: React.FormEvent) => void;
+  onLogout: () => void;
+}
+
+export default function CabinetNav({
+  customer,
+  showPwForm, setShowPwForm,
+  pwOld, setPwOld,
+  pwNew, setPwNew,
+  pwConfirm, setPwConfirm,
+  pwLoading, pwError, setPwError, pwSuccess,
+  onChangePassword, onLogout,
+}: CabinetNavProps) {
+  return (
+    <>
+      <nav className="bg-[#0f1117]/95 backdrop-blur border-b border-white/10 sticky top-0 z-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
+          <a href="/" className="flex items-center gap-3">
+            <img src="https://cdn.poehali.dev/projects/b7f56b72-3dfb-49ff-a0ce-cff7b631f477/files/bb517738-7e1e-4e29-bd74-607574a9b222.jpg" alt="HandyMan" className="w-9 h-9 rounded-xl object-cover" />
+            <span className="text-xl font-bold bg-gradient-to-r from-violet-400 to-indigo-400 bg-clip-text text-transparent">HandyMan</span>
+          </a>
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-lg bg-violet-600/20 flex items-center justify-center font-bold text-violet-400 text-sm">
+                {customer?.name?.[0]?.toUpperCase()}
+              </div>
+              <span className="text-gray-300 text-sm hidden sm:block">{customer?.name}</span>
+            </div>
+            <button onClick={() => { setShowPwForm(v => !v); setPwError(""); }}
+              className="text-gray-500 hover:text-gray-300 text-sm flex items-center gap-1.5 transition-colors hidden sm:flex">
+              <Icon name="KeyRound" size={15} />
+              Пароль
+            </button>
+            <button onClick={onLogout} className="text-gray-500 hover:text-gray-300 text-sm flex items-center gap-1.5 transition-colors">
+              <Icon name="LogOut" size={15} />
+              Выйти
+            </button>
+          </div>
+        </div>
+      </nav>
+
+      {pwSuccess && (
+        <div className="max-w-4xl mx-auto px-4 pt-4">
+          <div className="bg-emerald-600/15 border border-emerald-500/30 rounded-xl px-4 py-3 flex items-center gap-2 text-emerald-400 text-sm">
+            <Icon name="CheckCircle" size={15} />{pwSuccess}
+          </div>
+        </div>
+      )}
+
+      {showPwForm && (
+        <div className="max-w-4xl mx-auto px-4 pt-4">
+          <div className="bg-white/4 border border-white/8 rounded-2xl p-5 mb-0 max-w-md">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-white font-semibold text-sm">Изменить пароль</h3>
+              <button onClick={() => { setShowPwForm(false); setPwError(""); }} className="text-gray-500 hover:text-gray-300 transition-colors">
+                <Icon name="X" size={16} />
+              </button>
+            </div>
+            <form onSubmit={onChangePassword} className="flex flex-col gap-3">
+              {[
+                { label: "Текущий пароль", val: pwOld, set: setPwOld },
+                { label: "Новый пароль", val: pwNew, set: setPwNew },
+                { label: "Повторите новый", val: pwConfirm, set: setPwConfirm },
+              ].map(({ label, val, set }) => (
+                <div key={label}>
+                  <label className="text-xs text-gray-400 mb-1.5 block">{label}</label>
+                  <input type="password" required value={val} onChange={e => set(e.target.value)} placeholder="••••••••"
+                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-violet-500 transition-colors" />
+                </div>
+              ))}
+              {pwError && <p className="text-amber-400 text-sm">{pwError}</p>}
+              <Button type="submit" disabled={pwLoading} className="bg-violet-600 hover:bg-violet-500 text-white w-full">
+                {pwLoading ? "Сохранение..." : "Изменить пароль"}
+              </Button>
+            </form>
+          </div>
+        </div>
+      )}
+    </>
+  );
+}
