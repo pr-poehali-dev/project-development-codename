@@ -67,7 +67,13 @@ def send_code_email(to_email: str, code: str, name: str = ""):
 
 
 def get_orders(cur, customer_id=None, phone=None):
-    if customer_id:
+    if customer_id and phone:
+        cur.execute(
+            "SELECT id, title, description, category, city, budget, status, accepted_response_id, created_at "
+            f"FROM {SCHEMA}.orders WHERE customer_id = %s OR (contact_phone = %s AND customer_id IS NULL) ORDER BY created_at DESC",
+            (customer_id, phone)
+        )
+    elif customer_id:
         cur.execute(
             "SELECT id, title, description, category, city, budget, status, accepted_response_id, created_at "
             f"FROM {SCHEMA}.orders WHERE customer_id = %s ORDER BY created_at DESC",
@@ -485,7 +491,10 @@ def handler(event: dict, context) -> dict:
         cur.execute(f"SELECT * FROM {SCHEMA}.customers WHERE phone = %s", (phone,))
         customer = cur.fetchone()
         if customer:
-            orders_data = get_orders(cur, customer_id=customer['id'])
+            # Привязываем заказы созданные по телефону к аккаунту
+            cur.execute(f"UPDATE {SCHEMA}.orders SET customer_id = %s WHERE contact_phone = %s AND customer_id IS NULL", (customer['id'], phone))
+            conn.commit()
+            orders_data = get_orders(cur, customer_id=customer['id'], phone=phone)
             cur.close(); conn.close()
             return {'statusCode': 200, 'headers': HEADERS,
                     'body': json.dumps({'customer': {'id': customer['id'], 'name': customer['name'], 'phone': customer['phone'], 'email': customer.get('email') or ''}, 'orders': orders_data}, ensure_ascii=False)}
