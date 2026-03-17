@@ -15,6 +15,15 @@ interface Master {
   created_at: string;
 }
 
+interface Service {
+  id: number;
+  title: string;
+  description: string | null;
+  price: number | null;
+  category: string;
+  city: string;
+}
+
 interface Review {
   id: number;
   rating: number;
@@ -42,6 +51,7 @@ export default function MasterPage() {
   const [rating, setRating] = useState<number | null>(null);
   const [reviewsTotal, setReviewsTotal] = useState(0);
   const [reviews, setReviews] = useState<Review[]>([]);
+  const [services, setServices] = useState<Service[]>([]);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
 
@@ -58,6 +68,7 @@ export default function MasterPage() {
         setRating(parsed.rating);
         setReviewsTotal(parsed.reviews_total);
         setReviews(parsed.reviews || []);
+        setServices(parsed.services || []);
       })
       .finally(() => setLoading(false));
   }, []);
@@ -142,6 +153,43 @@ export default function MasterPage() {
             <Icon name="Calendar" size={13} className="text-gray-600" />
             <span className="text-gray-600 text-xs">На платформе с {master?.created_at ? formatDate(master.created_at) : "—"}</span>
           </div>
+        </div>
+
+        {/* Услуги */}
+        {services.length > 0 && (
+          <>
+            <h2 className="text-lg font-semibold text-white mb-4">Услуги</h2>
+            <div className="grid gap-3 sm:grid-cols-2 mb-8">
+              {services.map((s) => (
+                <div key={s.id} className="bg-white/4 border border-white/8 rounded-xl p-4 flex flex-col gap-2">
+                  <div className="flex items-start justify-between gap-2">
+                    <p className="text-white font-medium text-sm leading-snug">{s.title}</p>
+                    {s.price && (
+                      <span className="text-emerald-400 text-sm font-semibold whitespace-nowrap">от {s.price.toLocaleString("ru-RU")} ₽</span>
+                    )}
+                  </div>
+                  {s.description && <p className="text-gray-400 text-xs leading-relaxed line-clamp-2">{s.description}</p>}
+                  <div className="flex items-center gap-2 mt-auto pt-1">
+                    <Badge className="bg-violet-600/15 text-violet-400 border-violet-500/20 text-xs">{s.category}</Badge>
+                    {s.city && <span className="text-gray-600 text-xs flex items-center gap-1"><Icon name="MapPin" size={10} />{s.city}</span>}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </>
+        )}
+
+        {/* Кнопка — оставить заявку */}
+        <div className="bg-gradient-to-r from-violet-600/15 to-indigo-600/10 border border-violet-500/20 rounded-2xl p-5 mb-8 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div>
+            <p className="text-white font-semibold">Нужна помощь {master?.name?.split(" ")[0]}?</p>
+            <p className="text-gray-400 text-sm mt-0.5">Оставьте заявку — мастер откликнется в ближайшее время</p>
+          </div>
+          <a href="/" className="flex-shrink-0">
+            <button className="bg-violet-600 hover:bg-violet-500 text-white px-5 py-2.5 rounded-xl text-sm font-medium transition-colors whitespace-nowrap">
+              Создать заявку
+            </button>
+          </a>
         </div>
 
         {/* Отзывы */}

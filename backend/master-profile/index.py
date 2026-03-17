@@ -283,6 +283,34 @@ def handler(event: dict, context) -> dict:
                                         'user': {'id': user_row['id'], 'name': user_row['name'],
                                                  'phone': user_row['phone'], 'email': user_row['email'] or ''}})}
 
+        # ── ОБНОВЛЕНИЕ ПРОФИЛЯ ──
+        if body_raw.get('action') == 'update_profile':
+            master_id = body_raw.get('master_id')
+            about = body_raw.get('about', '')
+            name = (body_raw.get('name') or '').strip()
+            city = (body_raw.get('city') or '').strip()
+            if not master_id:
+                return {'statusCode': 400, 'headers': HEADERS, 'body': json.dumps({'error': 'Не авторизован'})}
+            conn = get_conn()
+            cur = conn.cursor()
+            fields, vals = [], []
+            if name:
+                fields.append("name=%s"); vals.append(name)
+            if city is not None:
+                fields.append("city=%s"); vals.append(city)
+            if about is not None:
+                fields.append("about=%s"); vals.append(about)
+            if fields:
+                vals.append(int(master_id))
+                cur.execute(f"UPDATE {SCHEMA}.masters SET {', '.join(fields)} WHERE id=%s RETURNING id, name, phone, city, about, category, balance, avatar_color, responses_count, created_at", vals)
+                updated = cur.fetchone()
+                conn.commit()
+                cur.close(); conn.close()
+                return {'statusCode': 200, 'headers': HEADERS,
+                        'body': json.dumps({'success': True, 'master': master_to_dict(updated)})}
+            cur.close(); conn.close()
+            return {'statusCode': 200, 'headers': HEADERS, 'body': json.dumps({'success': True})}
+
         # ── СМЕНА ПАРОЛЯ (из кабинета) ──
         if body_raw.get('action') == 'change_password':
             master_id = body_raw.get('master_id')
@@ -515,10 +543,17 @@ def handler(event: dict, context) -> dict:
 
         cur.execute(
             "SELECT ROUND(AVG(rating)::numeric, 1) as avg_rating, COUNT(*) as total "
-            "FROM reviews WHERE master_id = %s",
+            f"FROM {SCHEMA}.reviews WHERE master_id = %s",
             (master_id,)
         )
         stats = cur.fetchone()
+
+        cur.execute(
+            f"SELECT id, title, description, price, category, city FROM {SCHEMA}.master_services "
+            "WHERE master_id = %s AND is_active = TRUE ORDER BY sort_order DESC, created_at DESC",
+            (master_id,)
+        )
+        services = cur.fetchall()
         cur.close(); conn.close()
 
         return {
@@ -534,7 +569,15 @@ def handler(event: dict, context) -> dict:
                     'comment': r['comment'],
                     'order_title': r['order_title'],
                     'created_at': r['created_at'].isoformat() if r['created_at'] else None,
-                } for r in reviews]
+                } for r in reviews],
+                'services': [{
+                    'id': s['id'],
+                    'title': s['title'],
+                    'description': s['description'],
+                    'price': s['price'],
+                    'category': s['category'],
+                    'city': s['city'],
+                } for s in services],
             }, ensure_ascii=False)
         }
 

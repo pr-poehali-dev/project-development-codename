@@ -97,6 +97,13 @@ export default function MasterCabinet() {
   const [pwError, setPwError] = useState("");
   const [pwSuccess, setPwSuccess] = useState("");
 
+  // Редактирование профиля
+  const [editName, setEditName] = useState("");
+  const [editCity, setEditCity] = useState("");
+  const [editAbout, setEditAbout] = useState("");
+  const [profileLoading, setProfileLoading] = useState(false);
+  const [profileSuccess, setProfileSuccess] = useState("");
+
   const [showServiceForm, setShowServiceForm] = useState(false);
   const [serviceForm, setServiceForm] = useState({ title: "", description: "", category: "", city: "", price: "" });
   const [serviceLoading, setServiceLoading] = useState(false);
@@ -133,6 +140,9 @@ export default function MasterCabinet() {
         setMyResponses(data.my_responses || []);
         setMyServices(data.my_services || []);
         localStorage.setItem("master_phone", p);
+        setEditName(data.master?.name || "");
+        setEditCity(data.master?.city || "");
+        setEditAbout(data.master?.about || "");
       }
     } finally {
       setLoading(false);
@@ -228,6 +238,25 @@ export default function MasterCabinet() {
       await loadProfile(phone);
       setTimeout(() => setServiceSuccess(""), 3000);
     }
+  };
+
+  const handleSaveProfile = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setProfileLoading(true); setProfileSuccess("");
+    try {
+      const res = await fetch(PROFILE_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "update_profile", master_id: master?.id, name: editName, city: editCity, about: editAbout }),
+      });
+      const data = await res.json();
+      const d = typeof data === "string" ? JSON.parse(data) : data;
+      if (d.success && d.master) {
+        setMaster(d.master);
+        setProfileSuccess("Профиль сохранён!");
+        setTimeout(() => setProfileSuccess(""), 3000);
+      }
+    } finally { setProfileLoading(false); }
   };
 
   const handleChangePassword = async (e: React.FormEvent) => {
@@ -607,20 +636,39 @@ export default function MasterCabinet() {
 
         {tab === "profile" && (
           <div className="flex flex-col gap-6 max-w-md">
-            {/* Инфо */}
-            <div className="bg-white/4 border border-white/8 rounded-2xl p-5 flex flex-col gap-3">
-              <h3 className="text-white font-semibold text-sm mb-1">Данные аккаунта</h3>
-              {[
-                { label: "Имя", value: master?.name },
-                { label: "Телефон", value: master?.phone },
-                { label: "Категория", value: master?.category },
-                { label: "Город", value: master?.city },
-              ].map(({ label, value }) => (
-                <div key={label} className="flex items-center justify-between py-1 border-b border-white/6 last:border-0">
-                  <span className="text-gray-500 text-sm">{label}</span>
-                  <span className="text-white text-sm">{value || "—"}</span>
+            {/* Редактирование профиля */}
+            <div className="bg-white/4 border border-white/8 rounded-2xl p-5">
+              <h3 className="text-white font-semibold text-sm mb-4">Данные профиля</h3>
+              {profileSuccess && (
+                <div className="bg-emerald-600/15 border border-emerald-500/30 rounded-xl px-4 py-2.5 mb-4 flex items-center gap-2 text-emerald-400 text-sm">
+                  <Icon name="CheckCircle" size={15} />{profileSuccess}
                 </div>
-              ))}
+              )}
+              <form onSubmit={handleSaveProfile} className="flex flex-col gap-3">
+                <div>
+                  <label className="text-xs text-gray-400 mb-1.5 block">Имя</label>
+                  <input value={editName} onChange={e => setEditName(e.target.value)} placeholder="Ваше имя"
+                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-violet-500 transition-colors" />
+                </div>
+                <div className="flex items-center justify-between py-1 border-b border-white/6">
+                  <span className="text-gray-500 text-sm">Категория</span>
+                  <span className="text-white text-sm">{master?.category || "—"}</span>
+                </div>
+                <div>
+                  <label className="text-xs text-gray-400 mb-1.5 block">Город</label>
+                  <input value={editCity} onChange={e => setEditCity(e.target.value)} placeholder="Ваш город"
+                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-violet-500 transition-colors" />
+                </div>
+                <div>
+                  <label className="text-xs text-gray-400 mb-1.5 block">О себе</label>
+                  <textarea value={editAbout} onChange={e => setEditAbout(e.target.value)} rows={4}
+                    placeholder="Расскажите о своём опыте, специализации, достижениях..."
+                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-violet-500 transition-colors resize-none" />
+                </div>
+                <Button type="submit" disabled={profileLoading} className="bg-violet-600 hover:bg-violet-500 text-white w-full">
+                  {profileLoading ? "Сохранение..." : "Сохранить"}
+                </Button>
+              </form>
             </div>
 
             {/* Смена пароля */}
