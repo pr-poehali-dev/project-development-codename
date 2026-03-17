@@ -59,6 +59,7 @@ const Orders = () => {
   const [responseError, setResponseError] = useState("");
   const [masterBalance, setMasterBalance] = useState<number | null>(null);
   const [masterId, setMasterId] = useState<number | null>(null);
+  const [masterData, setMasterData] = useState<{ name: string; phone: string; category: string } | null>(null);
 
   useEffect(() => {
     const savedPhone = localStorage.getItem("master_phone");
@@ -70,7 +71,9 @@ const Orders = () => {
           if (parsed.master) {
             setMasterBalance(parsed.master.balance);
             setMasterId(parsed.master.id);
-            setResponseForm((f) => ({ ...f, master_name: parsed.master.name, master_phone: parsed.master.phone, master_category: parsed.master.category }));
+            const md = { name: parsed.master.name, phone: parsed.master.phone, category: parsed.master.category };
+            setMasterData(md);
+            setResponseForm((f) => ({ ...f, master_name: md.name, master_phone: md.phone, master_category: md.category }));
           }
         });
     }
@@ -247,7 +250,17 @@ const Orders = () => {
                 <div
                   key={order.id}
                   className="group bg-white/4 border border-white/8 rounded-2xl p-5 hover:border-violet-500/40 hover:bg-white/6 transition-all cursor-pointer flex flex-col"
-                  onClick={() => { setSelectedOrder(order); setResponseSent(false); setResponseError(""); setResponseForm({ master_name: "", master_phone: "", master_category: "", message: "" }); }}
+                  onClick={() => {
+                    setSelectedOrder(order);
+                    setResponseSent(false);
+                    setResponseError("");
+                    setResponseForm({
+                      master_name: masterData?.name || "",
+                      master_phone: masterData?.phone || "",
+                      master_category: masterData?.category || "",
+                      message: "",
+                    });
+                  }}
                 >
                   <div className="flex items-start justify-between mb-3">
                     <div className="flex items-center gap-2 flex-wrap">
@@ -295,7 +308,12 @@ const Orders = () => {
       </section>
 
       {/* Модалка с деталями заявки и формой отклика */}
-      <Dialog open={!!selectedOrder} onOpenChange={(v) => { if (!v) setSelectedOrder(null); }}>
+      <Dialog open={!!selectedOrder} onOpenChange={(v) => {
+        if (!v) { setSelectedOrder(null); setResponseSent(false); setResponseError(""); }
+        if (v && masterData) {
+          setResponseForm(f => ({ ...f, master_name: masterData.name, master_phone: masterData.phone, master_category: masterData.category }));
+        }
+      }}>
         <DialogContent className="bg-[#1a1d27] border border-white/10 text-white max-w-lg w-full">
           <DialogHeader>
             <DialogTitle className="text-xl font-bold text-white">
