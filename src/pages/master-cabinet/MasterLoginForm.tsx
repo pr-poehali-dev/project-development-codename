@@ -10,62 +10,83 @@ interface MasterLoginFormProps {
 
 export default function MasterLoginForm({ onLogin }: MasterLoginFormProps) {
   const [mode, setMode] = useState<"login" | "register">("login");
+  const [regStep, setRegStep] = useState<"form" | "code" | "password">("form");
+
+  // Вход
   const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
+
+  // Регистрация
   const [regName, setRegName] = useState("");
   const [regEmail, setRegEmail] = useState("");
   const [regPhone, setRegPhone] = useState("");
+  const [regCode, setRegCode] = useState("");
+  const [regPassword, setRegPassword] = useState("");
+  const [regPasswordConfirm, setRegPasswordConfirm] = useState("");
+
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const [registerSent, setRegisterSent] = useState(false);
 
   const inputCls = "w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-violet-500 transition-colors";
 
+  const post = async (body: object) => {
+    const res = await fetch(AUTH_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    const data = await res.json();
+    return typeof data === "string" ? JSON.parse(data) : data;
+  };
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError("");
-    setLoading(true);
+    setError(""); setLoading(true);
     try {
-      const res = await fetch(AUTH_URL, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          action: "auth_login",
-          email: identifier.includes("@") ? identifier : undefined,
-          phone: !identifier.includes("@") ? identifier : undefined,
-          password,
-        }),
+      const d = await post({
+        action: "auth_login",
+        email: identifier.includes("@") ? identifier : undefined,
+        phone: !identifier.includes("@") ? identifier : undefined,
+        password,
       });
-      const data = await res.json();
-      const d = typeof data === "string" ? JSON.parse(data) : data;
       if (d.error) { setError(d.error); return; }
       if (d.success) onLogin(d.user.phone);
-    } finally {
-      setLoading(false);
-    }
+    } finally { setLoading(false); }
   };
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError("");
-    setLoading(true);
+    setError(""); setLoading(true);
     try {
-      const res = await fetch(AUTH_URL, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "register", email: regEmail, phone: regPhone, name: regName, user_type: "master" }),
-      });
-      const data = await res.json();
-      const d = typeof data === "string" ? JSON.parse(data) : data;
+      const d = await post({ action: "register", email: regEmail, phone: regPhone, name: regName });
       if (d.error) {
         if (d.already_exists) setMode("login");
-        setError(d.error);
-        return;
+        setError(d.error); return;
       }
-      if (d.success) setRegisterSent(true);
-    } finally {
-      setLoading(false);
-    }
+      if (d.success) setRegStep("code");
+    } finally { setLoading(false); }
+  };
+
+  const handleVerifyCode = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(""); setLoading(true);
+    try {
+      const d = await post({ action: "verify_code_reg", email: regEmail, code: regCode });
+      if (d.error) { setError(d.error); return; }
+      if (d.success) setRegStep("password");
+    } finally { setLoading(false); }
+  };
+
+  const handleSetPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (regPassword !== regPasswordConfirm) { setError("Пароли не совпадают"); return; }
+    if (regPassword.length < 6) { setError("Пароль минимум 6 символов"); return; }
+    setError(""); setLoading(true);
+    try {
+      const d = await post({ action: "set_password", email: regEmail, password: regPassword });
+      if (d.error) { setError(d.error); return; }
+      if (d.success) onLogin(d.user.phone);
+    } finally { setLoading(false); }
   };
 
   return (
@@ -82,17 +103,19 @@ export default function MasterLoginForm({ onLogin }: MasterLoginFormProps) {
           <h1 className="text-2xl font-bold text-white mb-2">Кабинет мастера</h1>
         </div>
 
-        {/* Табы */}
-        <div className="flex gap-1 bg-white/5 rounded-xl p-1 mb-5">
-          <button onClick={() => { setMode("login"); setError(""); setRegisterSent(false); }}
-            className={`flex-1 py-2 text-sm rounded-lg transition-colors font-medium ${mode === "login" ? "bg-violet-600 text-white" : "text-gray-400 hover:text-white"}`}>
-            Войти
-          </button>
-          <button onClick={() => { setMode("register"); setError(""); setRegisterSent(false); }}
-            className={`flex-1 py-2 text-sm rounded-lg transition-colors font-medium ${mode === "register" ? "bg-violet-600 text-white" : "text-gray-400 hover:text-white"}`}>
-            Регистрация
-          </button>
-        </div>
+        {/* Табы — показываем только на первом шаге регистрации или на входе */}
+        {(mode === "login" || regStep === "form") && (
+          <div className="flex gap-1 bg-white/5 rounded-xl p-1 mb-5">
+            <button onClick={() => { setMode("login"); setError(""); }}
+              className={`flex-1 py-2 text-sm rounded-lg transition-colors font-medium ${mode === "login" ? "bg-violet-600 text-white" : "text-gray-400 hover:text-white"}`}>
+              Войти
+            </button>
+            <button onClick={() => { setMode("register"); setRegStep("form"); setError(""); }}
+              className={`flex-1 py-2 text-sm rounded-lg transition-colors font-medium ${mode === "register" ? "bg-violet-600 text-white" : "text-gray-400 hover:text-white"}`}>
+              Регистрация
+            </button>
+          </div>
+        )}
 
         {mode === "login" ? (
           <form onSubmit={handleLogin} className="bg-white/4 border border-white/8 rounded-2xl p-6 flex flex-col gap-4">
@@ -111,18 +134,10 @@ export default function MasterLoginForm({ onLogin }: MasterLoginFormProps) {
               {loading ? "Вход..." : "Войти"}
             </Button>
             <p className="text-center text-gray-500 text-xs">Нет аккаунта?{" "}
-              <button type="button" onClick={() => setMode("register")} className="text-violet-400 hover:underline">Зарегистрироваться</button>
+              <button type="button" onClick={() => { setMode("register"); setRegStep("form"); setError(""); }} className="text-violet-400 hover:underline">Зарегистрироваться</button>
             </p>
           </form>
-        ) : registerSent ? (
-          <div className="bg-emerald-600/10 border border-emerald-500/30 rounded-2xl p-8 text-center">
-            <div className="w-14 h-14 rounded-2xl bg-emerald-600/20 flex items-center justify-center mx-auto mb-4">
-              <Icon name="Mail" size={26} className="text-emerald-400" />
-            </div>
-            <h2 className="text-white font-semibold mb-2">Проверьте почту</h2>
-            <p className="text-gray-400 text-sm">Мы отправили письмо на <span className="text-white">{regEmail}</span>.<br />Перейдите по ссылке в письме, чтобы подтвердить email и задать пароль.</p>
-          </div>
-        ) : (
+        ) : regStep === "form" ? (
           <form onSubmit={handleRegister} className="bg-white/4 border border-white/8 rounded-2xl p-6 flex flex-col gap-4">
             <div>
               <label className="text-sm text-gray-400 mb-1.5 block">Ваше имя</label>
@@ -141,11 +156,52 @@ export default function MasterLoginForm({ onLogin }: MasterLoginFormProps) {
             </div>
             {error && <p className="text-amber-400 text-sm">{error}</p>}
             <Button type="submit" disabled={loading} className="bg-gradient-to-r from-violet-600 to-indigo-600 text-white w-full">
-              {loading ? "Отправка..." : "Зарегистрироваться"}
+              {loading ? "Отправка..." : "Продолжить"}
             </Button>
-            <p className="text-center text-gray-500 text-xs">Уже есть аккаунт?{" "}
-              <button type="button" onClick={() => setMode("login")} className="text-violet-400 hover:underline">Войти</button>
-            </p>
+          </form>
+        ) : regStep === "code" ? (
+          <form onSubmit={handleVerifyCode} className="bg-white/4 border border-white/8 rounded-2xl p-6 flex flex-col gap-4">
+            <div className="text-center mb-1">
+              <div className="w-12 h-12 rounded-2xl bg-violet-600/20 flex items-center justify-center mx-auto mb-3">
+                <Icon name="Mail" size={22} className="text-violet-400" />
+              </div>
+              <p className="text-white font-medium">Введите код из письма</p>
+              <p className="text-gray-500 text-sm mt-1">Отправили на <span className="text-gray-300">{regEmail}</span></p>
+            </div>
+            <input type="text" required maxLength={6} value={regCode} onChange={e => setRegCode(e.target.value.replace(/\D/g, ""))}
+              placeholder="000000" className={`${inputCls} text-center tracking-widest text-xl font-bold`} autoFocus />
+            {error && <p className="text-amber-400 text-sm text-center">{error}</p>}
+            <Button type="submit" disabled={loading || regCode.length < 6} className="bg-gradient-to-r from-violet-600 to-indigo-600 text-white w-full">
+              {loading ? "Проверка..." : "Подтвердить"}
+            </Button>
+            <button type="button" onClick={() => { setRegStep("form"); setRegCode(""); setError(""); }}
+              className="text-center text-xs text-gray-500 hover:text-gray-400 transition-colors">
+              Ввести данные снова
+            </button>
+          </form>
+        ) : (
+          <form onSubmit={handleSetPassword} className="bg-white/4 border border-white/8 rounded-2xl p-6 flex flex-col gap-4">
+            <div className="text-center mb-1">
+              <div className="w-12 h-12 rounded-2xl bg-violet-600/20 flex items-center justify-center mx-auto mb-3">
+                <Icon name="Lock" size={22} className="text-violet-400" />
+              </div>
+              <p className="text-white font-medium">Придумайте пароль</p>
+              <p className="text-gray-500 text-sm mt-1">Email подтверждён!</p>
+            </div>
+            <div>
+              <label className="text-sm text-gray-400 mb-1.5 block">Пароль</label>
+              <input type="password" required value={regPassword} onChange={e => setRegPassword(e.target.value)}
+                placeholder="Минимум 6 символов" className={inputCls} autoFocus />
+            </div>
+            <div>
+              <label className="text-sm text-gray-400 mb-1.5 block">Повторите пароль</label>
+              <input type="password" required value={regPasswordConfirm} onChange={e => setRegPasswordConfirm(e.target.value)}
+                placeholder="Повторите пароль" className={inputCls} />
+            </div>
+            {error && <p className="text-amber-400 text-sm">{error}</p>}
+            <Button type="submit" disabled={loading} className="bg-gradient-to-r from-violet-600 to-indigo-600 text-white w-full">
+              {loading ? "Сохранение..." : "Сохранить и войти"}
+            </Button>
           </form>
         )}
       </div>

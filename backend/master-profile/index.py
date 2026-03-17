@@ -39,30 +39,31 @@ def verify_password(password: str, stored_hash: str) -> bool:
     return hashlib.sha256((salt + password).encode()).hexdigest() == h
 
 
-def send_verify_email(to_email: str, token: str):
+def send_code_email_master(to_email: str, code: str, name: str = ""):
     host = os.environ['SMTP_HOST']
     port = int(os.environ['SMTP_PORT'])
     user = os.environ['SMTP_USER']
-    password = os.environ['SMTP_PASS']
-    verify_url = f"https://handyman.poehali.dev/verify-email?token={token}&type=master"
+    pw = os.environ['SMTP_PASS']
+    greeting = f"Привет, {name}!" if name else "Привет!"
     msg = MIMEMultipart('alternative')
-    msg['Subject'] = 'Подтверждение email — HandyMan'
+    msg['Subject'] = f'{code} — код подтверждения HandyMan'
     msg['From'] = f'HandyMan <{user}>'
     msg['To'] = to_email
     html = f"""
-    <div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:24px;">
-      <h2 style="color:#7c3aed;">Подтверждение email</h2>
-      <p>Нажмите кнопку ниже, чтобы подтвердить email и задать пароль:</p>
-      <a href="{verify_url}" style="display:inline-block;background:#7c3aed;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:bold;">
-        Подтвердить email
-      </a>
-      <p style="color:#888;font-size:13px;margin-top:16px;">Ссылка действительна 1 час.</p>
+    <div style="font-family:sans-serif;max-width:420px;margin:0 auto;padding:32px;background:#0a0d16;border-radius:16px;">
+      <h2 style="color:#fff;margin-bottom:4px;">HandyMan</h2>
+      <p style="color:#9ca3af;font-size:14px;margin-bottom:20px;">{greeting} Ваш код подтверждения:</p>
+      <div style="background:#1e1b4b;border:1px solid #4c1d95;border-radius:12px;padding:24px;text-align:center;margin-bottom:20px;">
+        <span style="font-size:42px;font-weight:700;letter-spacing:14px;color:#a78bfa;">{code}</span>
+      </div>
+      <p style="color:#6b7280;font-size:12px;">Код действителен 15 минут.</p>
     </div>
     """
+    msg.attach(MIMEText(f'Ваш код подтверждения: {code}\n\nКод действителен 15 минут.', 'plain'))
     msg.attach(MIMEText(html, 'html'))
     ctx = ssl.create_default_context()
     with smtplib.SMTP_SSL(host, port, context=ctx) as server:
-        server.login(user, password)
+        server.login(user, pw)
         server.sendmail(user, to_email, msg.as_string())
 
 
@@ -121,7 +122,7 @@ def handler(event: dict, context) -> dict:
     if method == 'POST':
         body_raw = json.loads(event.get('body') or '{}')
 
-        # ── РЕГИСТРАЦИЯ МАСТЕРА ──
+        # ── РЕГИСТРАЦИЯ МАСТЕРА — шаг 1: создать и отправить код ──
         if body_raw.get('action') == 'register':
             email = (body_raw.get('email') or '').strip().lower()
             phone = (body_raw.get('phone') or '').strip()
@@ -147,17 +148,63 @@ def handler(event: dict, context) -> dict:
                 )
             else:
                 cur.execute(f"UPDATE {SCHEMA}.masters SET name=%s, phone=%s WHERE email=%s", (name, phone, email))
-            token = secrets.token_urlsafe(40)
-            cur.execute(
-                f"INSERT INTO {SCHEMA}.verification_tokens (email, token, user_type) VALUES (%s,%s,'master')",
-                (email, token)
-            )
+            code = str(random.randint(100000, 999999))
+            cur.execute(f"UPDATE {SCHEMA}.auth_codes SET used=TRUE WHERE email=%s AND used=FALSE", (email,))
+            cur.execute(f"INSERT INTO {SCHEMA}.auth_codes (email, code) VALUES (%s,%s)", (email, code))
             conn.commit()
             cur.close(); conn.close()
-            send_verify_email(email, token)
-            return {'statusCode': 200, 'headers': HEADERS, 'body': json.dumps({'success': True, 'message': 'Письмо отправлено. Проверьте почту.'})}
+            send_code_email_master(email, code, name)
+            return {'statusCode': 200, 'headers': HEADERS,
+                    'body': json.dumps({'success': True, 'message': 'Код отправлен на вашу почту.'})}
 
-        # ── ВХОД МАСТЕРА (новый) ──
+        # ── РЕГИСТРАЦИЯ МАСТЕРА — шаг 2: подтвердить код ──
+        if body_raw.get('action') == 'verify_code_reg':
+            email = (body_raw.get('email') or '').strip().lower()
+            code = (body_raw.get('code') or '').strip()
+            if not email or not code:
+                return {'statusCode': 400, 'headers': HEADERS, 'body': json.dumps({'error': 'Укажите email и код'})}
+            conn = get_conn()
+            cur = conn.cursor()
+            cur.execute(
+                f"SELECT id FROM {SCHEMA}.auth_codes WHERE email=%s AND code=%s AND used=FALSE AND expires_at > NOW()",
+                (email, code)
+            )
+            row = cur.fetchone()
+            if not row:
+                cur.close(); conn.close()
+                return {'statusCode': 400, 'headers': HEADERS, 'body': json.dumps({'error': 'Неверный или устаревший код'})}
+            cur.execute(f"UPDATE {SCHEMA}.auth_codes SET used=TRUE WHERE id=%s", (row['id'],))
+            conn.commit()
+            cur.close(); conn.close()
+            return {'statusCode': 200, 'headers': HEADERS, 'body': json.dumps({'success': True, 'email': email})}
+
+        # ── РЕГИСТРАЦИЯ МАСТЕРА — шаг 3: установить пароль ──
+        if body_raw.get('action') == 'set_password':
+            email = (body_raw.get('email') or '').strip().lower()
+            password = body_raw.get('password', '')
+            if not email:
+                return {'statusCode': 400, 'headers': HEADERS, 'body': json.dumps({'error': 'Email не указан'})}
+            if len(password) < 6:
+                return {'statusCode': 400, 'headers': HEADERS, 'body': json.dumps({'error': 'Пароль минимум 6 символов'})}
+            conn = get_conn()
+            cur = conn.cursor()
+            pw_hash = hash_password(password)
+            cur.execute(
+                f"UPDATE {SCHEMA}.masters SET password_hash=%s, email_verified=TRUE WHERE email=%s RETURNING id, name, phone, email",
+                (pw_hash, email)
+            )
+            user_row = cur.fetchone()
+            if not user_row:
+                cur.close(); conn.close()
+                return {'statusCode': 400, 'headers': HEADERS, 'body': json.dumps({'error': 'Пользователь не найден'})}
+            conn.commit()
+            cur.close(); conn.close()
+            return {'statusCode': 200, 'headers': HEADERS,
+                    'body': json.dumps({'success': True,
+                                        'user': {'id': user_row['id'], 'name': user_row['name'],
+                                                 'phone': user_row['phone'], 'email': user_row['email'] or ''}})}
+
+        # ── ВХОД МАСТЕРА ──
         if body_raw.get('action') == 'auth_login':
             identifier = (body_raw.get('email') or body_raw.get('phone') or '').strip()
             password = body_raw.get('password', '')
@@ -174,75 +221,16 @@ def handler(event: dict, context) -> dict:
             if not row:
                 return {'statusCode': 401, 'headers': HEADERS, 'body': json.dumps({'error': 'Мастер не найден'})}
             if not row['email_verified'] or not row['password_hash']:
-                return {'statusCode': 401, 'headers': HEADERS, 'body': json.dumps({'error': 'Email не подтверждён. Завершите регистрацию.'})}
+                return {'statusCode': 401, 'headers': HEADERS,
+                        'body': json.dumps({'error': 'Завершите регистрацию — подтвердите email.'})}
             if not verify_password(password, row['password_hash']):
                 return {'statusCode': 401, 'headers': HEADERS, 'body': json.dumps({'error': 'Неверный пароль'})}
             return {'statusCode': 200, 'headers': HEADERS,
-                    'body': json.dumps({'success': True, 'user': {'id': row['id'], 'name': row['name'], 'phone': row['phone'], 'email': row['email'] or ''}})}
+                    'body': json.dumps({'success': True,
+                                        'user': {'id': row['id'], 'name': row['name'],
+                                                 'phone': row['phone'], 'email': row['email'] or ''}})}
 
-        # ── ВЕРИФИКАЦИЯ ТОКЕНА ──
-        if body_raw.get('action') == 'verify_token':
-            token = (body_raw.get('token') or '').strip()
-            if not token:
-                return {'statusCode': 400, 'headers': HEADERS, 'body': json.dumps({'error': 'Токен не указан'})}
-            conn = get_conn()
-            cur = conn.cursor()
-            cur.execute(
-                f"SELECT email, user_type, used, expires_at FROM {SCHEMA}.verification_tokens WHERE token=%s ORDER BY id DESC LIMIT 1",
-                (token,)
-            )
-            row = cur.fetchone()
-            if not row:
-                cur.close(); conn.close()
-                return {'statusCode': 400, 'headers': HEADERS, 'body': json.dumps({'error': 'Ссылка недействительна'})}
-            if row['used']:
-                cur.close(); conn.close()
-                return {'statusCode': 400, 'headers': HEADERS, 'body': json.dumps({'error': 'Ссылка уже использована'})}
-            cur.execute("SELECT NOW()")
-            now = cur.fetchone()['now']
-            if row['expires_at'] and now > row['expires_at']:
-                cur.close(); conn.close()
-                return {'statusCode': 400, 'headers': HEADERS, 'body': json.dumps({'error': 'Ссылка истекла. Зарегистрируйтесь снова.'})}
-            cur.close(); conn.close()
-            return {'statusCode': 200, 'headers': HEADERS,
-                    'body': json.dumps({'success': True, 'email': row['email'], 'user_type': row['user_type'], 'token': token})}
-
-        # ── УСТАНОВКА ПАРОЛЯ ──
-        if body_raw.get('action') == 'set_password':
-            token = (body_raw.get('token') or '').strip()
-            password = body_raw.get('password', '')
-            if len(password) < 6:
-                return {'statusCode': 400, 'headers': HEADERS, 'body': json.dumps({'error': 'Пароль минимум 6 символов'})}
-            conn = get_conn()
-            cur = conn.cursor()
-            cur.execute(
-                f"SELECT email, user_type, used, expires_at FROM {SCHEMA}.verification_tokens WHERE token=%s ORDER BY id DESC LIMIT 1",
-                (token,)
-            )
-            row = cur.fetchone()
-            if not row or row['used']:
-                cur.close(); conn.close()
-                return {'statusCode': 400, 'headers': HEADERS, 'body': json.dumps({'error': 'Ссылка недействительна или уже использована'})}
-            email = row['email']
-            user_type = row['user_type']
-            pw_hash = hash_password(password)
-            table = 'masters' if user_type == 'master' else 'customers'
-            cur.execute(
-                f"UPDATE {SCHEMA}.{table} SET password_hash=%s, email_verified=TRUE WHERE email=%s RETURNING id, name, phone, email",
-                (pw_hash, email)
-            )
-            user_row = cur.fetchone()
-            if not user_row:
-                cur.close(); conn.close()
-                return {'statusCode': 400, 'headers': HEADERS, 'body': json.dumps({'error': 'Пользователь не найден'})}
-            cur.execute(f"UPDATE {SCHEMA}.verification_tokens SET used=TRUE WHERE token=%s", (token,))
-            conn.commit()
-            cur.close(); conn.close()
-            return {'statusCode': 200, 'headers': HEADERS,
-                    'body': json.dumps({'success': True, 'user_type': user_type,
-                                        'user': {'id': user_row['id'], 'name': user_row['name'], 'phone': user_row['phone'], 'email': user_row['email'] or ''}})}
-
-        # ── ОТПРАВИТЬ КОД (старый) ──
+        # ── ОТПРАВИТЬ КОД ВХОДА (для существующих мастеров без пароля) ──
         if body_raw.get('action') == 'send_code':
             email = (body_raw.get('email') or '').strip().lower()
             if not email:

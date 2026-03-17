@@ -97,14 +97,17 @@ export default function Cabinet() {
 
   // Форма входа
   const [loginMode, setLoginMode] = useState<"login" | "register">("login");
+  const [regStep, setRegStep] = useState<"form" | "code" | "password">("form");
   const [loginIdentifier, setLoginIdentifier] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
   const [loginName, setLoginName] = useState("");
   const [loginPhone, setLoginPhone] = useState("");
   const [loginEmail, setLoginEmail] = useState("");
+  const [regCode, setRegCode] = useState("");
+  const [regPassword, setRegPassword] = useState("");
+  const [regPasswordConfirm, setRegPasswordConfirm] = useState("");
   const [loginError, setLoginError] = useState("");
   const [loginLoading, setLoginLoading] = useState(false);
-  const [registerSent, setRegisterSent] = useState(false);
 
   const [statusLoading, setStatusLoading] = useState<number | null>(null);
   const [selectMasterLoading, setSelectMasterLoading] = useState<number | null>(null);
@@ -191,7 +194,7 @@ export default function Cabinet() {
       const res = await fetch(AUTH_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "register", email: loginEmail, phone: loginPhone, name: loginName, user_type: "customer" }),
+        body: JSON.stringify({ action: "register", email: loginEmail, phone: loginPhone, name: loginName }),
       });
       const data = await res.json();
       const parsed = typeof data === "string" ? JSON.parse(data) : data;
@@ -200,7 +203,50 @@ export default function Cabinet() {
         setLoginError(parsed.error);
         return;
       }
-      if (parsed.success) setRegisterSent(true);
+      if (parsed.success) setRegStep("code");
+    } finally {
+      setLoginLoading(false);
+    }
+  };
+
+  const handleVerifyCode = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoginLoading(true);
+    setLoginError("");
+    try {
+      const res = await fetch(AUTH_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "verify_code", email: loginEmail, code: regCode }),
+      });
+      const data = await res.json();
+      const parsed = typeof data === "string" ? JSON.parse(data) : data;
+      if (parsed.error) { setLoginError(parsed.error); return; }
+      if (parsed.success) setRegStep("password");
+    } finally {
+      setLoginLoading(false);
+    }
+  };
+
+  const handleSetPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (regPassword !== regPasswordConfirm) { setLoginError("Пароли не совпадают"); return; }
+    if (regPassword.length < 6) { setLoginError("Пароль минимум 6 символов"); return; }
+    setLoginLoading(true);
+    setLoginError("");
+    try {
+      const res = await fetch(AUTH_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "set_password", email: loginEmail, password: regPassword }),
+      });
+      const data = await res.json();
+      const parsed = typeof data === "string" ? JSON.parse(data) : data;
+      if (parsed.error) { setLoginError(parsed.error); return; }
+      if (parsed.success) {
+        localStorage.setItem("customer_phone", parsed.user.phone);
+        await loadProfile(parsed.user.phone);
+      }
     } finally {
       setLoginLoading(false);
     }
@@ -301,18 +347,10 @@ export default function Cabinet() {
                 {loginLoading ? "Вход..." : "Войти"}
               </Button>
               <p className="text-center text-gray-500 text-xs">Нет аккаунта?{" "}
-                <button type="button" onClick={() => setLoginMode("register")} className="text-violet-400 hover:underline">Зарегистрироваться</button>
+                <button type="button" onClick={() => { setLoginMode("register"); setRegStep("form"); setLoginError(""); }} className="text-violet-400 hover:underline">Зарегистрироваться</button>
               </p>
             </form>
-          ) : registerSent ? (
-            <div className="bg-emerald-600/10 border border-emerald-500/30 rounded-2xl p-8 text-center">
-              <div className="w-14 h-14 rounded-2xl bg-emerald-600/20 flex items-center justify-center mx-auto mb-4">
-                <Icon name="Mail" size={26} className="text-emerald-400" />
-              </div>
-              <h2 className="text-white font-semibold mb-2">Проверьте почту</h2>
-              <p className="text-gray-400 text-sm">Мы отправили письмо на <span className="text-white">{loginEmail}</span>.<br />Перейдите по ссылке в письме, чтобы подтвердить email и задать пароль.</p>
-            </div>
-          ) : (
+          ) : regStep === "form" ? (
             <form onSubmit={handleRegister} className="bg-white/4 border border-white/8 rounded-2xl p-6 flex flex-col gap-4">
               <div>
                 <label className="text-sm text-gray-400 mb-1.5 block">Ваше имя</label>
@@ -331,11 +369,57 @@ export default function Cabinet() {
               </div>
               {loginError && <p className="text-amber-400 text-sm">{loginError}</p>}
               <Button type="submit" disabled={loginLoading} className="bg-gradient-to-r from-violet-600 to-indigo-600 text-white w-full">
-                {loginLoading ? "Отправка..." : "Зарегистрироваться"}
+                {loginLoading ? "Отправка..." : "Продолжить"}
               </Button>
               <p className="text-center text-gray-500 text-xs">Уже есть аккаунт?{" "}
-                <button type="button" onClick={() => setLoginMode("login")} className="text-violet-400 hover:underline">Войти</button>
+                <button type="button" onClick={() => { setLoginMode("login"); setLoginError(""); }} className="text-violet-400 hover:underline">Войти</button>
               </p>
+            </form>
+          ) : regStep === "code" ? (
+            <form onSubmit={handleVerifyCode} className="bg-white/4 border border-white/8 rounded-2xl p-6 flex flex-col gap-4">
+              <div className="text-center mb-1">
+                <div className="w-12 h-12 rounded-2xl bg-violet-600/20 flex items-center justify-center mx-auto mb-3">
+                  <Icon name="Mail" size={22} className="text-violet-400" />
+                </div>
+                <p className="text-white font-medium">Введите код из письма</p>
+                <p className="text-gray-500 text-sm mt-1">Отправили на <span className="text-gray-300">{loginEmail}</span></p>
+              </div>
+              <div>
+                <input type="text" required maxLength={6} value={regCode} onChange={e => setRegCode(e.target.value.replace(/\D/g, ""))}
+                  placeholder="000000" className={`${inputCls} text-center tracking-widest text-xl font-bold`} autoFocus />
+              </div>
+              {loginError && <p className="text-amber-400 text-sm text-center">{loginError}</p>}
+              <Button type="submit" disabled={loginLoading || regCode.length < 6} className="bg-gradient-to-r from-violet-600 to-indigo-600 text-white w-full">
+                {loginLoading ? "Проверка..." : "Подтвердить"}
+              </Button>
+              <button type="button" onClick={() => { setRegStep("form"); setRegCode(""); setLoginError(""); }}
+                className="text-center text-xs text-gray-500 hover:text-gray-400 transition-colors">
+                Ввести данные снова
+              </button>
+            </form>
+          ) : (
+            <form onSubmit={handleSetPassword} className="bg-white/4 border border-white/8 rounded-2xl p-6 flex flex-col gap-4">
+              <div className="text-center mb-1">
+                <div className="w-12 h-12 rounded-2xl bg-violet-600/20 flex items-center justify-center mx-auto mb-3">
+                  <Icon name="Lock" size={22} className="text-violet-400" />
+                </div>
+                <p className="text-white font-medium">Придумайте пароль</p>
+                <p className="text-gray-500 text-sm mt-1">Email подтверждён!</p>
+              </div>
+              <div>
+                <label className="text-sm text-gray-400 mb-1.5 block">Пароль</label>
+                <input type="password" required value={regPassword} onChange={e => setRegPassword(e.target.value)}
+                  placeholder="Минимум 6 символов" className={inputCls} autoFocus />
+              </div>
+              <div>
+                <label className="text-sm text-gray-400 mb-1.5 block">Повторите пароль</label>
+                <input type="password" required value={regPasswordConfirm} onChange={e => setRegPasswordConfirm(e.target.value)}
+                  placeholder="Повторите пароль" className={inputCls} />
+              </div>
+              {loginError && <p className="text-amber-400 text-sm">{loginError}</p>}
+              <Button type="submit" disabled={loginLoading} className="bg-gradient-to-r from-violet-600 to-indigo-600 text-white w-full">
+                {loginLoading ? "Сохранение..." : "Сохранить и войти"}
+              </Button>
             </form>
           )}
         </div>

@@ -1,8 +1,10 @@
 import json
 import os
+import random
 import secrets
 import hashlib
 import smtplib
+import ssl
 import psycopg2
 from psycopg2.extras import RealDictCursor
 from email.mime.text import MIMEText
@@ -36,35 +38,32 @@ def verify_password(password: str, stored_hash: str) -> bool:
     return hashlib.sha256((salt + password).encode()).hexdigest() == h
 
 
-def send_verification_email(to_email: str, token: str, user_type: str):
-    smtp_host = os.environ["SMTP_HOST"]
-    smtp_port = int(os.environ["SMTP_PORT"])
-    smtp_user = os.environ["SMTP_USER"]
-    smtp_pass = os.environ["SMTP_PASS"]
-
-    verify_url = f"https://handyman.poehali.dev/verify-email?token={token}&type={user_type}"
-
-    msg = MIMEMultipart("alternative")
-    msg["Subject"] = "Подтверждение email — HandyMan"
-    msg["From"] = smtp_user
-    msg["To"] = to_email
-
+def send_code_email(to_email: str, code: str, name: str = ""):
+    host = os.environ['SMTP_HOST']
+    port = int(os.environ['SMTP_PORT'])
+    user = os.environ['SMTP_USER']
+    pw = os.environ['SMTP_PASS']
+    greeting = f"Привет, {name}!" if name else "Привет!"
+    msg = MIMEMultipart('alternative')
+    msg['Subject'] = f'{code} — код подтверждения HandyMan'
+    msg['From'] = f'HandyMan <{user}>'
+    msg['To'] = to_email
     html = f"""
-    <div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:24px;">
-      <h2 style="color:#7c3aed;">Подтверждение email</h2>
-      <p>Нажмите кнопку ниже, чтобы подтвердить вашу почту и задать пароль:</p>
-      <a href="{verify_url}"
-         style="display:inline-block;background:#7c3aed;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:bold;">
-        Подтвердить email
-      </a>
-      <p style="color:#888;font-size:13px;margin-top:16px;">Ссылка действительна 1 час. Если вы не регистрировались — проигнорируйте это письмо.</p>
+    <div style="font-family:sans-serif;max-width:420px;margin:0 auto;padding:32px;background:#0a0d16;border-radius:16px;">
+      <h2 style="color:#fff;margin-bottom:4px;">HandyMan</h2>
+      <p style="color:#9ca3af;font-size:14px;margin-bottom:20px;">{greeting} Ваш код подтверждения:</p>
+      <div style="background:#1e1b4b;border:1px solid #4c1d95;border-radius:12px;padding:24px;text-align:center;margin-bottom:20px;">
+        <span style="font-size:42px;font-weight:700;letter-spacing:14px;color:#a78bfa;">{code}</span>
+      </div>
+      <p style="color:#6b7280;font-size:12px;">Код действителен 15 минут. Если вы не регистрировались — проигнорируйте письмо.</p>
     </div>
     """
-    msg.attach(MIMEText(html, "html"))
-
-    with smtplib.SMTP_SSL(smtp_host, smtp_port) as server:
-        server.login(smtp_user, smtp_pass)
-        server.sendmail(smtp_user, to_email, msg.as_string())
+    msg.attach(MIMEText(f'Ваш код подтверждения: {code}\n\nКод действителен 15 минут.', 'plain'))
+    msg.attach(MIMEText(html, 'html'))
+    ctx = ssl.create_default_context()
+    with smtplib.SMTP_SSL(host, port, context=ctx) as server:
+        server.login(user, pw)
+        server.sendmail(user, to_email, msg.as_string())
 
 
 def get_orders(cur, customer_id=None, phone=None):
@@ -117,7 +116,7 @@ def get_orders(cur, customer_id=None, phone=None):
 
 
 def handler(event: dict, context) -> dict:
-    """Кабинет заказчика: регистрация/вход по email+пароль, заявки с откликами, отзывы."""
+    """Кабинет заказчика: регистрация с кодом на email, вход по email/телефону+пароль, заявки, отзывы."""
 
     if event.get('httpMethod') == 'OPTIONS':
         return {'statusCode': 200, 'headers': HEADERS, 'body': ''}
@@ -128,7 +127,7 @@ def handler(event: dict, context) -> dict:
         body = json.loads(event.get('body') or '{}')
         action = body.get('action', 'login')
 
-        # ── РЕГИСТРАЦИЯ ЗАКАЗЧИКА ──
+        # ── ШАГ 1: РЕГИСТРАЦИЯ — создать аккаунт и отправить код ──
         if action == 'register':
             email = (body.get('email') or '').strip().lower()
             phone = (body.get('phone') or '').strip()
@@ -157,78 +156,67 @@ def handler(event: dict, context) -> dict:
             else:
                 cur.execute(f"UPDATE {SCHEMA}.customers SET name=%s, phone=%s WHERE email=%s", (name, phone, email))
 
-            token = secrets.token_urlsafe(40)
+            # Генерируем 6-значный код и сохраняем в auth_codes
+            code = str(random.randint(100000, 999999))
+            cur.execute(f"UPDATE {SCHEMA}.auth_codes SET used=TRUE WHERE email=%s AND used=FALSE", (email,))
             cur.execute(
-                f"INSERT INTO {SCHEMA}.verification_tokens (email, token, user_type) VALUES (%s,%s,'customer')",
-                (email, token)
+                f"INSERT INTO {SCHEMA}.auth_codes (email, code) VALUES (%s, %s)",
+                (email, code)
             )
             conn.commit()
             cur.close(); conn.close()
 
-            send_verification_email(email, token, 'customer')
-            return {'statusCode': 200, 'headers': HEADERS, 'body': json.dumps({'success': True, 'message': 'Письмо отправлено. Проверьте почту.'})}
+            send_code_email(email, code, name)
+            return {'statusCode': 200, 'headers': HEADERS,
+                    'body': json.dumps({'success': True, 'message': 'Код отправлен на вашу почту.'})}
 
-        # ── ВЕРИФИКАЦИЯ ТОКЕНА ──
-        if action == 'verify_token':
-            token = (body.get('token') or '').strip()
-            if not token:
-                return {'statusCode': 400, 'headers': HEADERS, 'body': json.dumps({'error': 'Токен не указан'})}
+        # ── ШАГ 2: ПОДТВЕРЖДЕНИЕ КОДА ──
+        if action == 'verify_code':
+            email = (body.get('email') or '').strip().lower()
+            code = (body.get('code') or '').strip()
+            if not email or not code:
+                return {'statusCode': 400, 'headers': HEADERS, 'body': json.dumps({'error': 'Укажите email и код'})}
             conn = get_conn()
             cur = conn.cursor()
             cur.execute(
-                f"SELECT email, user_type, used, expires_at FROM {SCHEMA}.verification_tokens WHERE token=%s ORDER BY id DESC LIMIT 1",
-                (token,)
+                f"SELECT id FROM {SCHEMA}.auth_codes WHERE email=%s AND code=%s AND used=FALSE AND expires_at > NOW()",
+                (email, code)
             )
             row = cur.fetchone()
             if not row:
                 cur.close(); conn.close()
-                return {'statusCode': 400, 'headers': HEADERS, 'body': json.dumps({'error': 'Ссылка недействительна'})}
-            if row['used']:
-                cur.close(); conn.close()
-                return {'statusCode': 400, 'headers': HEADERS, 'body': json.dumps({'error': 'Ссылка уже использована'})}
-            cur.execute("SELECT NOW()")
-            now = cur.fetchone()['now']
-            if row['expires_at'] and now > row['expires_at']:
-                cur.close(); conn.close()
-                return {'statusCode': 400, 'headers': HEADERS, 'body': json.dumps({'error': 'Ссылка истекла. Зарегистрируйтесь снова.'})}
+                return {'statusCode': 400, 'headers': HEADERS, 'body': json.dumps({'error': 'Неверный или устаревший код'})}
+            cur.execute(f"UPDATE {SCHEMA}.auth_codes SET used=TRUE WHERE id=%s", (row['id'],))
+            conn.commit()
             cur.close(); conn.close()
             return {'statusCode': 200, 'headers': HEADERS,
-                    'body': json.dumps({'success': True, 'email': row['email'], 'user_type': row['user_type'], 'token': token})}
+                    'body': json.dumps({'success': True, 'email': email})}
 
-        # ── УСТАНОВКА ПАРОЛЯ ──
+        # ── ШАГ 3: УСТАНОВКА ПАРОЛЯ ──
         if action == 'set_password':
-            token = (body.get('token') or '').strip()
+            email = (body.get('email') or '').strip().lower()
             password = body.get('password', '')
+            if not email:
+                return {'statusCode': 400, 'headers': HEADERS, 'body': json.dumps({'error': 'Email не указан'})}
             if len(password) < 6:
                 return {'statusCode': 400, 'headers': HEADERS, 'body': json.dumps({'error': 'Пароль минимум 6 символов'})}
             conn = get_conn()
             cur = conn.cursor()
-            cur.execute(
-                f"SELECT email, user_type, used, expires_at FROM {SCHEMA}.verification_tokens WHERE token=%s ORDER BY id DESC LIMIT 1",
-                (token,)
-            )
-            row = cur.fetchone()
-            if not row or row['used']:
-                cur.close(); conn.close()
-                return {'statusCode': 400, 'headers': HEADERS, 'body': json.dumps({'error': 'Ссылка недействительна или уже использована'})}
-            email = row['email']
-            user_type = row['user_type']
             pw_hash = hash_password(password)
-            table = 'masters' if user_type == 'master' else 'customers'
             cur.execute(
-                f"UPDATE {SCHEMA}.{table} SET password_hash=%s, email_verified=TRUE WHERE email=%s RETURNING id, name, phone, email",
+                f"UPDATE {SCHEMA}.customers SET password_hash=%s, email_verified=TRUE WHERE email=%s RETURNING id, name, phone, email",
                 (pw_hash, email)
             )
             user_row = cur.fetchone()
             if not user_row:
                 cur.close(); conn.close()
                 return {'statusCode': 400, 'headers': HEADERS, 'body': json.dumps({'error': 'Пользователь не найден'})}
-            cur.execute(f"UPDATE {SCHEMA}.verification_tokens SET used=TRUE WHERE token=%s", (token,))
             conn.commit()
             cur.close(); conn.close()
             return {'statusCode': 200, 'headers': HEADERS,
-                    'body': json.dumps({'success': True, 'user_type': user_type,
-                                        'user': {'id': user_row['id'], 'name': user_row['name'], 'phone': user_row['phone'], 'email': user_row['email'] or ''}})}
+                    'body': json.dumps({'success': True,
+                                        'user': {'id': user_row['id'], 'name': user_row['name'],
+                                                 'phone': user_row['phone'], 'email': user_row['email'] or ''}})}
 
         # ── ВХОД ЗАКАЗЧИКА ──
         if action == 'auth_login':
@@ -247,11 +235,14 @@ def handler(event: dict, context) -> dict:
             if not row:
                 return {'statusCode': 401, 'headers': HEADERS, 'body': json.dumps({'error': 'Пользователь не найден'})}
             if not row['email_verified'] or not row['password_hash']:
-                return {'statusCode': 401, 'headers': HEADERS, 'body': json.dumps({'error': 'Email не подтверждён. Завершите регистрацию.'})}
+                return {'statusCode': 401, 'headers': HEADERS,
+                        'body': json.dumps({'error': 'Завершите регистрацию — подтвердите email.'})}
             if not verify_password(password, row['password_hash']):
                 return {'statusCode': 401, 'headers': HEADERS, 'body': json.dumps({'error': 'Неверный пароль'})}
             return {'statusCode': 200, 'headers': HEADERS,
-                    'body': json.dumps({'success': True, 'user': {'id': row['id'], 'name': row['name'], 'phone': row['phone'], 'email': row['email'] or ''}})}
+                    'body': json.dumps({'success': True,
+                                        'user': {'id': row['id'], 'name': row['name'],
+                                                 'phone': row['phone'], 'email': row['email'] or ''}})}
 
         if action == 'select_master':
             order_id = body.get('order_id')
