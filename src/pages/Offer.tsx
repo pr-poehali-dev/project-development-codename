@@ -1,4 +1,14 @@
+import { useEffect } from "react";
+
 export default function Offer() {
+  useEffect(() => {
+    const hash = window.location.hash;
+    if (hash) {
+      const el = document.querySelector(hash);
+      if (el) setTimeout(() => el.scrollIntoView({ behavior: "smooth", block: "start" }), 100);
+    }
+  }, []);
+
   return (
     <div className="min-h-screen bg-[#080b12] text-white">
       <div className="max-w-3xl mx-auto px-4 py-12">
