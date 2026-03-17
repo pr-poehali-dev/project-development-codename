@@ -154,7 +154,7 @@ export default function MasterCabinet() {
       });
       const data = await res.json();
       if (data.success) {
-        setBuySuccess(`Куплено ${pkg.responses_count} откликов!`);
+        setBuySuccess(`Зачислено ${pkg.responses_count} токенов!`);
         setMaster((m) => m ? { ...m, balance: data.new_balance } : m);
         await loadProfile(phone);
         setTimeout(() => setBuySuccess(""), 4000);

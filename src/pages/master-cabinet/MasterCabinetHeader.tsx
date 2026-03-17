@@ -69,7 +69,7 @@ export default function MasterCabinetHeader({
         {/* Баланс */}
         <div className="bg-gradient-to-br from-violet-600/20 to-indigo-600/10 border border-violet-500/30 rounded-2xl p-6 mb-6 flex items-center justify-between">
           <div>
-            <p className="text-gray-400 text-sm mb-1">Доступно откликов</p>
+            <p className="text-gray-400 text-sm mb-1">Баланс токенов</p>
             <p className="text-5xl font-bold text-white">{master?.balance ?? 0}</p>
           </div>
           <div className="w-16 h-16 rounded-2xl bg-violet-600/20 flex items-center justify-center">

@@ -29,7 +29,7 @@ const HomeHeroStats = () => {
           </h1>
           <p className="text-gray-400 text-lg sm:text-xl mb-10 max-w-2xl mx-auto">
             Более 1 200 проверенных специалистов: мастера по ремонту, сантехники, электрики, бьюти-мастера, грузчики и многое другое.
-            Комиссия от 5% — только для самозанятых.
+            Откликайтесь на заявки бесплатно — платите токенами только когда заказчик выбрал вас исполнителем.
           </p>
 
           <div className="flex flex-col sm:flex-row gap-3 justify-center max-w-lg mx-auto">

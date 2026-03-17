@@ -116,7 +116,7 @@ const HomeModals = ({
                 <Icon name="CheckCircle" size={32} className="text-emerald-400" />
               </div>
               <p className="text-gray-300 mb-2">Добро пожаловать, <span className="text-white font-semibold">{masterForm.name}</span>!</p>
-              <p className="text-gray-500 text-sm mb-1">Аккаунт создан. Теперь вы можете откликаться на заявки заказчиков.</p>
+              <p className="text-gray-500 text-sm mb-1">Аккаунт создан. Откликайтесь на заявки бесплатно — токены нужны только когда заказчик выбирает вас исполнителем.</p>
               <p className="text-gray-600 text-xs mb-6">Для входа используйте email <span className="text-violet-400">{masterForm.email}</span></p>
               <div className="flex flex-col gap-3">
                 <a href="/master" onClick={() => { setMasterModalOpen(false); setMasterSent(false); }}>

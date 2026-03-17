@@ -166,7 +166,7 @@ const Orders = () => {
         <div className="max-w-7xl mx-auto">
           <div className="mb-8">
             <h1 className="text-3xl sm:text-4xl font-extrabold mb-2">Лента заявок</h1>
-            <p className="text-gray-400">Найди подходящий заказ и откликнись — заказчик выберет лучшего мастера</p>
+            <p className="text-gray-400">Найди подходящий заказ и откликнись бесплатно — токены списываются только если заказчик выбрал тебя исполнителем</p>
           </div>
 
           {/* Основные табы */}
