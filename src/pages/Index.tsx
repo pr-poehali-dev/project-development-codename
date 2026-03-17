@@ -59,6 +59,7 @@ const Index = () => {
   const [availableCities, setAvailableCities] = useState<string[]>([]);
   const [servicesLoading, setServicesLoading] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [registerModalOpen, setRegisterModalOpen] = useState(false);
 
   const [masterModalOpen, setMasterModalOpen] = useState(false);
   const [masterForm, setMasterForm] = useState({ name: "", phone: "", email: "", category: "", city: "", about: "", status: "Самозанятый / ИП / Компания" });
@@ -183,6 +184,14 @@ const Index = () => {
                 Мои заявки
               </Button>
             </a>
+            <Button
+              variant="ghost"
+              onClick={() => setRegisterModalOpen(true)}
+              className="text-gray-300 hover:text-white hover:bg-white/10 text-sm gap-2 border border-white/10"
+            >
+              <Icon name="UserPlus" size={15} />
+              Зарегистрироваться
+            </Button>
             <a href="/master">
               <Button className="bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white text-sm px-5">
                 Я мастер
@@ -204,6 +213,14 @@ const Index = () => {
             <a href="#categories" className="block text-gray-400 hover:text-white text-sm">Категории</a>
             <a href="/orders" className="block text-gray-400 hover:text-white text-sm">Лента заявок</a>
             <a href="#pricing" className="block text-gray-400 hover:text-white text-sm">Тарифы</a>
+            <Button
+              variant="ghost"
+              onClick={() => { setRegisterModalOpen(true); setMobileMenuOpen(false); }}
+              className="w-full text-gray-300 hover:text-white hover:bg-white/10 text-sm gap-2 border border-white/10"
+            >
+              <Icon name="UserPlus" size={15} />
+              Зарегистрироваться
+            </Button>
             <Button onClick={() => setMasterModalOpen(true)} className="w-full bg-gradient-to-r from-violet-600 to-indigo-600 text-white text-sm mt-2">
               Я мастер
             </Button>
@@ -784,6 +801,42 @@ const Index = () => {
               </Button>
             </form>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Модалка выбора роли при регистрации */}
+      <Dialog open={registerModalOpen} onOpenChange={setRegisterModalOpen}>
+        <DialogContent className="bg-[#0f1117] border border-white/10 text-white max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-bold text-center">Кто вы?</DialogTitle>
+          </DialogHeader>
+          <p className="text-gray-400 text-sm text-center -mt-2">Выберите роль для регистрации</p>
+          <div className="flex flex-col gap-3 mt-2">
+            <a href="/master" onClick={() => setRegisterModalOpen(false)}>
+              <div className="group flex items-center gap-4 p-4 rounded-xl border border-white/10 bg-white/4 hover:bg-violet-600/10 hover:border-violet-500/40 transition-all cursor-pointer">
+                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-violet-600 to-indigo-600 flex items-center justify-center flex-shrink-0">
+                  <Icon name="Wrench" size={22} className="text-white" />
+                </div>
+                <div>
+                  <p className="font-semibold text-white">Я мастер</p>
+                  <p className="text-gray-400 text-xs mt-0.5">Принимаю заказы и зарабатываю</p>
+                </div>
+                <Icon name="ChevronRight" size={18} className="text-gray-500 group-hover:text-violet-400 ml-auto transition-colors" />
+              </div>
+            </a>
+            <button onClick={() => { setRegisterModalOpen(false); setOrderModalOpen(true); }}>
+              <div className="group flex items-center gap-4 p-4 rounded-xl border border-white/10 bg-white/4 hover:bg-indigo-600/10 hover:border-indigo-500/40 transition-all cursor-pointer">
+                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-indigo-500 to-blue-600 flex items-center justify-center flex-shrink-0">
+                  <Icon name="ClipboardList" size={22} className="text-white" />
+                </div>
+                <div>
+                  <p className="font-semibold text-white">Я заказчик</p>
+                  <p className="text-gray-400 text-xs mt-0.5">Размещаю заявку и нахожу специалиста</p>
+                </div>
+                <Icon name="ChevronRight" size={18} className="text-gray-500 group-hover:text-indigo-400 ml-auto transition-colors" />
+              </div>
+            </button>
+          </div>
         </DialogContent>
       </Dialog>
     </div>
