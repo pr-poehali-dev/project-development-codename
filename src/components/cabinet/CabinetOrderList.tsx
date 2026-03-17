@@ -16,6 +16,7 @@ interface Response {
   master_phone: string;
   master_category: string;
   master_id: number | null;
+  master_balance: number;
   message: string;
   created_at: string;
   review: Review | null;

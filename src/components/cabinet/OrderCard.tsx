@@ -60,6 +60,7 @@ interface Response {
   master_phone: string;
   master_category: string;
   master_id: number | null;
+  master_balance: number;
   message: string;
   created_at: string;
   review: Review | null;
@@ -228,14 +229,21 @@ export default function OrderCard({
                       {r.message && <p className="text-gray-300 text-sm mb-3">{r.message}</p>}
                       <div className="flex items-center gap-3 flex-wrap">
                         {!order.accepted_response_id && order.status === "new" && (
-                          <button
-                            disabled={selectMasterLoading === r.id}
-                            onClick={() => onSelectMaster(order.id, r.id)}
-                            className="text-xs px-3 py-1.5 rounded-lg bg-violet-600/20 text-violet-300 border border-violet-500/30 hover:bg-violet-600/30 transition-colors flex items-center gap-1.5"
-                          >
-                            <Icon name="UserCheck" size={13} />
-                            {selectMasterLoading === r.id ? "Выбираем..." : "Выбрать исполнителем"}
-                          </button>
+                          r.master_balance >= 5 ? (
+                            <button
+                              disabled={selectMasterLoading === r.id}
+                              onClick={() => onSelectMaster(order.id, r.id)}
+                              className="text-xs px-3 py-1.5 rounded-lg bg-violet-600/20 text-violet-300 border border-violet-500/30 hover:bg-violet-600/30 transition-colors flex items-center gap-1.5"
+                            >
+                              <Icon name="UserCheck" size={13} />
+                              {selectMasterLoading === r.id ? "Выбираем..." : "Выбрать исполнителем"}
+                            </button>
+                          ) : (
+                            <span className="text-xs text-gray-600 flex items-center gap-1.5">
+                              <Icon name="Lock" size={12} />
+                              Мастер временно недоступен
+                            </span>
+                          )
                         )}
                         {r.review ? (
                           <div className="bg-amber-600/10 border border-amber-500/15 rounded-lg px-3 py-2 flex items-center gap-2">

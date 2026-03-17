@@ -203,11 +203,15 @@ export default function MasterTabServices({
               </div>
               <div>
                 <p className="text-white font-semibold">Публикация услуги</p>
-                <p className="text-violet-300 text-sm font-bold">300 ₽ / месяц</p>
+                <p className="text-violet-300 text-sm font-bold">4–6 токенов / месяц</p>
               </div>
             </div>
             <ul className="space-y-1.5 mb-4">
-              {["Размещение в разделе «Все услуги»", "Показ всем клиентам на главной", "Ссылка на ваш профиль"].map(f => (
+              {[
+                "1-я услуга — 6 токенов/мес",
+                "2-я услуга — 5 токенов/мес",
+                "3-я и далее — 4 токена/мес",
+              ].map(f => (
                 <li key={f} className="text-xs text-gray-400 flex items-center gap-1.5">
                   <Icon name="Check" size={12} className="text-violet-400 flex-shrink-0" />{f}
                 </li>
@@ -224,11 +228,11 @@ export default function MasterTabServices({
               </div>
               <div>
                 <p className="text-white font-semibold">Поднятие в топ</p>
-                <p className="text-amber-300 text-sm font-bold">50 ₽ за раз</p>
+                <p className="text-amber-300 text-sm font-bold">1 токен за раз</p>
               </div>
             </div>
             <ul className="space-y-1.5 mb-4">
-              {["Ваша услуга поднимается выше всех", "Новые клиенты видят вас первым", "Действует до следующей публикации"].map(f => (
+              {["Ваша услуга поднимается выше всех", "Новые клиенты видят вас первым", "Действует 7 дней"].map(f => (
                 <li key={f} className="text-xs text-gray-400 flex items-center gap-1.5">
                   <Icon name="Check" size={12} className="text-amber-400 flex-shrink-0" />{f}
                 </li>
@@ -243,7 +247,7 @@ export default function MasterTabServices({
         <form onSubmit={onAddService} className="bg-white/4 border border-violet-500/30 rounded-2xl p-5 mb-5 space-y-3">
           <div className="flex items-center justify-between mb-1">
             <h3 className="text-white font-semibold">Новая услуга</h3>
-            <span className="text-violet-400 text-sm font-medium">300 ₽ / месяц</span>
+            <span className="text-violet-400 text-sm font-medium">{myServices.length === 0 ? "6" : myServices.length === 1 ? "5" : "4"} токенов / 30 дней</span>
           </div>
           <input
             required
@@ -282,14 +286,10 @@ export default function MasterTabServices({
             onChange={e => setServiceForm(f => ({ ...f, price: e.target.value }))}
             className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-violet-500"
           />
-          <div className="bg-amber-600/10 border border-amber-500/20 rounded-xl px-4 py-3 flex items-start gap-2">
-            <Icon name="Info" size={15} className="text-amber-400 mt-0.5 flex-shrink-0" />
-            <p className="text-amber-300/80 text-xs leading-relaxed">Оплата через ЮKassa будет подключена в ближайшее время. Сейчас услуги публикуются бесплатно для тестирования.</p>
-          </div>
           <div className="flex gap-3 pt-1">
             <Button type="button" variant="ghost" className="flex-1 text-gray-400" onClick={() => setShowServiceForm(false)}>Отмена</Button>
             <Button type="submit" disabled={serviceLoading} className="flex-1 bg-violet-600 hover:bg-violet-500 text-white">
-              {serviceLoading ? "Публикация..." : "Опубликовать — 300 ₽"}
+              {serviceLoading ? "Публикация..." : `Опубликовать — ${myServices.length === 0 ? "6" : myServices.length === 1 ? "5" : "4"} токенов`}
             </Button>
           </div>
         </form>

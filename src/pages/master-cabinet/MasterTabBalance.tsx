@@ -21,31 +21,73 @@ interface MasterTabBalanceProps {
 }
 
 export default function MasterTabBalance({ packages, buyingId, onBuy }: MasterTabBalanceProps) {
+  const singlePkg = packages.find(p => p.responses_count === 1);
+  const bundlePkgs = packages.filter(p => p.responses_count > 1);
+  const pricePerToken = singlePkg ? singlePkg.price : 49;
+
   return (
     <>
-      <p className="text-gray-400 text-sm mb-4">Выберите пакет откликов — после подключения оплаты деньги спишутся автоматически:</p>
-      <div className="grid gap-4 sm:grid-cols-3">
-        {packages.map((pkg, i) => (
-          <div
-            key={pkg.id}
-            className={`bg-gradient-to-br ${PACKAGE_COLORS[i % PACKAGE_COLORS.length]} border rounded-2xl p-5 flex flex-col gap-4`}
-          >
-            <div>
-              <p className="text-white font-semibold text-lg">{pkg.name}</p>
-              <p className="text-gray-400 text-sm">{pkg.responses_count} откликов</p>
-            </div>
-            <p className="text-3xl font-bold text-white">{pkg.price} ₽</p>
+      <p className="text-gray-400 text-sm mb-5">Токены списываются когда заказчик выбирает вас исполнителем (−5 токенов). Буст услуги — 1 токен. Публикация услуги — 4–6 токенов/месяц.</p>
+
+      {/* Поштучная покупка */}
+      {singlePkg && (
+        <div className="bg-white/4 border border-white/10 rounded-2xl p-4 mb-5 flex items-center justify-between gap-4">
+          <div>
+            <p className="text-white font-semibold">Поштучно</p>
+            <p className="text-gray-500 text-xs mt-0.5">Самый дорогой способ — {singlePkg.price} ₽ за токен</p>
+          </div>
+          <div className="flex items-center gap-3 flex-shrink-0">
+            <p className="text-2xl font-bold text-white">{singlePkg.price} ₽</p>
             <Button
-              onClick={() => onBuy(pkg)}
-              disabled={buyingId === pkg.id}
-              className="bg-white/10 hover:bg-white/20 text-white border border-white/20 w-full"
+              onClick={() => onBuy(singlePkg)}
+              disabled={buyingId === singlePkg.id}
+              size="sm"
+              className="bg-white/10 hover:bg-white/20 text-white border border-white/20"
             >
-              {buyingId === pkg.id ? "Обработка..." : "Выбрать"}
+              {buyingId === singlePkg.id ? "..." : "Купить"}
             </Button>
           </div>
-        ))}
+        </div>
+      )}
+
+      {/* Пакеты */}
+      <div className="grid gap-4 sm:grid-cols-3 mb-5">
+        {bundlePkgs.map((pkg, i) => {
+          const perToken = Math.round(pkg.price / pkg.responses_count);
+          const discount = Math.round((1 - perToken / pricePerToken) * 100);
+          return (
+            <div
+              key={pkg.id}
+              className={`bg-gradient-to-br ${PACKAGE_COLORS[i % PACKAGE_COLORS.length]} border rounded-2xl p-5 flex flex-col gap-3`}
+            >
+              <div className="flex items-start justify-between">
+                <div>
+                  <p className="text-white font-semibold text-lg">{pkg.name}</p>
+                  <p className="text-gray-400 text-sm">{pkg.responses_count} токенов</p>
+                </div>
+                {discount > 0 && (
+                  <span className="text-xs px-2 py-0.5 rounded-lg bg-emerald-600/20 text-emerald-400 border border-emerald-500/20 font-medium">
+                    −{discount}%
+                  </span>
+                )}
+              </div>
+              <div>
+                <p className="text-3xl font-bold text-white">{pkg.price} ₽</p>
+                <p className="text-gray-600 text-xs mt-0.5">{perToken} ₽ за токен</p>
+              </div>
+              <Button
+                onClick={() => onBuy(pkg)}
+                disabled={buyingId === pkg.id}
+                className="bg-white/10 hover:bg-white/20 text-white border border-white/20 w-full"
+              >
+                {buyingId === pkg.id ? "Обработка..." : "Выбрать"}
+              </Button>
+            </div>
+          );
+        })}
       </div>
-      <div className="mt-6 bg-amber-600/10 border border-amber-500/20 rounded-xl px-4 py-3 flex items-start gap-3">
+
+      <div className="mt-2 bg-amber-600/10 border border-amber-500/20 rounded-xl px-4 py-3 flex items-start gap-3">
         <Icon name="Info" size={16} className="text-amber-400 mt-0.5 flex-shrink-0" />
         <p className="text-amber-300/80 text-xs leading-relaxed">
           Оплата через ЮKassa будет подключена в ближайшее время. Сейчас пакеты зачисляются без списания средств для тестирования.

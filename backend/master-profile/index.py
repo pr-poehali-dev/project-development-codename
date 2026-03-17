@@ -457,7 +457,7 @@ def handler(event: dict, context) -> dict:
             cur.close(); conn.close()
             return {'statusCode': 200, 'headers': HEADERS, 'body': json.dumps({'success': True})}
 
-        # PUT: поднятие услуги в топ
+        # PUT: поднятие услуги в топ (1 токен)
         if body.get('action') == 'boost_service':
             service_id = body.get('service_id')
             master_id = body.get('master_id')
@@ -465,17 +465,28 @@ def handler(event: dict, context) -> dict:
                 return {'statusCode': 400, 'headers': HEADERS, 'body': json.dumps({'error': 'Неверные данные'})}
             conn = get_conn()
             cur = conn.cursor()
+            # Проверяем баланс
+            cur.execute("SELECT balance FROM masters WHERE id = %s", (int(master_id),))
+            m = cur.fetchone()
+            if not m or m['balance'] < 1:
+                cur.close(); conn.close()
+                return {'statusCode': 402, 'headers': HEADERS, 'body': json.dumps({'error': 'Недостаточно токенов. Нужен 1 токен.', 'no_balance': True})}
             import time as _time
             new_sort = int(_time.time() * 1000)
             cur.execute(
                 "UPDATE master_services SET sort_order = %s, boost_count = boost_count + 1, boosted_until = NOW() + INTERVAL '7 days' WHERE id = %s AND master_id = %s",
                 (new_sort, int(service_id), int(master_id))
             )
+            cur.execute("UPDATE masters SET balance = balance - 1 WHERE id = %s", (int(master_id),))
+            cur.execute(
+                "INSERT INTO master_transactions (master_id, type, amount, description) VALUES (%s, 'spend', 1, %s)",
+                (int(master_id), f"Поднятие услуги #{service_id} в топ")
+            )
             conn.commit()
             cur.close(); conn.close()
             return {'statusCode': 200, 'headers': HEADERS, 'body': json.dumps({'success': True})}
 
-        # PUT: публикация новой услуги мастером
+        # PUT: публикация новой услуги мастером (6/5/4 токена)
         if body.get('action') == 'add_service':
             master_id = body.get('master_id')
             title = (body.get('title') or '').strip()
@@ -487,16 +498,37 @@ def handler(event: dict, context) -> dict:
                 return {'statusCode': 400, 'headers': HEADERS, 'body': json.dumps({'error': 'Заполните все обязательные поля'})}
             conn = get_conn()
             cur = conn.cursor()
+            # Считаем текущее количество активных услуг мастера
+            cur.execute("SELECT COUNT(*) as cnt FROM master_services WHERE master_id = %s AND is_active = TRUE", (int(master_id),))
+            active_count = cur.fetchone()['cnt']
+            # Определяем стоимость публикации
+            if active_count == 0:
+                token_cost = 6
+            elif active_count == 1:
+                token_cost = 5
+            else:
+                token_cost = 4
+            # Проверяем баланс
+            cur.execute("SELECT balance FROM masters WHERE id = %s", (int(master_id),))
+            m = cur.fetchone()
+            if not m or m['balance'] < token_cost:
+                cur.close(); conn.close()
+                return {'statusCode': 402, 'headers': HEADERS, 'body': json.dumps({'error': f'Недостаточно токенов. Нужно {token_cost}.', 'no_balance': True, 'required': token_cost})}
             import time as _time
             sort_order = int(_time.time() * 1000)
             cur.execute(
-                "INSERT INTO master_services (master_id, title, description, category, city, price, sort_order) VALUES (%s, %s, %s, %s, %s, %s, %s) RETURNING id",
+                "INSERT INTO master_services (master_id, title, description, category, city, price, sort_order, paid_until) VALUES (%s, %s, %s, %s, %s, %s, %s, NOW() + INTERVAL '30 days') RETURNING id",
                 (int(master_id), title, description, category, city, int(price) if price else None, sort_order)
             )
             new_id = cur.fetchone()['id']
+            cur.execute("UPDATE masters SET balance = balance - %s WHERE id = %s", (token_cost, int(master_id)))
+            cur.execute(
+                "INSERT INTO master_transactions (master_id, type, amount, description) VALUES (%s, 'spend', %s, %s)",
+                (int(master_id), token_cost, f"Публикация услуги на 30 дней")
+            )
             conn.commit()
             cur.close(); conn.close()
-            return {'statusCode': 200, 'headers': HEADERS, 'body': json.dumps({'success': True, 'id': new_id})}
+            return {'statusCode': 200, 'headers': HEADERS, 'body': json.dumps({'success': True, 'id': new_id, 'token_cost': token_cost})}
 
         # PUT: удаление услуги мастером
         if body.get('action') == 'delete_service':

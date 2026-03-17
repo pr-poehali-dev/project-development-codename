@@ -84,9 +84,11 @@ def get_orders(cur, customer_id=None, phone=None):
     for o in orders:
         cur.execute(
             "SELECT r.id, r.master_name, r.master_phone, r.master_category, r.message, r.created_at, r.master_id, "
-            "rv.id as review_id, rv.rating, rv.comment "
+            "rv.id as review_id, rv.rating, rv.comment, "
+            "COALESCE(m.balance, 0) as master_balance "
             f"FROM {SCHEMA}.responses r "
             f"LEFT JOIN {SCHEMA}.reviews rv ON rv.order_id = r.order_id AND rv.master_name = r.master_name "
+            f"LEFT JOIN {SCHEMA}.masters m ON m.id = r.master_id "
             "WHERE r.order_id = %s ORDER BY r.created_at ASC",
             (o['id'],)
         )
@@ -108,6 +110,7 @@ def get_orders(cur, customer_id=None, phone=None):
                 'master_category': r['master_category'],
                 'message': r['message'],
                 'master_id': r['master_id'],
+                'master_balance': int(r['master_balance']),
                 'created_at': r['created_at'].isoformat() if r['created_at'] else None,
                 'review': {'id': r['review_id'], 'rating': r['rating'], 'comment': r['comment']} if r['review_id'] else None,
             } for r in responses]
@@ -370,10 +373,29 @@ def handler(event: dict, context) -> dict:
                 return {'statusCode': 400, 'headers': HEADERS, 'body': json.dumps({'error': 'Недостаточно данных'})}
             conn = get_conn()
             cur = conn.cursor()
+            # Получаем master_id из отклика
+            cur.execute(f"SELECT master_id FROM {SCHEMA}.responses WHERE id = %s", (int(response_id),))
+            resp_row = cur.fetchone()
+            master_id = resp_row['master_id'] if resp_row else None
+            # Проверяем баланс мастера (минимум 5 токенов)
+            if master_id:
+                cur.execute(f"SELECT balance FROM {SCHEMA}.masters WHERE id = %s", (int(master_id),))
+                master_row = cur.fetchone()
+                if not master_row or master_row['balance'] < 5:
+                    cur.close(); conn.close()
+                    return {'statusCode': 402, 'headers': HEADERS, 'body': json.dumps({'error': 'У мастера недостаточно токенов для принятия заказа', 'no_balance': True})}
+            # Принимаем заявку
             cur.execute(
                 f"UPDATE {SCHEMA}.orders SET accepted_response_id = %s, status = 'in_progress' WHERE id = %s AND customer_id = %s",
                 (int(response_id), int(order_id), int(customer_id))
             )
+            # Списываем 5 токенов с мастера
+            if master_id:
+                cur.execute(f"UPDATE {SCHEMA}.masters SET balance = balance - 5 WHERE id = %s", (int(master_id),))
+                cur.execute(
+                    f"INSERT INTO {SCHEMA}.master_transactions (master_id, type, amount, description, order_id) VALUES (%s, 'spend', 5, %s, %s)",
+                    (int(master_id), f"Выбран исполнителем по заявке #{order_id}", int(response_id))
+                )
             conn.commit()
             cur.close(); conn.close()
             return {'statusCode': 200, 'headers': HEADERS, 'body': json.dumps({'success': True})}
