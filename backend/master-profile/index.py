@@ -95,11 +95,15 @@ def send_code_email(to_email: str, code: str):
 
 
 def master_to_dict(m):
+    cats = m['categories'] if m['categories'] else []
+    if not cats and m['category']:
+        cats = [m['category']]
     return {
         'id': m['id'],
         'name': m['name'],
         'phone': m['phone'],
         'category': m['category'],
+        'categories': list(cats),
         'city': m['city'],
         'about': m['about'],
         'avatar_color': m['avatar_color'] or '#7c3aed',
@@ -543,6 +547,35 @@ def handler(event: dict, context) -> dict:
             cur.close(); conn.close()
             return {'statusCode': 200, 'headers': HEADERS, 'body': json.dumps({'success': True})}
 
+        # PUT: обновление профиля мастера (имя, город, о себе, категории)
+        if body.get('action') == 'update_profile':
+            master_id = body.get('master_id')
+            name = (body.get('name') or '').strip()
+            city = (body.get('city') or '').strip()
+            about = (body.get('about') or '').strip()
+            categories_raw = body.get('categories')
+            if isinstance(categories_raw, list):
+                cats = [c.strip() for c in categories_raw if c and c.strip()]
+            else:
+                cats = []
+            primary_cat = cats[0] if cats else None
+            conn = get_conn()
+            cur = conn.cursor()
+            if cats:
+                cur.execute(
+                    "UPDATE masters SET name=COALESCE(NULLIF(%s,''),name), city=COALESCE(NULLIF(%s,''),city), about=COALESCE(NULLIF(%s,''),about), category=%s, categories=%s::TEXT[] WHERE id=%s RETURNING *",
+                    (name, city, about, primary_cat, cats, int(master_id))
+                )
+            else:
+                cur.execute(
+                    "UPDATE masters SET name=COALESCE(NULLIF(%s,''),name), city=COALESCE(NULLIF(%s,''),city), about=COALESCE(NULLIF(%s,''),about) WHERE id=%s RETURNING *",
+                    (name, city, about, int(master_id))
+                )
+            master = cur.fetchone()
+            conn.commit()
+            cur.close(); conn.close()
+            return {'statusCode': 200, 'headers': HEADERS, 'body': json.dumps({'success': True, 'master': master_to_dict(master)}, ensure_ascii=False)}
+
         # PUT: редактирование услуги мастером
         if body.get('action') == 'update_service':
             service_id = body.get('service_id')
@@ -726,6 +759,14 @@ def handler(event: dict, context) -> dict:
         name = (body.get('name') or '').strip()
         email = (body.get('email') or '').strip().lower() or None
         category = (body.get('category') or '').strip()
+        categories_raw = body.get('categories')
+        if isinstance(categories_raw, list):
+            categories = [c.strip() for c in categories_raw if c and c.strip()]
+        elif category:
+            categories = [category]
+        else:
+            categories = []
+        primary_cat = categories[0] if categories else category
         city = (body.get('city') or '').strip()
         about = (body.get('about') or '').strip()
 
@@ -738,10 +779,10 @@ def handler(event: dict, context) -> dict:
         master = cur.fetchone()
 
         if master:
-            if name or about or email:
+            if name or about or email or categories:
                 cur.execute(
-                    "UPDATE masters SET name = COALESCE(NULLIF(%s,''), name), category = COALESCE(NULLIF(%s,''), category), city = COALESCE(NULLIF(%s,''), city), about = COALESCE(NULLIF(%s,''), about), email = COALESCE(%s, email) WHERE phone = %s",
-                    (name, category, city, about, email, phone)
+                    "UPDATE masters SET name = COALESCE(NULLIF(%s,''), name), category = COALESCE(NULLIF(%s,''), category), categories = CASE WHEN %s::TEXT[] IS NOT NULL AND array_length(%s::TEXT[], 1) > 0 THEN %s::TEXT[] ELSE categories END, city = COALESCE(NULLIF(%s,''), city), about = COALESCE(NULLIF(%s,''), about), email = COALESCE(%s, email) WHERE phone = %s",
+                    (name, primary_cat, categories or None, categories or None, categories or None, city, about, email, phone)
                 )
                 conn.commit()
                 cur.execute("SELECT * FROM masters WHERE phone = %s", (phone,))
@@ -751,8 +792,8 @@ def handler(event: dict, context) -> dict:
                 cur.close(); conn.close()
                 return {'statusCode': 404, 'headers': HEADERS, 'body': json.dumps({'error': 'Мастер не найден', 'not_found': True})}
             cur.execute(
-                "INSERT INTO masters (name, phone, email, category, city, about, balance) VALUES (%s, %s, %s, %s, %s, %s, 0) RETURNING *",
-                (name, phone, email, category, city, about)
+                "INSERT INTO masters (name, phone, email, category, categories, city, about, balance) VALUES (%s, %s, %s, %s, %s::TEXT[], %s, %s, 0) RETURNING *",
+                (name, phone, email, primary_cat, categories or [], city, about)
             )
             master = cur.fetchone()
             conn.commit()

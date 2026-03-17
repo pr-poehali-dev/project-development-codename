@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import Icon from "@/components/ui/icon";
+import { categories } from "@/components/home/categories";
 
 function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString("ru-RU", { day: "numeric", month: "short", year: "numeric" });
@@ -11,6 +12,7 @@ interface Master {
   name: string;
   phone: string;
   category: string;
+  categories: string[];
   city: string;
   balance: number;
   created_at: string;
@@ -50,6 +52,8 @@ interface MasterTabOtherProps {
   setEditCity: (v: string) => void;
   editAbout: string;
   setEditAbout: (v: string) => void;
+  editCategories: string[];
+  setEditCategories: (v: string[]) => void;
   profileLoading: boolean;
   profileSuccess: string;
   onSaveProfile: (e: React.FormEvent) => void;
@@ -75,6 +79,7 @@ export default function MasterTabOther({
   editName, setEditName,
   editCity, setEditCity,
   editAbout, setEditAbout,
+  editCategories, setEditCategories,
   profileLoading, profileSuccess,
   onSaveProfile,
   pwOld, setPwOld,
@@ -169,9 +174,37 @@ export default function MasterTabOther({
             <input value={editName} onChange={e => setEditName(e.target.value)} placeholder="Ваше имя"
               className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-violet-500 transition-colors" />
           </div>
-          <div className="flex items-center justify-between py-1 border-b border-white/6">
-            <span className="text-gray-500 text-sm">Категория</span>
-            <span className="text-white text-sm">{master?.category || "—"}</span>
+          <div>
+            <label className="text-xs text-gray-400 mb-2 block">Категории услуг</label>
+            <div className="flex flex-wrap gap-2">
+              {categories.map((c) => {
+                const selected = editCategories.includes(c.name);
+                return (
+                  <button
+                    key={c.name}
+                    type="button"
+                    onClick={() => {
+                      if (selected) {
+                        setEditCategories(editCategories.filter((x) => x !== c.name));
+                      } else {
+                        setEditCategories([...editCategories, c.name]);
+                      }
+                    }}
+                    className={`px-3 py-1.5 rounded-lg text-xs border transition-all ${
+                      selected
+                        ? "bg-violet-600/20 border-violet-500/50 text-violet-300"
+                        : "bg-white/5 border-white/10 text-gray-400 hover:border-violet-500/30 hover:text-gray-200"
+                    }`}
+                  >
+                    {selected && <span className="mr-1">✓</span>}
+                    {c.name}
+                  </button>
+                );
+              })}
+            </div>
+            {editCategories.length === 0 && (
+              <p className="text-amber-400/70 text-xs mt-2">Выберите хотя бы одну категорию</p>
+            )}
           </div>
           <div>
             <label className="text-xs text-gray-400 mb-1.5 block">Город</label>

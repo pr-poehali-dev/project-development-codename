@@ -1,0 +1,2 @@
+ALTER TABLE masters ADD COLUMN IF NOT EXISTS categories TEXT[] DEFAULT '{}'::TEXT[];
+UPDATE masters SET categories = ARRAY[category] WHERE category IS NOT NULL AND category != '' AND (categories IS NULL OR array_length(categories, 1) IS NULL);

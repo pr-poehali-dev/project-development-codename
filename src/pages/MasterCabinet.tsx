@@ -13,6 +13,7 @@ interface Master {
   name: string;
   phone: string;
   category: string;
+  categories: string[];
   city: string;
   balance: number;
   created_at: string;
@@ -87,6 +88,7 @@ export default function MasterCabinet() {
   const [editName, setEditName] = useState("");
   const [editCity, setEditCity] = useState("");
   const [editAbout, setEditAbout] = useState("");
+  const [editCategories, setEditCategories] = useState<string[]>([]);
   const [profileLoading, setProfileLoading] = useState(false);
   const [profileSuccess, setProfileSuccess] = useState("");
 
@@ -129,6 +131,7 @@ export default function MasterCabinet() {
         setEditName(data.master?.name || "");
         setEditCity(data.master?.city || "");
         setEditAbout(data.master?.about || "");
+        setEditCategories(data.master?.categories?.length ? data.master.categories : (data.master?.category ? [data.master.category] : []));
       }
     } finally {
       setLoading(false);
@@ -271,7 +274,7 @@ export default function MasterCabinet() {
       const res = await fetch(PROFILE_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "update_profile", master_id: master?.id, name: editName, city: editCity, about: editAbout }),
+        body: JSON.stringify({ action: "update_profile", master_id: master?.id, name: editName, city: editCity, about: editAbout, categories: editCategories }),
       });
       const data = await res.json();
       const d = typeof data === "string" ? JSON.parse(data) : data;
@@ -370,6 +373,7 @@ export default function MasterCabinet() {
             editName={editName} setEditName={setEditName}
             editCity={editCity} setEditCity={setEditCity}
             editAbout={editAbout} setEditAbout={setEditAbout}
+            editCategories={editCategories} setEditCategories={setEditCategories}
             profileLoading={profileLoading} profileSuccess={profileSuccess}
             onSaveProfile={handleSaveProfile}
             pwOld={pwOld} setPwOld={setPwOld}

@@ -10,6 +10,7 @@ interface MasterForm {
   phone: string;
   email: string;
   category: string;
+  categories: string[];
   city: string;
   about: string;
   status: string;
@@ -111,19 +112,40 @@ const MasterRegisterModal = ({
               />
             </div>
             <div>
-              <label className="text-sm text-gray-400 mb-1.5 block">Категория услуг *</label>
-              <select
-                required
-                className="w-full bg-[#0f1117] border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-violet-500 transition-colors"
-                style={{ colorScheme: "dark" }}
-                value={masterForm.category}
-                onChange={(e) => setMasterForm({ ...masterForm, category: e.target.value })}
-              >
-                <option value="" disabled style={{ background: "#0f1117", color: "#9ca3af" }}>Выберите категорию</option>
-                {categories.map((c) => (
-                  <option key={c.name} value={c.name} style={{ background: "#0f1117", color: "#fff" }}>{c.name}</option>
-                ))}
-              </select>
+              <label className="text-sm text-gray-400 mb-2 block">
+                Категории услуг *
+                {masterForm.categories.length > 0 && (
+                  <span className="ml-2 text-violet-400 font-medium">({masterForm.categories.length})</span>
+                )}
+              </label>
+              <div className="flex flex-wrap gap-2 max-h-40 overflow-y-auto pr-1">
+                {categories.map((c) => {
+                  const selected = masterForm.categories.includes(c.name);
+                  return (
+                    <button
+                      key={c.name}
+                      type="button"
+                      onClick={() => {
+                        const next = selected
+                          ? masterForm.categories.filter((x) => x !== c.name)
+                          : [...masterForm.categories, c.name];
+                        setMasterForm({ ...masterForm, categories: next, category: next[0] || "" });
+                      }}
+                      className={`px-3 py-1.5 rounded-lg text-xs border transition-all ${
+                        selected
+                          ? "bg-violet-600/20 border-violet-500/50 text-violet-300"
+                          : "bg-white/5 border-white/10 text-gray-400 hover:border-violet-500/30 hover:text-gray-200"
+                      }`}
+                    >
+                      {selected && <span className="mr-1">✓</span>}
+                      {c.name}
+                    </button>
+                  );
+                })}
+              </div>
+              {masterForm.categories.length === 0 && (
+                <p className="text-amber-400/70 text-xs mt-1.5">Выберите хотя бы одну категорию</p>
+              )}
             </div>
             <div>
               <label className="text-sm text-gray-400 mb-1.5 block">Статус</label>

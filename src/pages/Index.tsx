@@ -40,7 +40,7 @@ const Index = () => {
 
   const [loginModalOpen, setLoginModalOpen] = useState(false);
   const [masterModalOpen, setMasterModalOpen] = useState(false);
-  const [masterForm, setMasterForm] = useState({ name: "", phone: "", email: "", category: "", city: "", about: "", status: "Самозанятый / ИП / Компания" });
+  const [masterForm, setMasterForm] = useState({ name: "", phone: "", email: "", category: "", categories: [] as string[], city: "", about: "", status: "Самозанятый / ИП / Компания" });
   const [masterSent, setMasterSent] = useState(false);
   const [masterLoading, setMasterLoading] = useState(false);
   const [masterError, setMasterError] = useState("");
@@ -123,7 +123,8 @@ const Index = () => {
           name: masterForm.name,
           phone: masterForm.phone,
           email: masterForm.email,
-          category: masterForm.category,
+          category: masterForm.categories[0] || masterForm.category,
+          categories: masterForm.categories,
           city: masterForm.city,
           about: masterForm.about,
         }),
