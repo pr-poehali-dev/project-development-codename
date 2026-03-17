@@ -322,6 +322,26 @@ def handler(event: dict, context) -> dict:
                                         'user': {'id': row['id'], 'name': row['name'],
                                                  'phone': row['phone'], 'email': row['email'] or ''}})}
 
+        if action == 'update_order':
+            order_id = body.get('order_id')
+            customer_id = body.get('customer_id')
+            title = (body.get('title') or '').strip()
+            description = (body.get('description') or '').strip()
+            category = (body.get('category') or '').strip()
+            city = (body.get('city') or '').strip()
+            budget = body.get('budget')
+            if not order_id or not customer_id or not title:
+                return {'statusCode': 400, 'headers': HEADERS, 'body': json.dumps({'error': 'Заполните обязательные поля'})}
+            conn = get_conn()
+            cur = conn.cursor()
+            cur.execute(
+                f"UPDATE {SCHEMA}.orders SET title=%s, description=%s, category=%s, city=%s, budget=%s WHERE id=%s AND customer_id=%s",
+                (title, description, category, city, int(budget) if budget else None, int(order_id), int(customer_id))
+            )
+            conn.commit()
+            cur.close(); conn.close()
+            return {'statusCode': 200, 'headers': HEADERS, 'body': json.dumps({'success': True})}
+
         if action == 'select_master':
             order_id = body.get('order_id')
             response_id = body.get('response_id')

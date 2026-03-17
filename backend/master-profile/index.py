@@ -498,6 +498,27 @@ def handler(event: dict, context) -> dict:
             cur.close(); conn.close()
             return {'statusCode': 200, 'headers': HEADERS, 'body': json.dumps({'success': True, 'id': new_id})}
 
+        # PUT: редактирование услуги мастером
+        if body.get('action') == 'update_service':
+            service_id = body.get('service_id')
+            master_id = body.get('master_id')
+            title = (body.get('title') or '').strip()
+            description = (body.get('description') or '').strip()
+            category = (body.get('category') or '').strip()
+            city = (body.get('city') or '').strip()
+            price = body.get('price')
+            if not all([service_id, master_id, title, category, city]):
+                return {'statusCode': 400, 'headers': HEADERS, 'body': json.dumps({'error': 'Заполните все обязательные поля'})}
+            conn = get_conn()
+            cur = conn.cursor()
+            cur.execute(
+                "UPDATE master_services SET title=%s, description=%s, category=%s, city=%s, price=%s WHERE id=%s AND master_id=%s",
+                (title, description, category, city, int(price) if price else None, int(service_id), int(master_id))
+            )
+            conn.commit()
+            cur.close(); conn.close()
+            return {'statusCode': 200, 'headers': HEADERS, 'body': json.dumps({'success': True})}
+
         order_id = body.get('order_id')
         status = body.get('status')
         customer_id = body.get('customer_id')

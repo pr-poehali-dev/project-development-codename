@@ -211,6 +211,34 @@ export default function MasterCabinet() {
     setMyServices(prev => prev.map(s => s.id === serviceId ? { ...s, is_active: isActive } : s));
   };
 
+  const handleUpdateService = async (serviceId: number, data: { title: string; description: string; category: string; city: string; price: string }) => {
+    if (!master) return;
+    await fetch(PROFILE_URL, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        action: "update_service",
+        service_id: serviceId,
+        master_id: master.id,
+        title: data.title,
+        description: data.description,
+        category: data.category,
+        city: data.city,
+        price: data.price ? Number(data.price) : null,
+      }),
+    });
+    setMyServices(prev => prev.map(s => s.id === serviceId ? {
+      ...s,
+      title: data.title,
+      description: data.description,
+      category: data.category,
+      city: data.city,
+      price: data.price ? Number(data.price) : null,
+    } : s));
+    setServiceSuccess("Услуга обновлена!");
+    setTimeout(() => setServiceSuccess(""), 3000);
+  };
+
   const handleBoostService = async (serviceId: number) => {
     if (!master) return;
     const res = await fetch(PROFILE_URL, {
@@ -318,6 +346,7 @@ export default function MasterCabinet() {
             onAddService={handleAddService}
             onToggleService={handleToggleService}
             onBoostService={handleBoostService}
+            onUpdateService={handleUpdateService}
           />
         )}
 

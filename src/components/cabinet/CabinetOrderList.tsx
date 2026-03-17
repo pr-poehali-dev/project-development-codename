@@ -85,6 +85,11 @@ interface Customer {
   email: string;
 }
 
+const CATEGORIES = [
+  "Авторемонт","Ремонт жилья","Строительство","Бьюти","IT-помощь",
+  "Сантехника","Электрика","Перевозки","Няня","Клининг","Прочее",
+];
+
 interface CabinetOrderListProps {
   orders: Order[];
   customer: Customer;
@@ -94,12 +99,13 @@ interface CabinetOrderListProps {
   onStatusChange: (orderId: number, status: string) => void;
   onSelectMaster: (orderId: number, responseId: number) => void;
   onReviewSubmit: (e: React.FormEvent, form: { orderId: number; masterName: string; masterId: number | null }, rating: number, comment: string) => void;
+  onUpdateOrder: (orderId: number, data: { title: string; description: string; category: string; city: string; budget: string }) => Promise<void>;
 }
 
 export default function CabinetOrderList({
   orders, customer, reviewSuccess,
   statusLoading, selectMasterLoading,
-  onStatusChange, onSelectMaster, onReviewSubmit,
+  onStatusChange, onSelectMaster, onReviewSubmit, onUpdateOrder,
 }: CabinetOrderListProps) {
   const [expandedOrder, setExpandedOrder] = useState<number | null>(null);
   const [activeTab, setActiveTab] = useState<"active" | "done">("active");
@@ -107,6 +113,30 @@ export default function CabinetOrderList({
   const [reviewRating, setReviewRating] = useState(5);
   const [reviewComment, setReviewComment] = useState("");
   const [reviewLoading, setReviewLoading] = useState(false);
+
+  const [editOrder, setEditOrder] = useState<Order | null>(null);
+  const [editForm, setEditForm] = useState({ title: "", description: "", category: "", city: "", budget: "" });
+  const [editLoading, setEditLoading] = useState(false);
+
+  const openEditOrder = (order: Order) => {
+    setEditOrder(order);
+    setEditForm({
+      title: order.title,
+      description: order.description,
+      category: order.category,
+      city: order.city,
+      budget: order.budget ? String(order.budget) : "",
+    });
+  };
+
+  const handleEditSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editOrder) return;
+    setEditLoading(true);
+    await onUpdateOrder(editOrder.id, editForm);
+    setEditLoading(false);
+    setEditOrder(null);
+  };
 
   const activeOrders = orders.filter(o => o.status !== "done" && o.status !== "cancelled");
   const doneOrders = orders.filter(o => o.status === "done" || o.status === "cancelled");
@@ -146,6 +176,80 @@ export default function CabinetOrderList({
           </div>
         ))}
       </div>
+
+      {editOrder && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 px-4">
+          <div className="bg-[#1a1d27] border border-white/10 rounded-2xl p-6 w-full max-w-md">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-white font-semibold text-lg">Редактировать заявку</h3>
+              <button onClick={() => setEditOrder(null)} className="text-gray-500 hover:text-gray-300 transition-colors">
+                <Icon name="X" size={18} />
+              </button>
+            </div>
+            <form onSubmit={handleEditSubmit} className="space-y-3">
+              <div>
+                <label className="text-xs text-gray-400 mb-1.5 block">Название *</label>
+                <input
+                  required
+                  value={editForm.title}
+                  onChange={e => setEditForm(f => ({ ...f, title: e.target.value }))}
+                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-violet-500 transition-colors"
+                />
+              </div>
+              <div>
+                <label className="text-xs text-gray-400 mb-1.5 block">Описание *</label>
+                <textarea
+                  required
+                  rows={3}
+                  value={editForm.description}
+                  onChange={e => setEditForm(f => ({ ...f, description: e.target.value }))}
+                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-violet-500 transition-colors resize-none"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs text-gray-400 mb-1.5 block">Категория *</label>
+                  <select
+                    required
+                    value={editForm.category}
+                    onChange={e => setEditForm(f => ({ ...f, category: e.target.value }))}
+                    className="w-full bg-[#0f1117] border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-violet-500"
+                    style={{ colorScheme: "dark" }}
+                  >
+                    <option value="" disabled>Выберите</option>
+                    {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="text-xs text-gray-400 mb-1.5 block">Город</label>
+                  <input
+                    value={editForm.city}
+                    onChange={e => setEditForm(f => ({ ...f, city: e.target.value }))}
+                    className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-violet-500 transition-colors"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="text-xs text-gray-400 mb-1.5 block">Бюджет, ₽</label>
+                <input
+                  type="number"
+                  min="0"
+                  value={editForm.budget}
+                  onChange={e => setEditForm(f => ({ ...f, budget: e.target.value }))}
+                  placeholder="Оставьте пустым, если не знаете"
+                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-violet-500 transition-colors"
+                />
+              </div>
+              <div className="flex gap-3 pt-1">
+                <Button type="button" variant="ghost" className="flex-1 text-gray-400" onClick={() => setEditOrder(null)}>Отмена</Button>
+                <Button type="submit" disabled={editLoading} className="flex-1 bg-gradient-to-r from-violet-600 to-indigo-600 text-white">
+                  {editLoading ? "Сохранение..." : "Сохранить"}
+                </Button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {reviewForm && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 px-4">
@@ -248,6 +352,15 @@ export default function CabinetOrderList({
 
                   {order.status !== "done" && order.status !== "cancelled" && (
                     <div className="flex gap-2 flex-wrap mb-4">
+                      {order.status === "new" && (
+                        <button
+                          onClick={() => openEditOrder(order)}
+                          className="text-xs px-3 py-1.5 rounded-lg bg-white/8 text-gray-300 border border-white/10 hover:bg-white/15 transition-colors flex items-center gap-1.5"
+                        >
+                          <Icon name="Pencil" size={12} />
+                          Редактировать
+                        </button>
+                      )}
                       {order.status !== "in_progress" && (
                         <button
                           disabled={statusLoading === order.id}

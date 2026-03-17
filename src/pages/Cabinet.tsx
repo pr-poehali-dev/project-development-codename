@@ -227,6 +227,32 @@ export default function Cabinet() {
     setLoginPassword("");
   };
 
+  const handleUpdateOrder = async (orderId: number, data: { title: string; description: string; category: string; city: string; budget: string }) => {
+    if (!customer) return;
+    await fetch(MY_ORDERS_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        action: "update_order",
+        order_id: orderId,
+        customer_id: customer.id,
+        title: data.title,
+        description: data.description,
+        category: data.category,
+        city: data.city,
+        budget: data.budget ? parseInt(data.budget) : null,
+      }),
+    });
+    setOrders(prev => prev.map(o => o.id === orderId ? {
+      ...o,
+      title: data.title,
+      description: data.description,
+      category: data.category,
+      city: data.city,
+      budget: data.budget ? parseInt(data.budget) : null,
+    } : o));
+  };
+
   const handleSelectMaster = async (orderId: number, responseId: number) => {
     if (!customer) return;
     setSelectMasterLoading(responseId);
@@ -363,6 +389,7 @@ export default function Cabinet() {
         onStatusChange={handleStatusChange}
         onSelectMaster={handleSelectMaster}
         onReviewSubmit={handleReview}
+        onUpdateOrder={handleUpdateOrder}
       />
     </div>
   );
