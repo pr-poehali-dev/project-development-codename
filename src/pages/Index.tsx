@@ -61,7 +61,7 @@ const Index = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const [masterModalOpen, setMasterModalOpen] = useState(false);
-  const [masterForm, setMasterForm] = useState({ name: "", phone: "", category: "", city: "", about: "", status: "Самозанятый / ИП / Компания" });
+  const [masterForm, setMasterForm] = useState({ name: "", phone: "", email: "", category: "", city: "", about: "", status: "Самозанятый / ИП / Компания" });
   const [masterSent, setMasterSent] = useState(false);
   const [masterLoading, setMasterLoading] = useState(false);
   const [masterError, setMasterError] = useState("");
@@ -106,6 +106,7 @@ const Index = () => {
         body: JSON.stringify({
           name: masterForm.name,
           phone: masterForm.phone,
+          email: masterForm.email,
           category: masterForm.category,
           city: masterForm.city,
           about: masterForm.about,
@@ -577,6 +578,16 @@ const Index = () => {
                   placeholder="+7 (999) 000-00-00"
                   value={masterForm.phone}
                   onChange={(e) => setMasterForm({ ...masterForm, phone: e.target.value })}
+                />
+              </div>
+              <div>
+                <label className="text-sm text-gray-400 mb-1.5 block">Email (для входа по коду)</label>
+                <input
+                  type="email"
+                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-violet-500 transition-colors"
+                  placeholder="you@example.com"
+                  value={masterForm.email}
+                  onChange={(e) => setMasterForm({ ...masterForm, email: e.target.value })}
                 />
               </div>
               <div>

@@ -380,6 +380,7 @@ def handler(event: dict, context) -> dict:
         body = json.loads(event.get('body') or '{}')
         phone = (body.get('phone') or '').strip()
         name = (body.get('name') or '').strip()
+        email = (body.get('email') or '').strip().lower() or None
         category = (body.get('category') or '').strip()
         city = (body.get('city') or '').strip()
         about = (body.get('about') or '').strip()
@@ -393,10 +394,10 @@ def handler(event: dict, context) -> dict:
         master = cur.fetchone()
 
         if master:
-            if name or about:
+            if name or about or email:
                 cur.execute(
-                    "UPDATE masters SET name = COALESCE(NULLIF(%s,''), name), category = COALESCE(NULLIF(%s,''), category), city = COALESCE(NULLIF(%s,''), city), about = COALESCE(NULLIF(%s,''), about) WHERE phone = %s",
-                    (name, category, city, about, phone)
+                    "UPDATE masters SET name = COALESCE(NULLIF(%s,''), name), category = COALESCE(NULLIF(%s,''), category), city = COALESCE(NULLIF(%s,''), city), about = COALESCE(NULLIF(%s,''), about), email = COALESCE(%s, email) WHERE phone = %s",
+                    (name, category, city, about, email, phone)
                 )
                 conn.commit()
                 cur.execute("SELECT * FROM masters WHERE phone = %s", (phone,))
@@ -406,8 +407,8 @@ def handler(event: dict, context) -> dict:
                 cur.close(); conn.close()
                 return {'statusCode': 404, 'headers': HEADERS, 'body': json.dumps({'error': 'Мастер не найден', 'not_found': True})}
             cur.execute(
-                "INSERT INTO masters (name, phone, category, city, about, balance) VALUES (%s, %s, %s, %s, %s, 0) RETURNING *",
-                (name, phone, category, city, about)
+                "INSERT INTO masters (name, phone, email, category, city, about, balance) VALUES (%s, %s, %s, %s, %s, %s, 0) RETURNING *",
+                (name, phone, email, category, city, about)
             )
             master = cur.fetchone()
             conn.commit()
