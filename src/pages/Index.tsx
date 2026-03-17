@@ -277,7 +277,15 @@ const Index = () => {
               </div>
             </div>
             <div>
-              <p className="text-gray-400 text-sm font-medium mb-3">Документы</p>
+              <p className="text-gray-400 text-sm font-medium mb-3">Кабинеты</p>
+              <div className="space-y-2">
+                {isCustomer && (
+                  <a href="/cabinet" className="block text-gray-600 hover:text-gray-400 text-sm transition-colors">Кабинет заказчика</a>
+                )}
+                <a href="/master" className="block text-gray-600 hover:text-gray-400 text-sm transition-colors">Кабинет мастера</a>
+                <a href="/orders" className="block text-gray-600 hover:text-gray-400 text-sm transition-colors">Лента заявок</a>
+              </div>
+              <p className="text-gray-400 text-sm font-medium mb-3 mt-5">Документы</p>
               <div className="space-y-2">
                 <a href="/offer" className="block text-gray-600 hover:text-gray-400 text-sm transition-colors">Публичная оферта</a>
                 <a href="/offer#7" className="block text-gray-600 hover:text-gray-400 text-sm transition-colors">Конфиденциальность</a>
