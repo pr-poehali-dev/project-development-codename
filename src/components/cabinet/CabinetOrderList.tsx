@@ -53,12 +53,13 @@ interface CabinetOrderListProps {
   onReviewSubmit: (e: React.FormEvent, form: { orderId: number; masterName: string; masterId: number | null }, rating: number, comment: string) => void;
   onUpdateOrder: (orderId: number, data: { title: string; description: string; category: string; city: string; budget: string }) => Promise<void>;
   onDeleteOrder: (orderId: number) => Promise<void>;
+  onCreateOrder: () => void;
 }
 
 export default function CabinetOrderList({
   orders, customer, reviewSuccess,
   statusLoading, selectMasterLoading,
-  onStatusChange, onSelectMaster, onReviewSubmit, onUpdateOrder, onDeleteOrder,
+  onStatusChange, onSelectMaster, onReviewSubmit, onUpdateOrder, onDeleteOrder, onCreateOrder,
 }: CabinetOrderListProps) {
   const [expandedOrder, setExpandedOrder] = useState<number | null>(null);
   const [activeTab, setActiveTab] = useState<"active" | "done">("active");
@@ -201,7 +202,7 @@ export default function CabinetOrderList({
           {activeTab === "active" ? (
             <>
               <p className="text-gray-500 text-lg">Активных заявок нет</p>
-              <a href="/"><Button className="mt-6 bg-gradient-to-r from-violet-600 to-indigo-600 text-white">Создать заявку</Button></a>
+              <Button onClick={onCreateOrder} className="mt-6 bg-gradient-to-r from-violet-600 to-indigo-600 text-white">Создать заявку</Button>
             </>
           ) : (
             <p className="text-gray-500 text-lg">Завершённых заявок пока нет</p>

@@ -453,6 +453,7 @@ export default function Cabinet() {
         onReviewSubmit={handleReview}
         onUpdateOrder={handleUpdateOrder}
         onDeleteOrder={handleDeleteOrder}
+        onCreateOrder={() => setOrderModalOpen(true)}
       />
     </div>
   );
