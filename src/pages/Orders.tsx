@@ -165,9 +165,9 @@ const Orders = () => {
 
           {/* Список заявок */}
           {loading ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-              {[1, 2, 3, 4, 5, 6].map((i) => (
-                <div key={i} className="bg-white/4 border border-white/8 rounded-2xl p-5 animate-pulse">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
+              {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((i) => (
+                <div key={i} className="bg-white/4 border border-white/8 rounded-xl p-3.5 animate-pulse">
                   <div className="h-4 bg-white/10 rounded mb-3 w-1/3" />
                   <div className="h-5 bg-white/10 rounded mb-2" />
                   <div className="h-4 bg-white/10 rounded w-2/3" />
@@ -189,7 +189,7 @@ const Orders = () => {
             </div>
           ) : (
             <>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
               {visible.map((order) => (
                 <OrderCard
                   key={order.id}
