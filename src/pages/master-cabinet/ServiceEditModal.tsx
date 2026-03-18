@@ -54,7 +54,7 @@ export default function ServiceEditModal({
       <div className="bg-[#1a1d27] border border-white/10 rounded-2xl p-6 w-full max-w-md">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-white font-semibold text-lg">Редактировать услугу</h3>
-          <button onClick={onClose} className="text-gray-500 hover:text-gray-300 transition-colors">
+          <button type="button" onClick={onClose} className="text-gray-500 hover:text-gray-300 transition-colors">
             <Icon name="X" size={18} />
           </button>
         </div>
