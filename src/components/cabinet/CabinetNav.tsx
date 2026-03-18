@@ -51,7 +51,7 @@ export default function CabinetNav({
               <Icon name="Plus" size={15} />
               Создать заявку
             </Button>
-            <button onClick={onCreateOrder} className="sm:hidden w-9 h-9 rounded-lg bg-violet-600 flex items-center justify-center">
+            <button type="button" onClick={onCreateOrder} className="sm:hidden w-9 h-9 rounded-lg bg-violet-600 flex items-center justify-center">
               <Icon name="Plus" size={18} className="text-white" />
             </button>
             <div className="flex items-center gap-2">
