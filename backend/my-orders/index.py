@@ -364,6 +364,8 @@ def handler(event: dict, context) -> dict:
             if row['status'] not in ('new', 'cancelled'):
                 cur.close(); conn.close()
                 return {'statusCode': 400, 'headers': HEADERS, 'body': json.dumps({'error': 'Нельзя удалить заявку в работе или выполненную'})}
+            cur.execute(f"DELETE FROM {SCHEMA}.reviews WHERE order_id=%s", (int(order_id),))
+            cur.execute(f"DELETE FROM {SCHEMA}.responses WHERE order_id=%s", (int(order_id),))
             cur.execute(f"DELETE FROM {SCHEMA}.orders WHERE id=%s AND customer_id=%s", (int(order_id), int(customer_id)))
             conn.commit()
             cur.close(); conn.close()
