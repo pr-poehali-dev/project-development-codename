@@ -67,6 +67,7 @@ const HomeCategoriesServices = ({
 }: HomeCategoriesServicesProps) => {
   const [searchQuery, setSearchQuery] = React.useState("");
   const [expandedCategory, setExpandedCategory] = React.useState<string | null>(null);
+  const [visibleCount, setVisibleCount] = React.useState(20);
   const q = searchQuery.trim().toLowerCase();
   const filtered = q
     ? services.filter(s =>
@@ -76,6 +77,11 @@ const HomeCategoriesServices = ({
         s.master_name.toLowerCase().includes(q)
       )
     : services;
+  const visible = filtered.slice(0, visibleCount);
+
+  React.useEffect(() => {
+    setVisibleCount(20);
+  }, [searchQuery, activeCategory, selectedCity]);
 
   return (
     <>
@@ -219,8 +225,9 @@ const HomeCategoriesServices = ({
               )}
             </div>
           ) : (
+            <>
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
-              {filtered.map((service) => (
+              {visible.map((service) => (
                 <div
                   key={service.id}
                   className="group bg-white/4 border border-white/8 rounded-xl p-3.5 hover:border-violet-500/40 hover:bg-white/6 transition-all flex flex-col"
@@ -294,6 +301,18 @@ const HomeCategoriesServices = ({
                 </div>
               ))}
             </div>
+            {visibleCount < filtered.length && (
+              <div className="text-center mt-8">
+                <Button
+                  variant="ghost"
+                  className="border border-white/10 text-gray-400 hover:text-white hover:border-white/20 px-8"
+                  onClick={() => setVisibleCount(v => v + 20)}
+                >
+                  Показать ещё ({filtered.length - visibleCount} осталось)
+                </Button>
+              </div>
+            )}
+            </>
           )}
         </div>
       </section>
