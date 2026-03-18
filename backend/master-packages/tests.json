@@ -5,7 +5,22 @@
       "method": "GET",
       "path": "/",
       "expectedStatus": 200,
-      "expectedBody": {"packages": []},
+      "expectedBody": {"packages": [{}]},
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "Дашборд без токена — 401",
+      "method": "GET",
+      "path": "/?action=admin_dashboard",
+      "expectedStatus": 401,
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "Вход с пустыми данными",
+      "method": "POST",
+      "path": "/?action=admin_login",
+      "body": {"login": "", "password": ""},
+      "expectedStatus": 400,
       "bodyMatcher": "partial"
     }
   ]

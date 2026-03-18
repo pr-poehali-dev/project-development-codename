@@ -1,12 +1,21 @@
+"""
+Пакеты откликов для мастеров + административная панель сайта.
+Управление пользователями, заявками, категориями, отзывами и балансами.
+"""
 import json
 import os
+import hashlib
+import secrets
 import psycopg2
 from psycopg2.extras import RealDictCursor
 
+SCHEMA = "t_p86314354_project_development_"
+
 HEADERS = {
     'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type',
+    'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type, X-Admin-Token',
+    'Content-Type': 'application/json',
 }
 
 
@@ -14,90 +23,343 @@ def get_conn():
     return psycopg2.connect(os.environ['DATABASE_URL'], cursor_factory=RealDictCursor)
 
 
-def handler(event: dict, context) -> dict:
-    """Пакеты откликов для мастеров: список пакетов и покупка (зачисление баланса)."""
+def hash_password(password: str) -> str:
+    salt = secrets.token_hex(16)
+    h = hashlib.sha256((salt + password).encode()).hexdigest()
+    return f"{salt}:{h}"
 
+
+def verify_password(password: str, stored_hash: str) -> bool:
+    parts = stored_hash.split(":")
+    if len(parts) != 2:
+        return False
+    salt, h = parts
+    return hashlib.sha256((salt + password).encode()).hexdigest() == h
+
+
+def ok(data: dict, status: int = 200) -> dict:
+    return {'statusCode': status, 'headers': HEADERS, 'body': json.dumps(data, default=str, ensure_ascii=False)}
+
+
+def err(msg: str, status: int = 400) -> dict:
+    return {'statusCode': status, 'headers': HEADERS, 'body': json.dumps({'error': msg}, ensure_ascii=False)}
+
+
+def check_auth(event: dict) -> bool:
+    hdrs = event.get('headers') or {}
+    token = hdrs.get('X-Admin-Token') or hdrs.get('x-admin-token') or ''
+    admin_token = os.environ.get('ADMIN_SECRET_TOKEN', '')
+    return bool(token) and token == admin_token
+
+
+def handler(event: dict, context) -> dict:
     if event.get('httpMethod') == 'OPTIONS':
         return {'statusCode': 200, 'headers': HEADERS, 'body': ''}
 
-    method = event.get('httpMethod')
+    method = event.get('httpMethod', 'GET')
+    params = event.get('queryStringParameters') or {}
+    action = params.get('action', '')
 
-    if method == 'GET':
+    body = {}
+    if event.get('body'):
+        try:
+            body = json.loads(event['body'])
+        except Exception:
+            pass
+
+    # ========== ПАКЕТЫ ДЛЯ МАСТЕРОВ ==========
+
+    if method == 'GET' and not action.startswith('admin_'):
         conn = get_conn()
         cur = conn.cursor()
-        cur.execute("SELECT * FROM response_packages WHERE is_active = true ORDER BY price ASC")
+        cur.execute(f"SELECT * FROM {SCHEMA}.response_packages WHERE is_active = true ORDER BY price ASC")
         packages = cur.fetchall()
         cur.close()
         conn.close()
+        return ok({'packages': [
+            {'id': p['id'], 'name': p['name'], 'responses_count': p['responses_count'], 'price': p['price']}
+            for p in packages
+        ]})
 
-        return {
-            'statusCode': 200,
-            'headers': HEADERS,
-            'body': json.dumps({
-                'packages': [
-                    {'id': p['id'], 'name': p['name'], 'responses_count': p['responses_count'], 'price': p['price']}
-                    for p in packages
-                ]
-            }, ensure_ascii=False)
-        }
-
-    if method == 'POST':
-        body = json.loads(event.get('body') or '{}')
+    if method == 'POST' and not action:
         master_id = body.get('master_id')
         package_id = body.get('package_id')
-
         if not master_id or not package_id:
-            return {'statusCode': 400, 'headers': HEADERS, 'body': json.dumps({'error': 'Укажите master_id и package_id'})}
+            return err('Укажите master_id и package_id')
 
         conn = get_conn()
         cur = conn.cursor()
-
-        cur.execute("SELECT * FROM masters WHERE id = %s", (int(master_id),))
+        cur.execute(f"SELECT * FROM {SCHEMA}.masters WHERE id = %s", (int(master_id),))
         master = cur.fetchone()
         if not master:
-            cur.close(); conn.close()
-            return {'statusCode': 404, 'headers': HEADERS, 'body': json.dumps({'error': 'Мастер не найден'})}
+            conn.close()
+            return err('Мастер не найден', 404)
 
-        cur.execute("SELECT * FROM response_packages WHERE id = %s AND is_active = true", (int(package_id),))
+        cur.execute(f"SELECT * FROM {SCHEMA}.response_packages WHERE id = %s AND is_active = true", (int(package_id),))
         package = cur.fetchone()
         if not package:
-            cur.close(); conn.close()
-            return {'statusCode': 404, 'headers': HEADERS, 'body': json.dumps({'error': 'Пакет не найден'})}
+            conn.close()
+            return err('Пакет не найден', 404)
 
         cur.execute(
-            "INSERT INTO payments (master_id, package_id, amount, status) VALUES (%s, %s, %s, 'pending') RETURNING id",
+            f"INSERT INTO {SCHEMA}.payments (master_id, package_id, amount, status) VALUES (%s, %s, %s, 'pending') RETURNING id",
             (int(master_id), int(package_id), package['price'])
         )
         payment_id = cur.fetchone()['id']
-
+        cur.execute(f"UPDATE {SCHEMA}.masters SET balance = balance + %s WHERE id = %s", (package['responses_count'], int(master_id)))
+        cur.execute(f"UPDATE {SCHEMA}.payments SET status = 'succeeded' WHERE id = %s", (payment_id,))
         cur.execute(
-            "UPDATE masters SET balance = balance + %s WHERE id = %s",
-            (package['responses_count'], int(master_id))
-        )
-        cur.execute(
-            "UPDATE payments SET status = 'succeeded' WHERE id = %s",
-            (payment_id,)
-        )
-        cur.execute(
-            "INSERT INTO master_transactions (master_id, type, amount, description) VALUES (%s, 'purchase', %s, %s)",
+            f"INSERT INTO {SCHEMA}.master_transactions (master_id, type, amount, description) VALUES (%s, 'purchase', %s, %s)",
             (int(master_id), package['responses_count'], f"Куплен пакет «{package['name']}» — {package['responses_count']} откликов")
         )
         conn.commit()
-
-        cur.execute("SELECT balance FROM masters WHERE id = %s", (int(master_id),))
+        cur.execute(f"SELECT balance FROM {SCHEMA}.masters WHERE id = %s", (int(master_id),))
         new_balance = cur.fetchone()['balance']
-        cur.close()
         conn.close()
+        return ok({'success': True, 'added': package['responses_count'], 'new_balance': new_balance, 'payment_id': payment_id})
 
-        return {
-            'statusCode': 200,
-            'headers': HEADERS,
-            'body': json.dumps({
-                'success': True,
-                'added': package['responses_count'],
-                'new_balance': new_balance,
-                'payment_id': payment_id
-            }, ensure_ascii=False)
-        }
+    # ========== АДМИНИСТРАТИВНАЯ ПАНЕЛЬ ==========
 
-    return {'statusCode': 405, 'headers': HEADERS, 'body': json.dumps({'error': 'Method not allowed'})}
+    # --- Вход ---
+    if method == 'POST' and action == 'admin_login':
+        login = body.get('login', '').strip()
+        password = body.get('password', '')
+        if not login or not password:
+            return err('Введите логин и пароль')
+        conn = get_conn()
+        cur = conn.cursor()
+        cur.execute(f"SELECT * FROM {SCHEMA}.admins WHERE login=%s", (login,))
+        admin = cur.fetchone()
+        conn.close()
+        if not admin or not verify_password(password, admin['password_hash']):
+            return err('Неверный логин или пароль', 401)
+        token = os.environ.get('ADMIN_SECRET_TOKEN', '')
+        return ok({'success': True, 'token': token})
+
+    # --- Первоначальная настройка ---
+    if method == 'POST' and action == 'admin_setup':
+        login = body.get('login', '').strip()
+        password = body.get('password', '')
+        if not login or not password or len(password) < 6:
+            return err('Логин и пароль (мин. 6 символов) обязательны')
+        conn = get_conn()
+        cur = conn.cursor()
+        cur.execute(f"SELECT COUNT(*) as cnt FROM {SCHEMA}.admins")
+        if cur.fetchone()['cnt'] > 0:
+            conn.close()
+            return err('Администратор уже создан', 403)
+        cur.execute(f"INSERT INTO {SCHEMA}.admins (login, password_hash) VALUES (%s, %s)", (login, hash_password(password)))
+        conn.commit()
+        conn.close()
+        return ok({'success': True})
+
+    # Все остальные admin-запросы требуют токен
+    if action.startswith('admin_') and not check_auth(event):
+        return err('Не авторизован', 401)
+
+    # --- GET: дашборд ---
+    if method == 'GET' and action == 'admin_dashboard':
+        conn = get_conn()
+        cur = conn.cursor()
+        cur.execute(f"SELECT COUNT(*) as cnt FROM {SCHEMA}.masters")
+        masters_count = cur.fetchone()['cnt']
+        cur.execute(f"SELECT COUNT(*) as cnt FROM {SCHEMA}.customers")
+        customers_count = cur.fetchone()['cnt']
+        cur.execute(f"SELECT COUNT(*) as cnt FROM {SCHEMA}.orders")
+        orders_count = cur.fetchone()['cnt']
+        cur.execute(f"SELECT COUNT(*) as cnt FROM {SCHEMA}.orders WHERE status='new'")
+        orders_new = cur.fetchone()['cnt']
+        cur.execute(f"SELECT COUNT(*) as cnt FROM {SCHEMA}.reviews")
+        reviews_count = cur.fetchone()['cnt']
+        cur.execute(f"SELECT COALESCE(SUM(balance),0) as total FROM {SCHEMA}.masters")
+        total_balance = cur.fetchone()['total']
+        conn.close()
+        return ok({'masters_count': masters_count, 'customers_count': customers_count,
+                   'orders_count': orders_count, 'orders_new': orders_new,
+                   'reviews_count': reviews_count, 'total_balance': total_balance})
+
+    # --- GET: мастера ---
+    if method == 'GET' and action == 'admin_masters':
+        conn = get_conn()
+        cur = conn.cursor()
+        cur.execute(f"""
+            SELECT m.id, m.name, m.phone, m.email, m.category, m.city,
+                   m.balance, m.is_blocked, m.email_verified, m.created_at,
+                   COALESCE(AVG(r.rating),0) as avg_rating,
+                   COUNT(DISTINCT r.id) as reviews_count
+            FROM {SCHEMA}.masters m
+            LEFT JOIN {SCHEMA}.reviews r ON r.master_id = m.id
+            GROUP BY m.id ORDER BY m.created_at DESC LIMIT 200
+        """)
+        masters = cur.fetchall()
+        conn.close()
+        return ok({'masters': masters})
+
+    # --- GET: заказчики ---
+    if method == 'GET' and action == 'admin_customers':
+        conn = get_conn()
+        cur = conn.cursor()
+        cur.execute(f"""
+            SELECT id, name, phone, email, is_blocked, created_at
+            FROM {SCHEMA}.customers
+            ORDER BY created_at DESC LIMIT 200
+        """)
+        customers = cur.fetchall()
+        conn.close()
+        return ok({'customers': customers})
+
+    # --- GET: заявки ---
+    if method == 'GET' and action == 'admin_orders':
+        conn = get_conn()
+        cur = conn.cursor()
+        cur.execute(f"""
+            SELECT id, title, description, category, city, budget,
+                   contact_name, contact_phone, status, created_at
+            FROM {SCHEMA}.orders ORDER BY created_at DESC LIMIT 200
+        """)
+        orders = cur.fetchall()
+        conn.close()
+        return ok({'orders': orders})
+
+    # --- GET: отзывы ---
+    if method == 'GET' and action == 'admin_reviews':
+        conn = get_conn()
+        cur = conn.cursor()
+        cur.execute(f"""
+            SELECT rv.id, rv.master_id, rv.rating, rv.text, rv.created_at,
+                   m.name as master_name
+            FROM {SCHEMA}.reviews rv
+            LEFT JOIN {SCHEMA}.masters m ON m.id = rv.master_id
+            ORDER BY rv.created_at DESC LIMIT 200
+        """)
+        reviews = cur.fetchall()
+        conn.close()
+        return ok({'reviews': reviews})
+
+    # --- GET: категории ---
+    if method == 'GET' and action == 'admin_categories':
+        conn = get_conn()
+        cur = conn.cursor()
+        cur.execute(f"SELECT * FROM {SCHEMA}.service_categories ORDER BY name")
+        categories = cur.fetchall()
+        conn.close()
+        return ok({'categories': categories})
+
+    # --- GET: транзакции мастера ---
+    if method == 'GET' and action == 'admin_master_transactions':
+        master_id = params.get('master_id')
+        if not master_id:
+            return err('Укажите master_id')
+        conn = get_conn()
+        cur = conn.cursor()
+        cur.execute(f"SELECT * FROM {SCHEMA}.master_transactions WHERE master_id=%s ORDER BY created_at DESC LIMIT 50", (master_id,))
+        txs = cur.fetchall()
+        conn.close()
+        return ok({'transactions': txs})
+
+    # --- POST: действия admin ---
+    if method == 'POST' and action == 'admin_block_master':
+        master_id = body.get('master_id')
+        block = body.get('block', True)
+        conn = get_conn()
+        cur = conn.cursor()
+        cur.execute(f"UPDATE {SCHEMA}.masters SET is_blocked=%s WHERE id=%s", (block, master_id))
+        conn.commit()
+        conn.close()
+        return ok({'success': True})
+
+    if method == 'POST' and action == 'admin_block_customer':
+        customer_id = body.get('customer_id')
+        block = body.get('block', True)
+        conn = get_conn()
+        cur = conn.cursor()
+        cur.execute(f"UPDATE {SCHEMA}.customers SET is_blocked=%s WHERE id=%s", (block, customer_id))
+        conn.commit()
+        conn.close()
+        return ok({'success': True})
+
+    if method == 'POST' and action == 'admin_update_order_status':
+        order_id = body.get('order_id')
+        status = body.get('status')
+        if status not in ['new', 'in_progress', 'done', 'cancelled']:
+            return err('Неверный статус')
+        conn = get_conn()
+        cur = conn.cursor()
+        cur.execute(f"UPDATE {SCHEMA}.orders SET status=%s WHERE id=%s", (status, order_id))
+        conn.commit()
+        conn.close()
+        return ok({'success': True})
+
+    if method == 'POST' and action == 'admin_delete_order':
+        order_id = body.get('order_id')
+        conn = get_conn()
+        cur = conn.cursor()
+        cur.execute(f"DELETE FROM {SCHEMA}.responses WHERE order_id=%s", (order_id,))
+        cur.execute(f"DELETE FROM {SCHEMA}.orders WHERE id=%s", (order_id,))
+        conn.commit()
+        conn.close()
+        return ok({'success': True})
+
+    if method == 'POST' and action == 'admin_delete_review':
+        review_id = body.get('review_id')
+        conn = get_conn()
+        cur = conn.cursor()
+        cur.execute(f"DELETE FROM {SCHEMA}.reviews WHERE id=%s", (review_id,))
+        conn.commit()
+        conn.close()
+        return ok({'success': True})
+
+    if method == 'POST' and action == 'admin_add_category':
+        name = body.get('name', '').strip()
+        if not name:
+            return err('Введите название')
+        conn = get_conn()
+        cur = conn.cursor()
+        cur.execute(f"INSERT INTO {SCHEMA}.service_categories (name) VALUES (%s) ON CONFLICT (name) DO NOTHING", (name,))
+        conn.commit()
+        conn.close()
+        return ok({'success': True})
+
+    if method == 'POST' and action == 'admin_delete_category':
+        cat_id = body.get('id')
+        conn = get_conn()
+        cur = conn.cursor()
+        cur.execute(f"DELETE FROM {SCHEMA}.service_categories WHERE id=%s", (cat_id,))
+        conn.commit()
+        conn.close()
+        return ok({'success': True})
+
+    if method == 'POST' and action == 'admin_adjust_balance':
+        master_id = body.get('master_id')
+        amount = body.get('amount')
+        comment = body.get('comment', 'Корректировка администратором')
+        if not master_id or amount is None:
+            return err('Укажите master_id и amount')
+        amount = int(amount)
+        conn = get_conn()
+        cur = conn.cursor()
+        cur.execute(f"UPDATE {SCHEMA}.masters SET balance = balance + %s WHERE id=%s", (amount, master_id))
+        cur.execute(f"INSERT INTO {SCHEMA}.master_transactions (master_id, amount, type, description) VALUES (%s, %s, 'admin_adjust', %s)",
+                    (master_id, amount, comment))
+        conn.commit()
+        conn.close()
+        return ok({'success': True})
+
+    if method == 'POST' and action == 'admin_change_password':
+        old_pass = body.get('old_password', '')
+        new_pass = body.get('new_password', '')
+        if not old_pass or not new_pass or len(new_pass) < 6:
+            return err('Проверьте пароли (мин. 6 символов)')
+        conn = get_conn()
+        cur = conn.cursor()
+        cur.execute(f"SELECT * FROM {SCHEMA}.admins LIMIT 1")
+        admin = cur.fetchone()
+        if not admin or not verify_password(old_pass, admin['password_hash']):
+            conn.close()
+            return err('Неверный текущий пароль', 401)
+        cur.execute(f"UPDATE {SCHEMA}.admins SET password_hash=%s WHERE id=%s", (hash_password(new_pass), admin['id']))
+        conn.commit()
+        conn.close()
+        return ok({'success': True})
+
+    return err('Метод или action не поддерживается', 405)
