@@ -219,76 +219,76 @@ const HomeCategoriesServices = ({
               )}
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
               {filtered.map((service) => (
                 <div
                   key={service.id}
-                  className="group bg-white/4 border border-white/8 rounded-2xl p-5 hover:border-violet-500/40 hover:bg-white/6 transition-all flex flex-col"
+                  className="group bg-white/4 border border-white/8 rounded-xl p-3.5 hover:border-violet-500/40 hover:bg-white/6 transition-all flex flex-col"
                 >
                   <a href={`/master-page?id=${service.master_id}`} className="block flex-1">
-                    <div className="flex items-start justify-between mb-4">
+                    <div className="flex items-start justify-between mb-2.5">
                       <Badge
-                        className="text-xs px-2.5 py-1 rounded-lg"
+                        className="text-[10px] px-2 py-0.5 rounded-md leading-tight"
                         style={{ backgroundColor: "rgba(99,102,241,0.15)", color: "#a5b4fc", border: "1px solid rgba(99,102,241,0.2)" }}
                       >
                         {service.category}
                       </Badge>
                       {service.rating ? (
-                        <div className="flex items-center gap-1 text-amber-400 text-sm">
-                          <Icon name="Star" size={13} />
+                        <div className="flex items-center gap-0.5 text-amber-400 text-xs">
+                          <Icon name="Star" size={11} />
                           <span>{service.rating}</span>
-                          <span className="text-gray-600 text-xs">({service.reviews_count})</span>
+                          <span className="text-gray-600 text-[10px]">({service.reviews_count})</span>
                         </div>
                       ) : (
-                        <span className="text-gray-600 text-xs">Новый</span>
+                        <span className="text-gray-600 text-[10px]">Новый</span>
                       )}
                     </div>
 
-                    <h3 className="text-white font-semibold text-base mb-4 leading-snug group-hover:text-violet-200 transition-colors">
+                    <h3 className="text-white font-semibold text-sm mb-2.5 leading-snug group-hover:text-violet-200 transition-colors line-clamp-2">
                       {service.title}
                     </h3>
 
-                    <div className="flex items-center gap-3 mb-4">
+                    <div className="flex items-center gap-2 mb-2.5">
                       <div
-                        className="w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-bold flex-shrink-0"
+                        className="w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0"
                         style={{ backgroundColor: service.avatar_color }}
                       >
                         {service.master_name?.[0]?.toUpperCase()}
                       </div>
                       <div className="min-w-0">
-                        <div className="text-sm text-gray-300 font-medium truncate">{service.master_name}</div>
+                        <div className="text-xs text-gray-300 font-medium truncate">{service.master_name}</div>
                         {service.city && (
-                          <div className="text-xs text-gray-600 flex items-center gap-1 mt-0.5">
-                            <Icon name="MapPin" size={10} />{service.city}
+                          <div className="text-[10px] text-gray-600 flex items-center gap-0.5">
+                            <Icon name="MapPin" size={9} />{service.city}
                           </div>
                         )}
                       </div>
                     </div>
 
-                    <div className="flex items-center justify-between pt-4 border-t border-white/6 mb-3">
+                    <div className="flex items-center justify-between pt-2.5 border-t border-white/6 mb-2">
                       <div>
                         {service.price ? (
                           <>
-                            <span className="text-gray-500 text-xs">от</span>
-                            <span className="text-white font-bold text-lg ml-1">{service.price.toLocaleString("ru-RU")} ₽</span>
+                            <span className="text-gray-500 text-[10px]">от</span>
+                            <span className="text-white font-bold text-sm ml-1">{service.price.toLocaleString("ru-RU")} ₽</span>
                           </>
                         ) : (
-                          <span className="text-gray-500 text-sm">Цена по договору</span>
+                          <span className="text-gray-500 text-xs">По договору</span>
                         )}
                       </div>
-                      <span className="text-violet-400 text-xs hover:text-violet-300 transition-colors">Профиль →</span>
+                      <span className="text-violet-400 text-[10px] hover:text-violet-300 transition-colors">Профиль →</span>
                     </div>
                   </a>
 
                   <Button
                     size="sm"
-                    className="w-full bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white text-xs rounded-xl"
+                    className="w-full bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white text-xs rounded-lg h-7"
                     onClick={() => {
                       setOrderForm(f => ({ ...f, category: service.category, city: service.city || "" }));
                       setOrderModalOpen(true);
                     }}
                   >
-                    <Icon name="Send" size={13} className="mr-1.5" />
+                    <Icon name="Send" size={11} className="mr-1" />
                     Оставить заявку
                   </Button>
                 </div>
