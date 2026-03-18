@@ -264,12 +264,16 @@ export default function Cabinet() {
 
   const handleDeleteOrder = async (orderId: number) => {
     if (!customer) return;
-    await fetch(MY_ORDERS_URL, {
+    const res = await fetch(MY_ORDERS_URL, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ action: "delete_order", order_id: orderId, customer_id: customer.id }),
     });
-    setOrders(prev => prev.filter(o => o.id !== orderId));
+    const data = await res.json();
+    const parsed = typeof data === "string" ? JSON.parse(data) : data;
+    if (parsed.success) {
+      setOrders(prev => prev.filter(o => o.id !== orderId));
+    }
   };
 
   const handleUpdateOrder = async (orderId: number, data: { title: string; description: string; category: string; city: string; budget: string }) => {
