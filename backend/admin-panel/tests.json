@@ -1,0 +1,19 @@
+{
+  "tests": [
+    {
+      "name": "Проверка входа без данных",
+      "method": "POST",
+      "path": "/?action=login",
+      "body": {"login": "", "password": ""},
+      "expectedStatus": 400,
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "Проверка дашборда без токена",
+      "method": "GET",
+      "path": "/?action=dashboard",
+      "expectedStatus": 401,
+      "bodyMatcher": "partial"
+    }
+  ]
+}
