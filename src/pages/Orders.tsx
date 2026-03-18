@@ -34,6 +34,7 @@ const Orders = () => {
   const [responseLoading, setResponseLoading] = useState(false);
   const [responseError, setResponseError] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
+  const [visibleCount, setVisibleCount] = useState(20);
   const [masterBalance, setMasterBalance] = useState<number | null>(null);
   const [masterId, setMasterId] = useState<number | null>(null);
   const [masterData, setMasterData] = useState<{ name: string; phone: string; category: string } | null>(null);
@@ -77,6 +78,11 @@ const Orders = () => {
     (activeCategory === "Все" || o.category === activeCategory) &&
     (!q || o.title.toLowerCase().includes(q) || o.description.toLowerCase().includes(q) || o.category.toLowerCase().includes(q))
   );
+  const visible = filtered.slice(0, visibleCount);
+
+  useEffect(() => {
+    setVisibleCount(20);
+  }, [searchQuery, activeCategory, selectedCity, mainTab]);
 
   const handleRespond = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -182,8 +188,9 @@ const Orders = () => {
               {q && <button onClick={() => setSearchQuery("")} className="mt-4 text-violet-400 hover:text-violet-300 text-sm transition-colors">Сбросить поиск</button>}
             </div>
           ) : (
+            <>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-              {filtered.map((order) => (
+              {visible.map((order) => (
                 <OrderCard
                   key={order.id}
                   order={order}
@@ -202,6 +209,18 @@ const Orders = () => {
                 />
               ))}
             </div>
+            {visibleCount < filtered.length && (
+              <div className="text-center mt-8">
+                <Button
+                  variant="ghost"
+                  className="border border-white/10 text-gray-400 hover:text-white hover:border-white/20 px-8"
+                  onClick={() => setVisibleCount(v => v + 20)}
+                >
+                  Показать ещё ({filtered.length - visibleCount} осталось)
+                </Button>
+              </div>
+            )}
+            </>
           )}
         </div>
       </section>
