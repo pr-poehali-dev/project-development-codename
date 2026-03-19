@@ -69,7 +69,7 @@ export default function ServiceCard({ service: s, onEdit, onDelete, onBoost, onT
             onClick={() => onBoost(s.id)}
             className="text-xs px-2.5 py-1.5 rounded-lg border bg-amber-600/15 text-amber-400 border-amber-500/20 hover:bg-amber-600/25 transition-colors flex items-center gap-1"
           >
-            <Icon name="TrendingUp" size={11} />50 ₽
+            <Icon name="TrendingUp" size={11} />В топ
           </button>
           <button
             onClick={() => onToggle(s.id, !s.is_active)}

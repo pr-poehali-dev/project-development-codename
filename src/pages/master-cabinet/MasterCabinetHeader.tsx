@@ -20,6 +20,7 @@ interface MasterCabinetHeaderProps {
   myResponses: { id: number }[];
   buySuccess: string;
   serviceSuccess: string;
+  serviceError: string;
   onLogout: () => void;
 }
 
@@ -31,6 +32,7 @@ export default function MasterCabinetHeader({
   myResponses,
   buySuccess,
   serviceSuccess,
+  serviceError,
   onLogout,
 }: MasterCabinetHeaderProps) {
   return (
@@ -86,6 +88,11 @@ export default function MasterCabinetHeader({
         {serviceSuccess && (
           <div className="bg-emerald-600/15 border border-emerald-500/30 rounded-xl px-4 py-3 mb-4 flex items-center gap-2 text-emerald-400 text-sm">
             <Icon name="CheckCircle" size={16} />{serviceSuccess}
+          </div>
+        )}
+        {serviceError && (
+          <div className="bg-red-600/15 border border-red-500/30 rounded-xl px-4 py-3 mb-4 flex items-center gap-2 text-red-400 text-sm">
+            <Icon name="AlertCircle" size={16} />{serviceError}
           </div>
         )}
 

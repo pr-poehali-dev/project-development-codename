@@ -96,6 +96,7 @@ export default function MasterCabinet() {
   const [serviceForm, setServiceForm] = useState({ title: "", description: "", category: "", city: "", price: "" });
   const [serviceLoading, setServiceLoading] = useState(false);
   const [serviceSuccess, setServiceSuccess] = useState("");
+  const [serviceError, setServiceError] = useState("");
 
   useEffect(() => {
     const saved = localStorage.getItem("master_phone");
@@ -261,9 +262,15 @@ export default function MasterCabinet() {
     });
     const data = await res.json();
     if (data.success) {
-      setServiceSuccess("Услуга поднята в топ!");
+      setServiceSuccess("Услуга поднята в топ на 7 дней!");
       await loadProfile(phone);
       setTimeout(() => setServiceSuccess(""), 3000);
+    } else if (data.no_balance) {
+      setServiceError(data.error || "Недостаточно токенов. Нужно 100 токенов.");
+      setTimeout(() => setServiceError(""), 4000);
+    } else {
+      setServiceError(data.error || "Ошибка при поднятии в топ");
+      setTimeout(() => setServiceError(""), 4000);
     }
   };
 
@@ -335,6 +342,7 @@ export default function MasterCabinet() {
         myResponses={myResponses}
         buySuccess={buySuccess}
         serviceSuccess={serviceSuccess}
+        serviceError={serviceError}
         onLogout={handleLogout}
       />
 
