@@ -70,8 +70,8 @@ const OrderModal = ({
 
   return (
     <Dialog open={orderModalOpen} onOpenChange={(v) => { setOrderModalOpen(v); if (!v) { setOrderSent(false); setOrderError(""); setSelectedMainCat(""); } }}>
-      <DialogContent className="bg-[#1a1d27] border border-white/10 text-white max-w-md w-full">
-        <DialogHeader>
+      <DialogContent className="bg-[#1a1d27] border border-white/10 text-white max-w-md w-full max-h-[90dvh] flex flex-col">
+        <DialogHeader className="flex-shrink-0">
           <DialogTitle className="text-xl font-bold text-white">
             {orderSent ? "Заявка опубликована!" : "Создать заявку"}
           </DialogTitle>
@@ -92,7 +92,7 @@ const OrderModal = ({
             </Button>
           </div>
         ) : (
-          <form onSubmit={handleOrderSubmit} className="space-y-4 mt-2">
+          <form onSubmit={handleOrderSubmit} className="space-y-4 mt-2 overflow-y-auto flex-1 pr-1">
             <div>
               <label className="text-sm text-gray-400 mb-1.5 block">Что нужно сделать? *</label>
               <input
