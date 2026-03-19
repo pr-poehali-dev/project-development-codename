@@ -41,8 +41,8 @@ const MasterRegisterModal = ({
 }: MasterRegisterModalProps) => {
   return (
     <Dialog open={masterModalOpen} onOpenChange={(v) => { setMasterModalOpen(v); if (!v) setMasterSent(false); }}>
-      <DialogContent className="bg-[#1a1d27] border border-white/10 text-white max-w-md w-full">
-        <DialogHeader>
+      <DialogContent className="bg-[#1a1d27] border border-white/10 text-white max-w-md w-full max-h-[90dvh] flex flex-col">
+        <DialogHeader className="flex-shrink-0">
           <DialogTitle className="text-xl font-bold text-white">
             {masterSent ? "Заявка отправлена!" : "Регистрация мастера"}
           </DialogTitle>
@@ -71,7 +71,7 @@ const MasterRegisterModal = ({
             </div>
           </div>
         ) : (
-          <form onSubmit={handleMasterSubmit} className="space-y-4 mt-2">
+          <form onSubmit={handleMasterSubmit} className="space-y-4 mt-2 overflow-y-auto flex-1 pr-1">
             <div>
               <label className="text-sm text-gray-400 mb-1.5 block">Ваше имя *</label>
               <input

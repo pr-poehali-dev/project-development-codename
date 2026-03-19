@@ -69,8 +69,8 @@ export default function OrderResponseModal({
         setResponseForm({ ...responseForm, master_name: masterData.name, master_phone: masterData.phone, master_category: masterData.category });
       }
     }}>
-      <DialogContent className="bg-[#1a1d27] border border-white/10 text-white max-w-lg w-full">
-        <DialogHeader>
+      <DialogContent className="bg-[#1a1d27] border border-white/10 text-white max-w-lg w-full max-h-[90dvh] flex flex-col">
+        <DialogHeader className="flex-shrink-0">
           <DialogTitle className="text-xl font-bold text-white">
             {responseSent ? "Отклик отправлен!" : selectedOrder?.title}
           </DialogTitle>
@@ -91,7 +91,7 @@ export default function OrderResponseModal({
             </Button>
           </div>
         ) : selectedOrder && (
-          <div className="space-y-4">
+          <div className="space-y-4 overflow-y-auto flex-1 pr-1">
             {/* Детали заявки */}
             <div className="bg-white/4 rounded-xl p-4 space-y-2">
               <div className="flex items-center gap-2">

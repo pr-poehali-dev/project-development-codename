@@ -93,14 +93,14 @@ export function EditOrderModal({ editOrder, editForm, editLoading, setEditForm, 
   if (!editOrder) return null;
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 px-4">
-      <div className="bg-[#1a1d27] border border-white/10 rounded-2xl p-6 w-full max-w-md">
-        <div className="flex items-center justify-between mb-4">
+      <div className="bg-[#1a1d27] border border-white/10 rounded-2xl p-6 w-full max-w-md max-h-[90dvh] flex flex-col">
+        <div className="flex items-center justify-between mb-4 flex-shrink-0">
           <h3 className="text-white font-semibold text-lg">Редактировать заявку</h3>
           <button onClick={onCancel} className="text-gray-500 hover:text-gray-300 transition-colors">
             <Icon name="X" size={18} />
           </button>
         </div>
-        <form onSubmit={onSubmit} className="space-y-3">
+        <form onSubmit={onSubmit} className="space-y-3 overflow-y-auto flex-1 pr-1">
           <div>
             <label className="text-xs text-gray-400 mb-1.5 block">Название *</label>
             <input
@@ -189,10 +189,10 @@ export function ReviewModal({ reviewForm, reviewRating, reviewComment, reviewLoa
   if (!reviewForm) return null;
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 px-4">
-      <div className="bg-[#1a1d27] border border-white/10 rounded-2xl p-6 w-full max-w-md">
-        <h3 className="text-white font-semibold text-lg mb-1">Отзыв о мастере</h3>
-        <p className="text-gray-400 text-sm mb-5">{reviewForm.masterName}</p>
-        <form onSubmit={onSubmit} className="space-y-4">
+      <div className="bg-[#1a1d27] border border-white/10 rounded-2xl p-6 w-full max-w-md max-h-[90dvh] flex flex-col">
+        <h3 className="text-white font-semibold text-lg mb-1 flex-shrink-0">Отзыв о мастере</h3>
+        <p className="text-gray-400 text-sm mb-5 flex-shrink-0">{reviewForm.masterName}</p>
+        <form onSubmit={onSubmit} className="space-y-4 overflow-y-auto flex-1 pr-1">
           <div>
             <label className="text-sm text-gray-400 mb-2 block">Оценка</label>
             <StarRating value={reviewRating} onChange={setReviewRating} />
