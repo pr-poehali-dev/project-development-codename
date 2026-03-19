@@ -45,14 +45,14 @@ export default function ServiceAddForm({
   onSubmit,
   onCancel,
 }: ServiceAddFormProps) {
-  const tokenCost = servicesCount === 0 ? "6" : servicesCount === 1 ? "5" : "4";
+  const tokenCost = servicesCount === 0 ? "10" : servicesCount === 1 ? "8" : "6";
   const addSubcategories = CATEGORIES.find(c => c.name === addMainCat)?.subcategories ?? [];
 
   return (
     <form onSubmit={onSubmit} className="bg-white/4 border border-violet-500/30 rounded-2xl p-5 mb-5 space-y-3">
       <div className="flex items-center justify-between mb-1">
         <h3 className="text-white font-semibold">Новая услуга</h3>
-        <span className="text-violet-400 text-sm font-medium">{tokenCost} токенов / 30 дней</span>
+        <span className="text-violet-400 text-sm font-medium">{tokenCost} токенов / 14 дней</span>
       </div>
       <input
         required
