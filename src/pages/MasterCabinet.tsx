@@ -343,6 +343,10 @@ export default function MasterCabinet() {
       const d = typeof data === "string" ? JSON.parse(data) : data;
       if (d.success && d.master) {
         setMaster(d.master);
+        setEditName(d.master.name || "");
+        setEditCity(d.master.city || "");
+        setEditAbout(d.master.about || "");
+        setEditCategories(d.master.categories?.length ? d.master.categories : (d.master.category ? [d.master.category] : []));
         setProfileSuccess("Профиль сохранён!");
         setTimeout(() => setProfileSuccess(""), 3000);
       }
