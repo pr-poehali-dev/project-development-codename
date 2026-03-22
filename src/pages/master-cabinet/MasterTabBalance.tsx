@@ -18,15 +18,22 @@ interface MasterTabBalanceProps {
   packages: Package[];
   buyingId: number | null;
   onBuy: (pkg: Package) => void;
+  paymentChecking?: boolean;
 }
 
-export default function MasterTabBalance({ packages, buyingId, onBuy }: MasterTabBalanceProps) {
+export default function MasterTabBalance({ packages, buyingId, onBuy, paymentChecking }: MasterTabBalanceProps) {
   const singlePkg = packages.find(p => p.responses_count === 1);
   const bundlePkgs = packages.filter(p => p.responses_count > 1);
   const pricePerToken = singlePkg ? singlePkg.price : 49;
 
   return (
     <>
+      {paymentChecking && (
+        <div className="mb-5 bg-violet-600/15 border border-violet-500/30 rounded-xl px-4 py-3 flex items-center gap-3">
+          <div className="w-4 h-4 border-2 border-violet-400 border-t-transparent rounded-full animate-spin flex-shrink-0" />
+          <p className="text-violet-300 text-sm">Проверяем статус оплаты...</p>
+        </div>
+      )}
       <p className="text-gray-400 text-sm mb-5">Токены списываются когда заказчик выбирает вас исполнителем (−5 токенов). Буст услуги — 1 токен. Публикация услуги — 4–6 токенов/месяц.</p>
 
       {/* Поштучная покупка */}
@@ -87,10 +94,10 @@ export default function MasterTabBalance({ packages, buyingId, onBuy }: MasterTa
         })}
       </div>
 
-      <div className="mt-2 bg-amber-600/10 border border-amber-500/20 rounded-xl px-4 py-3 flex items-start gap-3">
-        <Icon name="Info" size={16} className="text-amber-400 mt-0.5 flex-shrink-0" />
-        <p className="text-amber-300/80 text-xs leading-relaxed">
-          Оплата через ЮKassa будет подключена в ближайшее время. Сейчас пакеты зачисляются без списания средств для тестирования.
+      <div className="mt-2 bg-white/4 border border-white/8 rounded-xl px-4 py-3 flex items-start gap-3">
+        <Icon name="ShieldCheck" size={16} className="text-emerald-400 mt-0.5 flex-shrink-0" />
+        <p className="text-gray-400 text-xs leading-relaxed">
+          Оплата через ЮKassa — безопасно. После оплаты токены зачисляются автоматически.
         </p>
       </div>
       <p className="mt-4 text-gray-600 text-xs text-center">

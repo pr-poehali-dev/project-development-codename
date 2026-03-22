@@ -7,6 +7,7 @@ import MasterTabOther from "@/pages/master-cabinet/MasterTabOther";
 
 const PROFILE_URL = "https://functions.poehali.dev/de274bd5-3f08-42d8-9aac-b373bb34b900";
 const PACKAGES_URL = "https://functions.poehali.dev/a097fcb4-fb63-44d8-9784-e4fa20009cb4";
+const PAYMENTS_URL = "https://functions.poehali.dev/cad10a69-4b34-4497-960c-f6026044d2f8";
 
 interface Master {
   id: number;
@@ -71,7 +72,9 @@ export default function MasterCabinet() {
   const [error, setError] = useState("");
   const [buyingId, setBuyingId] = useState<number | null>(null);
   const [buySuccess, setBuySuccess] = useState("");
+  const [paymentChecking, setPaymentChecking] = useState(false);
   const initialTab = new URLSearchParams(window.location.search).get("tab");
+  const initialPaymentId = new URLSearchParams(window.location.search).get("payment_id");
   const [tab, setTab] = useState<"balance" | "history" | "responses" | "services" | "profile">(
     initialTab === "services" || initialTab === "responses" || initialTab === "history" || initialTab === "profile" ? initialTab as "services" | "responses" | "history" | "profile" : "balance"
   );
@@ -103,10 +106,35 @@ export default function MasterCabinet() {
     if (saved) {
       setPhone(saved);
       setInputPhone(saved);
-      loadProfile(saved);
+      loadProfile(saved).then(() => {
+        if (initialPaymentId) {
+          checkPayment(initialPaymentId, saved);
+        }
+      });
     }
     loadPackages();
   }, []);
+
+  const checkPayment = async (paymentId: string, masterPhone: string) => {
+    setPaymentChecking(true);
+    try {
+      const res = await fetch(`${PAYMENTS_URL}?action=check&payment_id=${paymentId}`);
+      const data = await res.json();
+      if (data.status === "succeeded") {
+        setBuySuccess(`Оплата прошла! Зачислено ${data.tokens} токенов.`);
+        await loadProfile(masterPhone);
+        setTimeout(() => setBuySuccess(""), 6000);
+      } else if (data.status === "canceled") {
+        setBuySuccess("Оплата отменена.");
+        setTimeout(() => setBuySuccess(""), 4000);
+      }
+    } finally {
+      setPaymentChecking(false);
+      const url = new URL(window.location.href);
+      url.searchParams.delete("payment_id");
+      window.history.replaceState({}, "", url.toString());
+    }
+  };
 
   const loadPackages = async () => {
     const res = await fetch(PACKAGES_URL);
@@ -151,16 +179,22 @@ export default function MasterCabinet() {
     setBuyingId(pkg.id);
     setBuySuccess("");
     try {
-      const res = await fetch(PACKAGES_URL, {
+      const returnUrl = `${window.location.origin}/master?tab=balance`;
+      const res = await fetch(PAYMENTS_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ master_id: master.id, package_id: pkg.id }),
+        body: JSON.stringify({
+          action: "create",
+          master_id: master.id,
+          package_id: pkg.id,
+          return_url: returnUrl,
+        }),
       });
       const data = await res.json();
-      if (data.success) {
-        setBuySuccess(`Зачислено ${pkg.responses_count} токенов!`);
-        setMaster((m) => m ? { ...m, balance: data.new_balance } : m);
-        await loadProfile(phone);
+      if (data.confirmation_url) {
+        window.location.href = data.confirmation_url;
+      } else {
+        setBuySuccess("Ошибка при создании платежа. Попробуй ещё раз.");
         setTimeout(() => setBuySuccess(""), 4000);
       }
     } finally {
@@ -352,6 +386,7 @@ export default function MasterCabinet() {
             packages={packages}
             buyingId={buyingId}
             onBuy={handleBuy}
+            paymentChecking={paymentChecking}
           />
         )}
 
