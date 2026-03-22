@@ -406,9 +406,9 @@ def handler(event: dict, context) -> dict:
             f"ms.sort_order, ms.boosted_until, "
             f"m.id as master_id, m.name as master_name, m.avatar_color, "
             f"ROUND(AVG(r.rating)::numeric, 1) as rating, COUNT(r.id) as reviews_count "
-            f"FROM master_services ms "
-            f"JOIN masters m ON m.id = ms.master_id "
-            f"LEFT JOIN reviews r ON r.master_id = m.id "
+            f"FROM {SCHEMA}.master_services ms "
+            f"JOIN {SCHEMA}.masters m ON m.id = ms.master_id "
+            f"LEFT JOIN {SCHEMA}.reviews r ON r.master_id = m.id "
             f"WHERE {where} "
             f"GROUP BY ms.id, ms.title, ms.description, ms.category, ms.city, ms.price, ms.created_at, "
             f"ms.sort_order, ms.boosted_until, m.id, m.name, m.avatar_color "
@@ -416,7 +416,7 @@ def handler(event: dict, context) -> dict:
             args
         )
         services = cur.fetchall()
-        cur.execute("SELECT DISTINCT city FROM master_services WHERE is_active = TRUE ORDER BY city")
+        cur.execute(f"SELECT DISTINCT city FROM {SCHEMA}.master_services WHERE is_active = TRUE ORDER BY city")
         cities = [row['city'] for row in cur.fetchall()]
         cur.close(); conn.close()
 
