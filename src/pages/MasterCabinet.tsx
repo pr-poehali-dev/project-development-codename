@@ -73,6 +73,8 @@ export default function MasterCabinet() {
   const [buyingId, setBuyingId] = useState<number | null>(null);
   const [buySuccess, setBuySuccess] = useState("");
   const [paymentChecking, setPaymentChecking] = useState(false);
+  const [checkoutToken, setCheckoutToken] = useState<string | null>(null);
+  const [checkoutPaymentId, setCheckoutPaymentId] = useState<number | null>(null);
   const initialTab = new URLSearchParams(window.location.search).get("tab");
   const initialPaymentId = new URLSearchParams(window.location.search).get("payment_id");
   const [tab, setTab] = useState<"balance" | "history" | "responses" | "services" | "profile">(
@@ -179,7 +181,6 @@ export default function MasterCabinet() {
     setBuyingId(pkg.id);
     setBuySuccess("");
     try {
-      const returnUrl = `${window.location.origin}/master?tab=balance`;
       const res = await fetch(PAYMENTS_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -187,18 +188,37 @@ export default function MasterCabinet() {
           action: "create",
           master_id: master.id,
           package_id: pkg.id,
-          return_url: returnUrl,
         }),
       });
       const data = await res.json();
-      if (data.confirmation_url) {
-        window.location.href = data.confirmation_url;
+      if (data.confirmation_token) {
+        setCheckoutToken(data.confirmation_token);
+        setCheckoutPaymentId(data.payment_id);
       } else {
         setBuySuccess("Ошибка при создании платежа. Попробуй ещё раз.");
         setTimeout(() => setBuySuccess(""), 4000);
       }
     } finally {
       setBuyingId(null);
+    }
+  };
+
+  const handleCheckoutSuccess = async () => {
+    setCheckoutToken(null);
+    if (checkoutPaymentId) {
+      setPaymentChecking(true);
+      try {
+        const res = await fetch(`${PAYMENTS_URL}?action=check&payment_id=${checkoutPaymentId}`);
+        const data = await res.json();
+        if (data.status === "succeeded") {
+          setBuySuccess(`Оплата прошла! Зачислено ${data.tokens} токенов.`);
+          await loadProfile(phone);
+          setTimeout(() => setBuySuccess(""), 6000);
+        }
+      } finally {
+        setPaymentChecking(false);
+        setCheckoutPaymentId(null);
+      }
     }
   };
 
@@ -387,6 +407,9 @@ export default function MasterCabinet() {
             buyingId={buyingId}
             onBuy={handleBuy}
             paymentChecking={paymentChecking}
+            checkoutToken={checkoutToken}
+            onCheckoutSuccess={handleCheckoutSuccess}
+            onCheckoutClose={() => setCheckoutToken(null)}
           />
         )}
 

@@ -1,3 +1,4 @@
+import { useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import Icon from "@/components/ui/icon";
 
@@ -19,12 +20,106 @@ interface MasterTabBalanceProps {
   buyingId: number | null;
   onBuy: (pkg: Package) => void;
   paymentChecking?: boolean;
+  checkoutToken?: string | null;
+  onCheckoutSuccess?: () => void;
+  onCheckoutClose?: () => void;
 }
 
-export default function MasterTabBalance({ packages, buyingId, onBuy, paymentChecking }: MasterTabBalanceProps) {
+declare global {
+  interface Window {
+    YooMoneyCheckoutWidget: new (options: {
+      confirmation_token: string;
+      return_url?: string;
+      customization?: { colors?: { controlPrimary?: string } };
+      error_callback?: (error: unknown) => void;
+    }) => {
+      render: (containerId: string) => void;
+      on: (event: string, callback: () => void) => void;
+      destroy: () => void;
+    };
+  }
+}
+
+export default function MasterTabBalance({
+  packages, buyingId, onBuy, paymentChecking,
+  checkoutToken, onCheckoutSuccess, onCheckoutClose,
+}: MasterTabBalanceProps) {
+  const widgetRef = useRef<ReturnType<typeof window.YooMoneyCheckoutWidget> | null>(null);
+  const scriptLoadedRef = useRef(false);
+
   const singlePkg = packages.find(p => p.responses_count === 1);
   const bundlePkgs = packages.filter(p => p.responses_count > 1);
   const pricePerToken = singlePkg ? singlePkg.price : 49;
+
+  useEffect(() => {
+    if (!checkoutToken) {
+      if (widgetRef.current) {
+        widgetRef.current.destroy();
+        widgetRef.current = null;
+      }
+      return;
+    }
+
+    const initWidget = () => {
+      if (widgetRef.current) {
+        widgetRef.current.destroy();
+        widgetRef.current = null;
+      }
+      const checkout = new window.YooMoneyCheckoutWidget({
+        confirmation_token: checkoutToken,
+        customization: { colors: { controlPrimary: '#7c3aed' } },
+        error_callback: () => {
+          onCheckoutClose?.();
+        },
+      });
+      checkout.on('success', () => {
+        checkout.destroy();
+        widgetRef.current = null;
+        onCheckoutSuccess?.();
+      });
+      checkout.on('fail', () => {
+        checkout.destroy();
+        widgetRef.current = null;
+        onCheckoutClose?.();
+      });
+      checkout.render('yookassa-widget');
+      widgetRef.current = checkout;
+    };
+
+    if (window.YooMoneyCheckoutWidget) {
+      initWidget();
+    } else if (!scriptLoadedRef.current) {
+      scriptLoadedRef.current = true;
+      const script = document.createElement('script');
+      script.src = 'https://yookassa.ru/checkout-widget/v1/checkout-widget.js';
+      script.onload = () => initWidget();
+      document.head.appendChild(script);
+    }
+
+    return () => {
+      if (widgetRef.current) {
+        widgetRef.current.destroy();
+        widgetRef.current = null;
+      }
+    };
+  }, [checkoutToken]);
+
+  if (checkoutToken) {
+    return (
+      <div>
+        <div className="flex items-center justify-between mb-4">
+          <p className="text-white font-semibold">Оплата</p>
+          <button
+            onClick={onCheckoutClose}
+            className="text-gray-400 hover:text-white transition-colors text-sm flex items-center gap-1"
+          >
+            <Icon name="X" size={16} /> Отмена
+          </button>
+        </div>
+        <div id="yookassa-widget" className="rounded-xl overflow-hidden min-h-[400px]" />
+      </div>
+    );
+  }
 
   return (
     <>
@@ -36,7 +131,6 @@ export default function MasterTabBalance({ packages, buyingId, onBuy, paymentChe
       )}
       <p className="text-gray-400 text-sm mb-5">Токены списываются когда заказчик выбирает вас исполнителем (−5 токенов). Буст услуги — 1 токен. Публикация услуги — 4–6 токенов/месяц.</p>
 
-      {/* Поштучная покупка */}
       {singlePkg && (
         <div className="bg-white/4 border border-white/10 rounded-2xl p-4 mb-5 flex items-center justify-between gap-4">
           <div>
@@ -57,7 +151,6 @@ export default function MasterTabBalance({ packages, buyingId, onBuy, paymentChe
         </div>
       )}
 
-      {/* Пакеты */}
       <div className="grid gap-4 sm:grid-cols-3 mb-5">
         {bundlePkgs.map((pkg, i) => {
           const perToken = Math.round(pkg.price / pkg.responses_count);

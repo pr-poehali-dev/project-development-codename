@@ -136,8 +136,7 @@ def handler(event: dict, context) -> dict:
             yk_payment = yookassa_request('POST', '/payments', {
                 'amount': {'value': amount_str, 'currency': 'RUB'},
                 'confirmation': {
-                    'type': 'redirect',
-                    'return_url': f"{return_url}&payment_id={payment_db_id}"
+                    'type': 'embedded',
                 },
                 'capture': True,
                 'description': f"Покупка пакета «{pkg['name']}» — {pkg['responses_count']} токенов",
@@ -149,7 +148,7 @@ def handler(event: dict, context) -> dict:
             })
 
             yk_id = yk_payment['id']
-            confirmation_url = yk_payment['confirmation']['confirmation_url']
+            confirmation_token = yk_payment['confirmation']['confirmation_token']
 
             cur.execute(
                 f"UPDATE {SCHEMA}.payments SET yookassa_payment_id = %s WHERE id = %s",
@@ -163,7 +162,7 @@ def handler(event: dict, context) -> dict:
                 'headers': CORS,
                 'body': json.dumps({
                     'payment_id': payment_db_id,
-                    'confirmation_url': confirmation_url,
+                    'confirmation_token': confirmation_token,
                     'yookassa_id': yk_id,
                 })
             }
