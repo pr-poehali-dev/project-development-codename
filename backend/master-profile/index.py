@@ -1,7 +1,6 @@
 import json
 import os
 import random
-
 import secrets
 import hashlib
 import smtplib
