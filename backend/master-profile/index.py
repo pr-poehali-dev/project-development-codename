@@ -293,6 +293,7 @@ def handler(event: dict, context) -> dict:
             about = body_raw.get('about', '')
             name = (body_raw.get('name') or '').strip()
             city = (body_raw.get('city') or '').strip()
+            categories_raw = body_raw.get('categories')
             if not master_id:
                 return {'statusCode': 400, 'headers': HEADERS, 'body': json.dumps({'error': 'Не авторизован'})}
             conn = get_conn()
@@ -304,9 +305,14 @@ def handler(event: dict, context) -> dict:
                 fields.append("city=%s"); vals.append(city)
             if about is not None:
                 fields.append("about=%s"); vals.append(about)
+            if isinstance(categories_raw, list) and categories_raw:
+                cats = [c.strip() for c in categories_raw if c and c.strip()]
+                if cats:
+                    fields.append("categories=%s::TEXT[]"); vals.append(cats)
+                    fields.append("category=%s"); vals.append(cats[0])
             if fields:
                 vals.append(int(master_id))
-                cur.execute(f"UPDATE {SCHEMA}.masters SET {', '.join(fields)} WHERE id=%s RETURNING id, name, phone, city, about, category, balance, avatar_color, responses_count, created_at", vals)
+                cur.execute(f"UPDATE {SCHEMA}.masters SET {', '.join(fields)} WHERE id=%s RETURNING id, name, phone, city, about, category, categories, balance, avatar_color, responses_count, created_at", vals)
                 updated = cur.fetchone()
                 conn.commit()
                 cur.close(); conn.close()
