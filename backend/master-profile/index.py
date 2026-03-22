@@ -412,7 +412,7 @@ def handler(event: dict, context) -> dict:
             f"WHERE {where} "
             f"GROUP BY ms.id, ms.title, ms.description, ms.category, ms.city, ms.price, ms.created_at, "
             f"ms.sort_order, ms.boosted_until, m.id, m.name, m.avatar_color "
-            f"ORDER BY (ms.boosted_until > NOW()) DESC, ms.sort_order DESC, ms.created_at DESC LIMIT 50",
+            f"ORDER BY (COALESCE(ms.boosted_until, '2000-01-01') > NOW()) DESC, ms.sort_order DESC, ms.created_at DESC LIMIT 50",
             args
         )
         services = cur.fetchall()
