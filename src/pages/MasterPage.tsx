@@ -8,6 +8,7 @@ interface Master {
   id: number;
   name: string;
   category: string;
+  categories: string[];
   city: string;
   about: string | null;
   avatar_color: string;
@@ -118,9 +119,9 @@ export default function MasterPage() {
             <div className="flex-1 min-w-0">
               <h1 className="text-2xl font-bold text-white mb-1">{master?.name}</h1>
               <div className="flex items-center gap-3 flex-wrap mb-3">
-                {master?.category && (
-                  <Badge className="bg-violet-600/15 text-violet-400 border-violet-500/20 text-xs">{master.category}</Badge>
-                )}
+                {(master?.categories?.length ? master.categories : master?.category ? [master.category] : []).map((cat) => (
+                  <Badge key={cat} className="bg-violet-600/15 text-violet-400 border-violet-500/20 text-xs">{cat}</Badge>
+                ))}
                 {master?.city && (
                   <span className="flex items-center gap-1 text-gray-500 text-sm">
                     <Icon name="MapPin" size={13} />{master.city}
