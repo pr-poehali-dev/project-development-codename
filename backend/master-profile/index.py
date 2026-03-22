@@ -470,7 +470,7 @@ def handler(event: dict, context) -> dict:
             conn = get_conn()
             cur = conn.cursor()
             # Проверяем баланс
-            cur.execute("SELECT balance FROM masters WHERE id = %s", (int(master_id),))
+            cur.execute(f"SELECT balance FROM {SCHEMA}.masters WHERE id = %s", (int(master_id),))
             m = cur.fetchone()
             if not m or m['balance'] < 100:
                 cur.close(); conn.close()
@@ -478,12 +478,12 @@ def handler(event: dict, context) -> dict:
             import time as _time
             new_sort = int(_time.time() * 1000)
             cur.execute(
-                "UPDATE master_services SET sort_order = %s, boost_count = boost_count + 1, boosted_until = NOW() + INTERVAL '7 days' WHERE id = %s AND master_id = %s",
+                f"UPDATE {SCHEMA}.master_services SET sort_order = %s, boost_count = boost_count + 1, boosted_until = NOW() + INTERVAL '7 days' WHERE id = %s AND master_id = %s",
                 (new_sort, int(service_id), int(master_id))
             )
-            cur.execute("UPDATE masters SET balance = balance - 100 WHERE id = %s", (int(master_id),))
+            cur.execute(f"UPDATE {SCHEMA}.masters SET balance = balance - 100 WHERE id = %s", (int(master_id),))
             cur.execute(
-                "INSERT INTO master_transactions (master_id, type, amount, description) VALUES (%s, 'spend', 100, %s)",
+                f"INSERT INTO {SCHEMA}.master_transactions (master_id, type, amount, description) VALUES (%s, 'spend', 100, %s)",
                 (int(master_id), f"Поднятие услуги #{service_id} в топ на 7 дней")
             )
             conn.commit()
@@ -503,7 +503,7 @@ def handler(event: dict, context) -> dict:
             conn = get_conn()
             cur = conn.cursor()
             # Считаем текущее количество активных услуг мастера
-            cur.execute("SELECT COUNT(*) as cnt FROM master_services WHERE master_id = %s AND is_active = TRUE", (int(master_id),))
+            cur.execute(f"SELECT COUNT(*) as cnt FROM {SCHEMA}.master_services WHERE master_id = %s AND is_active = TRUE", (int(master_id),))
             active_count = cur.fetchone()['cnt']
             # Определяем стоимость публикации (1-я: 10, 2-я: 8, 3-я и далее: 6)
             if active_count == 0:
@@ -513,7 +513,7 @@ def handler(event: dict, context) -> dict:
             else:
                 token_cost = 6
             # Проверяем баланс
-            cur.execute("SELECT balance FROM masters WHERE id = %s", (int(master_id),))
+            cur.execute(f"SELECT balance FROM {SCHEMA}.masters WHERE id = %s", (int(master_id),))
             m = cur.fetchone()
             if not m or m['balance'] < token_cost:
                 cur.close(); conn.close()
@@ -521,13 +521,13 @@ def handler(event: dict, context) -> dict:
             import time as _time
             sort_order = int(_time.time() * 1000)
             cur.execute(
-                "INSERT INTO master_services (master_id, title, description, category, city, price, sort_order, paid_until) VALUES (%s, %s, %s, %s, %s, %s, %s, NOW() + INTERVAL '14 days') RETURNING id",
+                f"INSERT INTO {SCHEMA}.master_services (master_id, title, description, category, city, price, sort_order, paid_until) VALUES (%s, %s, %s, %s, %s, %s, %s, NOW() + INTERVAL '14 days') RETURNING id",
                 (int(master_id), title, description, category, city, int(price) if price else None, sort_order)
             )
             new_id = cur.fetchone()['id']
-            cur.execute("UPDATE masters SET balance = balance - %s WHERE id = %s", (token_cost, int(master_id)))
+            cur.execute(f"UPDATE {SCHEMA}.masters SET balance = balance - %s WHERE id = %s", (token_cost, int(master_id)))
             cur.execute(
-                "INSERT INTO master_transactions (master_id, type, amount, description) VALUES (%s, 'spend', %s, %s)",
+                f"INSERT INTO {SCHEMA}.master_transactions (master_id, type, amount, description) VALUES (%s, 'spend', %s, %s)",
                 (int(master_id), token_cost, f"Публикация услуги на 14 дней")
             )
             conn.commit()
@@ -542,7 +542,7 @@ def handler(event: dict, context) -> dict:
                 return {'statusCode': 400, 'headers': HEADERS, 'body': json.dumps({'error': 'Недостаточно данных'})}
             conn = get_conn()
             cur = conn.cursor()
-            cur.execute("DELETE FROM master_services WHERE id=%s AND master_id=%s", (int(service_id), int(master_id)))
+            cur.execute(f"DELETE FROM {SCHEMA}.master_services WHERE id=%s AND master_id=%s", (int(service_id), int(master_id)))
             conn.commit()
             cur.close(); conn.close()
             return {'statusCode': 200, 'headers': HEADERS, 'body': json.dumps({'success': True})}
@@ -563,12 +563,12 @@ def handler(event: dict, context) -> dict:
             cur = conn.cursor()
             if cats:
                 cur.execute(
-                    "UPDATE masters SET name=COALESCE(NULLIF(%s,''),name), city=COALESCE(NULLIF(%s,''),city), about=COALESCE(NULLIF(%s,''),about), category=%s, categories=%s::TEXT[] WHERE id=%s RETURNING *",
+                    f"UPDATE {SCHEMA}.masters SET name=COALESCE(NULLIF(%s,''),name), city=COALESCE(NULLIF(%s,''),city), about=COALESCE(NULLIF(%s,''),about), category=%s, categories=%s::TEXT[] WHERE id=%s RETURNING *",
                     (name, city, about, primary_cat, cats, int(master_id))
                 )
             else:
                 cur.execute(
-                    "UPDATE masters SET name=COALESCE(NULLIF(%s,''),name), city=COALESCE(NULLIF(%s,''),city), about=COALESCE(NULLIF(%s,''),about) WHERE id=%s RETURNING *",
+                    f"UPDATE {SCHEMA}.masters SET name=COALESCE(NULLIF(%s,''),name), city=COALESCE(NULLIF(%s,''),city), about=COALESCE(NULLIF(%s,''),about) WHERE id=%s RETURNING *",
                     (name, city, about, int(master_id))
                 )
             master = cur.fetchone()
@@ -590,7 +590,7 @@ def handler(event: dict, context) -> dict:
             conn = get_conn()
             cur = conn.cursor()
             cur.execute(
-                "UPDATE master_services SET title=%s, description=%s, category=%s, city=%s, price=%s WHERE id=%s AND master_id=%s",
+                f"UPDATE {SCHEMA}.master_services SET title=%s, description=%s, category=%s, city=%s, price=%s WHERE id=%s AND master_id=%s",
                 (title, description, category, city, int(price) if price else None, int(service_id), int(master_id))
             )
             conn.commit()
@@ -609,12 +609,12 @@ def handler(event: dict, context) -> dict:
         cur = conn.cursor()
         if customer_id:
             cur.execute(
-                "UPDATE orders SET status = %s, closed_at = CASE WHEN %s IN ('done','cancelled') THEN now() ELSE NULL END WHERE id = %s AND customer_id = %s",
+                f"UPDATE {SCHEMA}.orders SET status = %s, closed_at = CASE WHEN %s IN ('done','cancelled') THEN now() ELSE NULL END WHERE id = %s AND customer_id = %s",
                 (status, status, int(order_id), int(customer_id))
             )
         else:
             cur.execute(
-                "UPDATE orders SET status = %s WHERE id = %s",
+                f"UPDATE {SCHEMA}.orders SET status = %s WHERE id = %s",
                 (status, int(order_id))
             )
         conn.commit()
@@ -626,16 +626,16 @@ def handler(event: dict, context) -> dict:
         master_id = int(params['master_id'])
         conn = get_conn()
         cur = conn.cursor()
-        cur.execute("SELECT * FROM masters WHERE id = %s", (master_id,))
+        cur.execute(f"SELECT * FROM {SCHEMA}.masters WHERE id = %s", (master_id,))
         master = cur.fetchone()
         if not master:
             cur.close(); conn.close()
             return {'statusCode': 404, 'headers': HEADERS, 'body': json.dumps({'error': 'Мастер не найден'})}
 
         cur.execute(
-            "SELECT r.id, r.rating, r.comment, r.created_at, o.title as order_title "
-            "FROM reviews r JOIN orders o ON o.id = r.order_id "
-            "WHERE r.master_id = %s ORDER BY r.created_at DESC LIMIT 20",
+            f"SELECT r.id, r.rating, r.comment, r.created_at, o.title as order_title "
+            f"FROM {SCHEMA}.reviews r JOIN {SCHEMA}.orders o ON o.id = r.order_id "
+            f"WHERE r.master_id = %s ORDER BY r.created_at DESC LIMIT 20",
             (master_id,)
         )
         reviews = cur.fetchall()
@@ -688,28 +688,28 @@ def handler(event: dict, context) -> dict:
 
         conn = get_conn()
         cur = conn.cursor()
-        cur.execute("SELECT * FROM masters WHERE phone = %s", (phone,))
+        cur.execute(f"SELECT * FROM {SCHEMA}.masters WHERE phone = %s", (phone,))
         master = cur.fetchone()
         if not master:
             cur.close(); conn.close()
             return {'statusCode': 404, 'headers': HEADERS, 'body': json.dumps({'error': 'Мастер не найден', 'not_found': True})}
 
         cur.execute(
-            "SELECT * FROM master_transactions WHERE master_id = %s ORDER BY created_at DESC LIMIT 20",
+            f"SELECT * FROM {SCHEMA}.master_transactions WHERE master_id = %s ORDER BY created_at DESC LIMIT 20",
             (master['id'],)
         )
         transactions = cur.fetchall()
-        cur.execute("SELECT ROUND(AVG(rating)::numeric,1) as avg, COUNT(*) as cnt FROM reviews WHERE master_id = %s", (master['id'],))
+        cur.execute(f"SELECT ROUND(AVG(rating)::numeric,1) as avg, COUNT(*) as cnt FROM {SCHEMA}.reviews WHERE master_id = %s", (master['id'],))
         stats = cur.fetchone()
         cur.execute(
-            "SELECT r.id, r.order_id, r.message, r.created_at, o.title as order_title, o.category as order_category, o.status as order_status, o.city as order_city "
-            "FROM responses r JOIN orders o ON o.id = r.order_id "
-            "WHERE r.master_id = %s ORDER BY r.created_at DESC LIMIT 50",
+            f"SELECT r.id, r.order_id, r.message, r.created_at, o.title as order_title, o.category as order_category, o.status as order_status, o.city as order_city "
+            f"FROM {SCHEMA}.responses r JOIN {SCHEMA}.orders o ON o.id = r.order_id "
+            f"WHERE r.master_id = %s ORDER BY r.created_at DESC LIMIT 50",
             (master['id'],)
         )
         my_responses = cur.fetchall()
         cur.execute(
-            "SELECT id, title, description, category, city, price, is_active, paid_until, boosted_until, boost_count, created_at FROM master_services WHERE master_id = %s ORDER BY sort_order DESC, created_at DESC",
+            f"SELECT id, title, description, category, city, price, is_active, paid_until, boosted_until, boost_count, created_at FROM {SCHEMA}.master_services WHERE master_id = %s ORDER BY sort_order DESC, created_at DESC",
             (master['id'],)
         )
         my_services = cur.fetchall()
