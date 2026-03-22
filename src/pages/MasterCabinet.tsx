@@ -316,8 +316,10 @@ export default function MasterCabinet() {
     });
     const data = await res.json();
     if (data.success) {
+      const boostedUntil = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
+      setMyServices(prev => prev.map(s => s.id === serviceId ? { ...s, boosted_until: boostedUntil, boost_count: s.boost_count + 1 } : s));
+      setMaster(m => m ? { ...m, balance: m.balance - 100 } : m);
       setServiceSuccess("Услуга поднята в топ на 7 дней!");
-      await loadProfile(phone);
       setTimeout(() => setServiceSuccess(""), 3000);
     } else if (data.no_balance) {
       setServiceError(data.error || "Недостаточно токенов. Нужно 100 токенов.");
