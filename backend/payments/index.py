@@ -55,6 +55,52 @@ def handler(event: dict, context) -> dict:
         body = json.loads(event.get('body') or '{}')
         action = body.get('action', action)
 
+        if action == 'webhook':
+            event_type = body.get('event', '')
+            obj = body.get('object', {})
+
+            if event_type != 'payment.succeeded':
+                return {'statusCode': 200, 'headers': CORS, 'body': json.dumps({'ok': True})}
+
+            yk_payment_id = obj.get('id')
+            metadata = obj.get('metadata', {})
+            payment_db_id = metadata.get('payment_db_id')
+            master_id = metadata.get('master_id')
+
+            if not yk_payment_id or not payment_db_id:
+                return {'statusCode': 200, 'headers': CORS, 'body': json.dumps({'ok': True})}
+
+            conn = get_conn()
+            cur = conn.cursor()
+            cur.execute(
+                f"SELECT p.*, rp.responses_count FROM {SCHEMA}.payments p "
+                f"JOIN {SCHEMA}.response_packages rp ON p.package_id = rp.id "
+                f"WHERE p.id = %s AND p.status != 'succeeded'",
+                (payment_db_id,)
+            )
+            payment = cur.fetchone()
+            if not payment:
+                conn.close()
+                return {'statusCode': 200, 'headers': CORS, 'body': json.dumps({'ok': True})}
+
+            tokens = payment['responses_count']
+            cur.execute(
+                f"UPDATE {SCHEMA}.payments SET status = 'succeeded' WHERE id = %s",
+                (payment_db_id,)
+            )
+            cur.execute(
+                f"UPDATE {SCHEMA}.masters SET balance = balance + %s WHERE id = %s",
+                (tokens, payment['master_id'])
+            )
+            cur.execute(
+                f"INSERT INTO {SCHEMA}.master_transactions (master_id, type, amount, description) "
+                f"VALUES (%s, 'purchase', %s, %s)",
+                (payment['master_id'], tokens, f"Покупка {tokens} токенов через ЮKassa")
+            )
+            conn.commit()
+            conn.close()
+            return {'statusCode': 200, 'headers': CORS, 'body': json.dumps({'ok': True})}
+
         if action == 'create':
             master_id = body.get('master_id')
             package_id = body.get('package_id')

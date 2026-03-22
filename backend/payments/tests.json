@@ -5,6 +5,13 @@
       "method": "OPTIONS",
       "path": "/",
       "expectedStatus": 200
+    },
+    {
+      "name": "Webhook неизвестного типа — игнорируем",
+      "method": "POST",
+      "path": "/",
+      "body": {"action": "webhook", "event": "payment.waiting_for_capture", "object": {}},
+      "expectedStatus": 200
     }
   ]
 }
