@@ -42,10 +42,15 @@ export default function CabinetNav({
     <>
       <nav className="bg-[#0f1117]/95 backdrop-blur border-b border-white/10 sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
-          <a href="/" className="flex items-center gap-3">
-            <img src="https://cdn.poehali.dev/projects/b7f56b72-3dfb-49ff-a0ce-cff7b631f477/files/bb517738-7e1e-4e29-bd74-607574a9b222.jpg" alt="HandyMan" className="w-9 h-9 rounded-xl object-cover" />
-            <span className="text-xl font-bold bg-gradient-to-r from-violet-400 to-indigo-400 bg-clip-text text-transparent">HandyMan</span>
-          </a>
+          <div className="flex items-center gap-3">
+            <button onClick={() => window.history.back()} className="text-gray-500 hover:text-white transition-colors">
+              <Icon name="ArrowLeft" size={18} />
+            </button>
+            <a href="/" className="flex items-center gap-3">
+              <img src="https://cdn.poehali.dev/projects/b7f56b72-3dfb-49ff-a0ce-cff7b631f477/files/bb517738-7e1e-4e29-bd74-607574a9b222.jpg" alt="HandyMan" className="w-9 h-9 rounded-xl object-cover" />
+              <span className="text-xl font-bold bg-gradient-to-r from-violet-400 to-indigo-400 bg-clip-text text-transparent">HandyMan</span>
+            </a>
+          </div>
           <div className="flex items-center gap-3">
             <Button onClick={onCreateOrder} className="bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white text-sm h-9 px-4 hidden sm:flex items-center gap-1.5">
               <Icon name="Plus" size={15} />

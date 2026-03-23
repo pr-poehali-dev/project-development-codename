@@ -210,6 +210,13 @@ export default function AdminPage() {
           <Icon name="Shield" size={22} className="text-purple-600" />
           <span className="font-bold text-gray-800">Админ</span>
         </div>
+        <button
+          onClick={() => window.history.back()}
+          className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors mb-2"
+        >
+          <Icon name="ArrowLeft" size={16} />
+          Назад
+        </button>
         {tabs.map((t) => (
           <button
             key={t.id}
