@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useSeoMeta } from "@/hooks/useSeoMeta";
 import { Button } from "@/components/ui/button";
 import Icon from "@/components/ui/icon";
 import HomeNavbar from "@/components/home/HomeNavbar";
@@ -30,6 +31,10 @@ const MASTER_URL = "https://functions.poehali.dev/de274bd5-3f08-42d8-9aac-b373bb
 const MY_ORDERS_URL = "https://functions.poehali.dev/458454d0-900d-46a1-9bff-15ecce0839e0";
 
 const Index = () => {
+  useSeoMeta(
+    "HandyMan — маркетплейс бытовых услуг",
+    "Найдите мастера для ремонта, сантехники, электрики, клининга и других бытовых услуг. Быстро, удобно, надёжно."
+  );
   const [activeCategory, setActiveCategory] = useState("Все");
   const [selectedCity, setSelectedCityFilter] = useState("");
   const [services, setServices] = useState<Service[]>([]);

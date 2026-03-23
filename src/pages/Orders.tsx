@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useSeoMeta } from "@/hooks/useSeoMeta";
 import { Button } from "@/components/ui/button";
 import Icon from "@/components/ui/icon";
 import OrdersFilters from "@/pages/OrdersFilters";
@@ -26,6 +27,14 @@ const Orders = () => {
   const [loading, setLoading] = useState(true);
   const initialCategory = new URLSearchParams(window.location.search).get("category") || "";
   const [activeCategories, setActiveCategories] = useState<string[]>(initialCategory ? [initialCategory] : []);
+
+  const seoTitle = activeCategories.length === 1
+    ? `${activeCategories[0]} — заявки на HandyMan`
+    : "Лента заявок — HandyMan";
+  const seoDesc = activeCategories.length === 1
+    ? `Заявки на услугу «${activeCategories[0]}» — откликайтесь и получайте заказы на HandyMan.`
+    : "Лента заявок от заказчиков. Найдите подходящий заказ и откликнитесь на HandyMan.";
+  useSeoMeta(seoTitle, seoDesc);
   const [selectedCity, setSelectedCity] = useState("");
   const [mainTab, setMainTab] = useState<"all" | "active" | "done">("all");
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
