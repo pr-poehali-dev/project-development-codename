@@ -44,6 +44,7 @@ interface MyService {
   title: string;
   description: string;
   category: string;
+  subcategories: string[];
   city: string;
   price: number | null;
   is_active: boolean;
@@ -234,29 +235,33 @@ export default function MasterCabinet() {
     e.preventDefault();
     if (!master) return;
     setServiceLoading(true);
-    const subs = serviceForm.subcategories.length > 0 ? serviceForm.subcategories : [serviceForm.category || master.category];
-    for (const cat of subs) {
-      await fetch(PROFILE_URL, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          action: "add_service",
-          master_id: master.id,
-          title: serviceForm.title,
-          description: serviceForm.description,
-          category: cat,
-          city: serviceForm.city || master.city,
-          price: serviceForm.price ? Number(serviceForm.price) : null,
-        }),
-      });
-    }
+    const res = await fetch(PROFILE_URL, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        action: "add_service",
+        master_id: master.id,
+        title: serviceForm.title,
+        description: serviceForm.description,
+        category: serviceForm.category || master.category,
+        subcategories: serviceForm.subcategories,
+        city: serviceForm.city || master.city,
+        price: serviceForm.price ? Number(serviceForm.price) : null,
+      }),
+    });
+    const data = await res.json();
     setServiceLoading(false);
-    setServiceSuccess(subs.length > 1 ? `Опубликовано ${subs.length} услуги!` : "Услуга опубликована!");
-    setShowServiceForm(false);
-    setServiceForm({ title: "", description: "", category: "", subcategories: [], city: "", price: "" });
-    localStorage.removeItem("master_banner_dismissed");
-    await loadProfile(phone);
-    setTimeout(() => setServiceSuccess(""), 3000);
+    if (data.success) {
+      setServiceSuccess("Услуга опубликована!");
+      setShowServiceForm(false);
+      setServiceForm({ title: "", description: "", category: "", subcategories: [], city: "", price: "" });
+      localStorage.removeItem("master_banner_dismissed");
+      await loadProfile(phone);
+      setTimeout(() => setServiceSuccess(""), 3000);
+    } else {
+      setServiceError(data.error || "Ошибка при публикации");
+      setTimeout(() => setServiceError(""), 4000);
+    }
   };
 
   const handleToggleService = async (serviceId: number, isActive: boolean) => {

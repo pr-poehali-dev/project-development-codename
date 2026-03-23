@@ -506,6 +506,7 @@ def handler(event: dict, context) -> dict:
             title = (body.get('title') or '').strip()
             description = (body.get('description') or '').strip()
             category = (body.get('category') or '').strip()
+            subcategories = body.get('subcategories') or []
             city = (body.get('city') or '').strip()
             price = body.get('price')
             if not all([master_id, title, category, city]):
@@ -530,9 +531,10 @@ def handler(event: dict, context) -> dict:
                 return {'statusCode': 402, 'headers': HEADERS, 'body': json.dumps({'error': f'Недостаточно токенов. Нужно {token_cost}.', 'no_balance': True, 'required': token_cost})}
             import time as _time
             sort_order = int(_time.time() * 1000)
+            subs_array = '{' + ','.join(f'"{s}"' for s in subcategories) + '}' if subcategories else '{}'
             cur.execute(
-                f"INSERT INTO {SCHEMA}.master_services (master_id, title, description, category, city, price, sort_order, paid_until) VALUES (%s, %s, %s, %s, %s, %s, %s, NOW() + INTERVAL '14 days') RETURNING id",
-                (int(master_id), title, description, category, city, int(price) if price else None, sort_order)
+                f"INSERT INTO {SCHEMA}.master_services (master_id, title, description, category, subcategories, city, price, sort_order, paid_until) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, NOW() + INTERVAL '14 days') RETURNING id",
+                (int(master_id), title, description, category, subs_array, city, int(price) if price else None, sort_order)
             )
             new_id = cur.fetchone()['id']
             cur.execute(f"UPDATE {SCHEMA}.masters SET balance = balance - %s WHERE id = %s", (token_cost, int(master_id)))
@@ -719,7 +721,7 @@ def handler(event: dict, context) -> dict:
         )
         my_responses = cur.fetchall()
         cur.execute(
-            f"SELECT id, title, description, category, city, price, is_active, paid_until, boosted_until, boost_count, created_at FROM {SCHEMA}.master_services WHERE master_id = %s ORDER BY sort_order DESC, created_at DESC",
+            f"SELECT id, title, description, category, subcategories, city, price, is_active, paid_until, boosted_until, boost_count, created_at FROM {SCHEMA}.master_services WHERE master_id = %s ORDER BY sort_order DESC, created_at DESC",
             (master['id'],)
         )
         my_services = cur.fetchall()
@@ -752,6 +754,7 @@ def handler(event: dict, context) -> dict:
                     'title': s['title'],
                     'description': s['description'],
                     'category': s['category'],
+                    'subcategories': list(s['subcategories']) if s['subcategories'] else [],
                     'city': s['city'],
                     'price': s['price'],
                     'is_active': s['is_active'],

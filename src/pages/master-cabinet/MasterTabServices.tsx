@@ -25,6 +25,7 @@ interface MyService {
   title: string;
   description: string;
   category: string;
+  subcategories: string[];
   city: string;
   price: number | null;
   is_active: boolean;

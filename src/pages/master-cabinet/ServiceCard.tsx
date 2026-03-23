@@ -5,6 +5,7 @@ interface MyService {
   title: string;
   description: string;
   category: string;
+  subcategories: string[];
   city: string;
   price: number | null;
   is_active: boolean;
@@ -38,6 +39,13 @@ export default function ServiceCard({ service: s, onEdit, onDelete, onBoost, onT
               </span>
             )}
           </div>
+          {s.subcategories?.length > 0 && (
+            <div className="flex flex-wrap gap-1 mb-1">
+              {s.subcategories.map(sub => (
+                <span key={sub} className="text-[10px] px-1.5 py-0.5 rounded bg-violet-600/10 text-violet-400 border border-violet-500/20">{sub}</span>
+              ))}
+            </div>
+          )}
           <div className="flex items-center gap-2 mt-0.5 flex-wrap">
             <span className="text-gray-500 text-xs">{s.category}</span>
             <span className="text-gray-600 text-xs flex items-center gap-1">
