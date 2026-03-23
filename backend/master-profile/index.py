@@ -660,7 +660,7 @@ def handler(event: dict, context) -> dict:
         stats = cur.fetchone()
 
         cur.execute(
-            f"SELECT id, title, description, price, category, city FROM {SCHEMA}.master_services "
+            f"SELECT id, title, description, price, category, subcategories, city FROM {SCHEMA}.master_services "
             "WHERE master_id = %s AND is_active = TRUE ORDER BY sort_order DESC, created_at DESC",
             (master_id,)
         )
@@ -687,6 +687,7 @@ def handler(event: dict, context) -> dict:
                     'description': s['description'],
                     'price': s['price'],
                     'category': s['category'],
+                    'subcategories': list(s['subcategories']) if s['subcategories'] else [],
                     'city': s['city'],
                 } for s in services],
             }, ensure_ascii=False)

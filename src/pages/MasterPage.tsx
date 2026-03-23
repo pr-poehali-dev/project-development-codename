@@ -22,6 +22,7 @@ interface Service {
   description: string | null;
   price: number | null;
   category: string;
+  subcategories: string[];
   city: string;
 }
 
@@ -170,6 +171,13 @@ export default function MasterPage() {
                     )}
                   </div>
                   {s.description && <p className="text-gray-400 text-xs leading-relaxed line-clamp-2">{s.description}</p>}
+                  {s.subcategories?.length > 0 && (
+                    <div className="flex flex-wrap gap-1">
+                      {s.subcategories.map(sub => (
+                        <span key={sub} className="text-[10px] px-1.5 py-0.5 rounded bg-violet-600/10 text-violet-400 border border-violet-500/20">{sub}</span>
+                      ))}
+                    </div>
+                  )}
                   <div className="flex items-center gap-2 mt-auto pt-1">
                     <Badge className="bg-violet-600/15 text-violet-400 border-violet-500/20 text-xs">{s.category}</Badge>
                     {s.city && <span className="text-gray-600 text-xs flex items-center gap-1"><Icon name="MapPin" size={10} />{s.city}</span>}
