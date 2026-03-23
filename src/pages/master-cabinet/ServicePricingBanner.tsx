@@ -15,11 +15,11 @@ export default function ServicePricingBanner({ onAddService }: ServicePricingBan
           </div>
           <div>
             <p className="text-white font-semibold">Публикация услуги</p>
-            <p className="text-violet-300 text-sm font-bold">6–10 токенов / 14 дней</p>
+            <p className="text-violet-300 text-sm font-bold">6–10 токенов / 30 дней</p>
           </div>
         </div>
         <ul className="space-y-1.5 mb-3">
-          {["1-я услуга — 10 токенов / 14 дней", "2-я услуга — 8 токенов / 14 дней", "3-я и далее — 6 токенов / 14 дней"].map(f => (
+          {["1-я услуга — 10 токенов / 30 дней", "2-я услуга — 8 токенов / 30 дней", "3-я и далее — 6 токенов / 30 дней"].map(f => (
             <li key={f} className="text-xs text-gray-400 flex items-center gap-1.5">
               <Icon name="Check" size={12} className="text-violet-400 flex-shrink-0" />{f}
             </li>

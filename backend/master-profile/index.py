@@ -500,7 +500,7 @@ def handler(event: dict, context) -> dict:
             cur.close(); conn.close()
             return {'statusCode': 200, 'headers': HEADERS, 'body': json.dumps({'success': True})}
 
-        # PUT: публикация новой услуги мастером (10/8/6 токенов / 14 дней)
+        # PUT: публикация новой услуги мастером (10/8/6 токенов / 30 дней)
         if body.get('action') == 'add_service':
             master_id = body.get('master_id')
             title = (body.get('title') or '').strip()
@@ -533,14 +533,14 @@ def handler(event: dict, context) -> dict:
             sort_order = int(_time.time() * 1000)
             subs_array = '{' + ','.join(f'"{s}"' for s in subcategories) + '}' if subcategories else '{}'
             cur.execute(
-                f"INSERT INTO {SCHEMA}.master_services (master_id, title, description, category, subcategories, city, price, sort_order, paid_until) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, NOW() + INTERVAL '14 days') RETURNING id",
+                f"INSERT INTO {SCHEMA}.master_services (master_id, title, description, category, subcategories, city, price, sort_order, paid_until) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, NOW() + INTERVAL '30 days') RETURNING id",
                 (int(master_id), title, description, category, subs_array, city, int(price) if price else None, sort_order)
             )
             new_id = cur.fetchone()['id']
             cur.execute(f"UPDATE {SCHEMA}.masters SET balance = balance - %s WHERE id = %s", (token_cost, int(master_id)))
             cur.execute(
                 f"INSERT INTO {SCHEMA}.master_transactions (master_id, type, amount, description) VALUES (%s, 'spend', %s, %s)",
-                (int(master_id), token_cost, f"Публикация услуги на 14 дней")
+                (int(master_id), token_cost, f"Публикация услуги на 30 дней")
             )
             conn.commit()
             cur.close(); conn.close()

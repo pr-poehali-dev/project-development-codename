@@ -60,7 +60,7 @@ export default function ServiceAddForm({
       <div className="flex items-center justify-between mb-1">
         <h3 className="text-white font-semibold">Новая услуга</h3>
         <span className="text-violet-400 text-sm font-medium">
-          {tokenCost} токенов / 14 дней
+          {tokenCost} токенов / 30 дней
           {selectedSubs.length > 1 && <span className="ml-1 text-indigo-400">× {selectedSubs.length} = {totalTokens}</span>}
         </span>
       </div>
