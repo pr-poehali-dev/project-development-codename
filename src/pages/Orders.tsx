@@ -67,18 +67,33 @@ const Orders = () => {
   }, []);
 
   useEffect(() => {
-    setLoading(true);
-    const params = new URLSearchParams({ tab: mainTab });
-    if (mainTab === "all" && selectedCity) params.set("city", selectedCity);
-    if ((mainTab === "active" || mainTab === "done") && masterId) params.set("master_id", String(masterId));
-    fetch(`${ORDERS_URL}?${params}`)
-      .then((r) => r.json())
-      .then((data) => {
-        const raw = typeof data === "string" ? JSON.parse(data) : data;
-        setOrders(raw.orders || []);
-      })
-      .finally(() => setLoading(false));
-  }, [selectedCity, mainTab, masterId]);
+    if (mainTab === "all") {
+      setLoading(true);
+      const params = new URLSearchParams({ tab: "all" });
+      if (selectedCity) params.set("city", selectedCity);
+      fetch(`${ORDERS_URL}?${params}`)
+        .then((r) => r.json())
+        .then((data) => {
+          const raw = typeof data === "string" ? JSON.parse(data) : data;
+          setOrders(raw.orders || []);
+        })
+        .finally(() => setLoading(false));
+    }
+  }, [selectedCity, mainTab]);
+
+  useEffect(() => {
+    if ((mainTab === "active" || mainTab === "done") && masterId !== null) {
+      setLoading(true);
+      const params = new URLSearchParams({ tab: mainTab, master_id: String(masterId) });
+      fetch(`${ORDERS_URL}?${params}`)
+        .then((r) => r.json())
+        .then((data) => {
+          const raw = typeof data === "string" ? JSON.parse(data) : data;
+          setOrders(raw.orders || []);
+        })
+        .finally(() => setLoading(false));
+    }
+  }, [mainTab, masterId]);
 
   const cities = ["Все", ...Array.from(new Set(orders.map((o) => o.city).filter(Boolean)))];
   const categories = Array.from(new Set(orders.map((o) => o.category)));
