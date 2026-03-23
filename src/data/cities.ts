@@ -1,4 +1,4 @@
-export const cities = [
+const cities = [
   "Москва",
   "Санкт-Петербург",
   "Новосибирск",
@@ -162,3 +162,5 @@ export const cities = [
   "Нарьян-Мар",
   "Анадырь",
 ];
+
+export default cities;
