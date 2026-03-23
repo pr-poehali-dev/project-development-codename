@@ -391,17 +391,21 @@ def handler(event: dict, context) -> dict:
 
     # GET — список услуг мастеров для главной страницы
     if method == 'GET' and params.get('action') == 'services':
-        category = params.get('category', '').strip()
         city = params.get('city', '').strip()
+        # Поддержка нескольких категорий через categories=A,B,C или одиночной category=A
+        categories_raw = params.get('categories', '').strip()
+        category_single = params.get('category', '').strip()
+        selected_categories = [c.strip() for c in categories_raw.split(',') if c.strip()] if categories_raw else ([category_single] if category_single else [])
 
         conn = get_conn()
         cur = conn.cursor()
 
         conditions = ['ms.is_active = TRUE']
         args = []
-        if category:
-            conditions.append('ms.category = %s')
-            args.append(category)
+        if selected_categories:
+            placeholders = ','.join(['%s'] * len(selected_categories))
+            conditions.append(f'ms.category IN ({placeholders})')
+            args.extend(selected_categories)
         if city:
             conditions.append('ms.city ILIKE %s')
             args.append(city)

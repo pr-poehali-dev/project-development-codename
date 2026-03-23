@@ -9,8 +9,8 @@ interface OrdersFiltersProps {
   setSearchQuery: (v: string) => void;
   selectedCity: string;
   setSelectedCity: (v: string) => void;
-  activeCategory: string;
-  setActiveCategory: (v: string) => void;
+  activeCategories: string[];
+  setActiveCategories: (v: string[]) => void;
   categories: string[];
   cities: string[];
 }
@@ -23,11 +23,19 @@ export default function OrdersFilters({
   setSearchQuery,
   selectedCity,
   setSelectedCity,
-  activeCategory,
-  setActiveCategory,
+  activeCategories,
+  setActiveCategories,
   categories,
   cities,
 }: OrdersFiltersProps) {
+  const toggleCategory = (cat: string) => {
+    if (activeCategories.includes(cat)) {
+      setActiveCategories(activeCategories.filter(c => c !== cat));
+    } else {
+      setActiveCategories([...activeCategories, cat]);
+    }
+  };
+
   return (
     <>
       {/* Поиск */}
@@ -96,12 +104,21 @@ export default function OrdersFilters({
 
       {/* Фильтр по категориям */}
       <div className={`flex gap-2 flex-wrap mb-8 ${mainTab !== "all" ? "hidden" : ""}`}>
+        {activeCategories.length > 0 && (
+          <button
+            onClick={() => setActiveCategories([])}
+            className="px-4 py-1.5 rounded-full text-sm border transition-all bg-white/3 border-white/10 text-gray-500 hover:border-white/20 hover:text-gray-300 flex items-center gap-1"
+          >
+            <Icon name="X" size={12} />
+            Сбросить
+          </button>
+        )}
         {categories.map((cat) => (
           <button
             key={cat}
-            onClick={() => setActiveCategory(cat)}
+            onClick={() => toggleCategory(cat)}
             className={`px-4 py-1.5 rounded-full text-sm border transition-all ${
-              activeCategory === cat
+              activeCategories.includes(cat)
                 ? "bg-violet-600/20 border-violet-500/50 text-violet-300"
                 : "bg-white/3 border-white/10 text-gray-400 hover:border-white/20 hover:text-white"
             }`}

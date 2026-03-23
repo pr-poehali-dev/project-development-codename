@@ -24,8 +24,8 @@ interface Order {
 const Orders = () => {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
-  const initialCategory = new URLSearchParams(window.location.search).get("category") || "Все";
-  const [activeCategory, setActiveCategory] = useState(initialCategory);
+  const initialCategory = new URLSearchParams(window.location.search).get("category") || "";
+  const [activeCategories, setActiveCategories] = useState<string[]>(initialCategory ? [initialCategory] : []);
   const [selectedCity, setSelectedCity] = useState("");
   const [mainTab, setMainTab] = useState<"all" | "active" | "done">("all");
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
@@ -72,17 +72,17 @@ const Orders = () => {
   }, [selectedCity, mainTab, masterId]);
 
   const cities = ["Все", ...Array.from(new Set(orders.map((o) => o.city).filter(Boolean)))];
-  const categories = ["Все", ...Array.from(new Set(orders.map((o) => o.category)))];
+  const categories = Array.from(new Set(orders.map((o) => o.category)));
   const q = searchQuery.trim().toLowerCase();
   const filtered = orders.filter((o) =>
-    (activeCategory === "Все" || o.category === activeCategory) &&
+    (activeCategories.length === 0 || activeCategories.includes(o.category)) &&
     (!q || o.title.toLowerCase().includes(q) || o.description.toLowerCase().includes(q) || o.category.toLowerCase().includes(q))
   );
   const visible = filtered.slice(0, visibleCount);
 
   useEffect(() => {
     setVisibleCount(20);
-  }, [searchQuery, activeCategory, selectedCity, mainTab]);
+  }, [searchQuery, activeCategories, selectedCity, mainTab]);
 
   const handleRespond = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -157,8 +157,8 @@ const Orders = () => {
             setSearchQuery={setSearchQuery}
             selectedCity={selectedCity}
             setSelectedCity={setSelectedCity}
-            activeCategory={activeCategory}
-            setActiveCategory={setActiveCategory}
+            activeCategories={activeCategories}
+            setActiveCategories={setActiveCategories}
             categories={categories}
             cities={cities}
           />
