@@ -1,5 +1,19 @@
 import { useParams } from "react-router-dom";
+import { useEffect } from "react";
 import Icon from "@/components/ui/icon";
+
+function useSeoMeta(title: string, description: string) {
+  useEffect(() => {
+    document.title = title;
+    const setMeta = (selector: string, content: string) => {
+      const el = document.querySelector(selector);
+      if (el) el.setAttribute("content", content);
+    };
+    setMeta('meta[name="description"]', description);
+    setMeta('meta[property="og:title"]', title);
+    setMeta('meta[property="og:description"]', description);
+  }, [title, description]);
+}
 
 const categories = [
   { name: "Авторемонт", icon: "Car", subcategories: ["Кузовной ремонт", "Автоэлектрика", "Шиномонтаж", "Детейлинг", "Диагностика", "Техническое обслуживание"] },
@@ -38,6 +52,14 @@ export default function CategoryPage() {
   const { name } = useParams<{ name: string }>();
   const decoded = decodeURIComponent(name || "");
   const cat = categories.find(c => c.name === decoded);
+
+  const seoTitle = cat
+    ? `${cat.name} — найти мастера | HandyMan`
+    : "Категория не найдена | HandyMan";
+  const seoDesc = cat
+    ? `Найдите мастера по категории «${cat.name}»: ${cat.subcategories.slice(0, 4).join(", ")} и другие услуги. Быстро, удобно, надёжно.`
+    : "";
+  useSeoMeta(seoTitle, seoDesc);
 
   if (!cat) {
     return (
