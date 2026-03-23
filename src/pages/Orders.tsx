@@ -189,6 +189,16 @@ const Orders = () => {
             </div>
           ) : (
             <>
+            {(activeCategories.length > 0 || searchQuery || selectedCity) && (
+              <p className="text-sm text-gray-400 mb-4">
+                Найдено{" "}
+                <span className="text-white font-semibold">{filtered.length}</span>{" "}
+                {filtered.length === 1 ? "заявка" : filtered.length >= 2 && filtered.length <= 4 ? "заявки" : "заявок"}
+                {activeCategories.length > 0 && (
+                  <> в {activeCategories.length === 1 ? <span className="text-violet-400">{activeCategories[0]}</span> : <><span className="text-violet-400">{activeCategories.length} категориях</span></>}</>
+                )}
+              </p>
+            )}
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
               {visible.map((order) => (
                 <OrderCard
