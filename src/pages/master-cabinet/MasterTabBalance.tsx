@@ -129,7 +129,7 @@ export default function MasterTabBalance({
           <p className="text-violet-300 text-sm">Проверяем статус оплаты...</p>
         </div>
       )}
-      <p className="text-gray-400 text-sm mb-5">Токены списываются когда заказчик выбирает вас исполнителем (−5 токенов). Буст услуги — 1 токен. Публикация услуги — 4–6 токенов/месяц.</p>
+      <p className="text-gray-400 text-sm mb-5">Токены списываются когда заказчик выбирает вас исполнителем (−5 токенов). Буст услуги — 5 токенов. Публикация услуги — 6–10 токенов/14 дней.</p>
 
       {singlePkg && (
         <div className="bg-white/4 border border-white/10 rounded-2xl p-4 mb-5 flex items-center justify-between gap-4">
