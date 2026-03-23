@@ -166,7 +166,12 @@ const HomeCategoriesServices = ({
             <div className="flex items-center gap-4 flex-wrap">
               <h2 className="text-2xl font-bold">
                 {activeCategory === "Все" ? "Все услуги" : activeCategory}
-                {!servicesLoading && <span className="text-gray-600 text-lg font-normal ml-3">{filtered.length}</span>}
+                {!servicesLoading && (
+                  <span className="text-gray-500 text-base font-normal ml-3">
+                    {filtered.length}{" "}
+                    {filtered.length === 1 ? "услуга" : filtered.length >= 2 && filtered.length <= 4 ? "услуги" : "услуг"}
+                  </span>
+                )}
               </h2>
               <div className="relative">
                 <Icon name="Search" size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
