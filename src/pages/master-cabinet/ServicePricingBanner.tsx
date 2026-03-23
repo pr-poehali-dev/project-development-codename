@@ -41,7 +41,7 @@ export default function ServicePricingBanner({ onAddService }: ServicePricingBan
           </div>
           <div>
             <p className="text-white font-semibold">Поднятие в топ</p>
-            <p className="text-amber-300 text-sm font-bold">100 токенов / 7 дней</p>
+            <p className="text-amber-300 text-sm font-bold">5 токенов / 7 дней</p>
           </div>
         </div>
         <ul className="space-y-1.5 mb-3">

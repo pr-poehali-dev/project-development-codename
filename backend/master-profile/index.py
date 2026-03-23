@@ -471,7 +471,7 @@ def handler(event: dict, context) -> dict:
             cur.close(); conn.close()
             return {'statusCode': 200, 'headers': HEADERS, 'body': json.dumps({'success': True})}
 
-        # PUT: поднятие услуги в топ (100 токенов / 7 дней)
+        # PUT: поднятие услуги в топ (5 токенов / 7 дней)
         if body.get('action') == 'boost_service':
             service_id = body.get('service_id')
             master_id = body.get('master_id')
@@ -482,18 +482,18 @@ def handler(event: dict, context) -> dict:
             # Проверяем баланс
             cur.execute(f"SELECT balance FROM {SCHEMA}.masters WHERE id = %s", (int(master_id),))
             m = cur.fetchone()
-            if not m or m['balance'] < 100:
+            if not m or m['balance'] < 5:
                 cur.close(); conn.close()
-                return {'statusCode': 402, 'headers': HEADERS, 'body': json.dumps({'error': 'Недостаточно токенов. Нужно 100 токенов.', 'no_balance': True})}
+                return {'statusCode': 402, 'headers': HEADERS, 'body': json.dumps({'error': 'Недостаточно токенов. Нужно 5 токенов.', 'no_balance': True})}
             import time as _time
             new_sort = int(_time.time() * 1000)
             cur.execute(
                 f"UPDATE {SCHEMA}.master_services SET sort_order = %s, boost_count = boost_count + 1, boosted_until = NOW() + INTERVAL '7 days' WHERE id = %s AND master_id = %s",
                 (new_sort, int(service_id), int(master_id))
             )
-            cur.execute(f"UPDATE {SCHEMA}.masters SET balance = balance - 100 WHERE id = %s", (int(master_id),))
+            cur.execute(f"UPDATE {SCHEMA}.masters SET balance = balance - 5 WHERE id = %s", (int(master_id),))
             cur.execute(
-                f"INSERT INTO {SCHEMA}.master_transactions (master_id, type, amount, description) VALUES (%s, 'spend', 100, %s)",
+                f"INSERT INTO {SCHEMA}.master_transactions (master_id, type, amount, description) VALUES (%s, 'spend', 5, %s)",
                 (int(master_id), f"Поднятие услуги #{service_id} в топ на 7 дней")
             )
             conn.commit()
