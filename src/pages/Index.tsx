@@ -209,9 +209,9 @@ const Index = () => {
           <p className="text-gray-400 text-center mb-10">Отклики бесплатны — токены списываются только когда заказчик выбирает вас исполнителем (−5 токенов). Чем больше пакет — тем дешевле токен.</p>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 mb-8">
             {[
-              { name: "Старт", count: 5, price: 199, per: 40, color: "violet" },
-              { name: "Стандарт", count: 15, price: 549, per: 37, color: "indigo" },
-              { name: "Профи", count: 30, price: 899, per: 30, color: "purple" },
+              { name: "Старт", count: 5, price: 99, per: 20, color: "violet" },
+              { name: "Стандарт", count: 15, price: 249, per: 17, color: "indigo" },
+              { name: "Профи", count: 30, price: 399, per: 13, color: "purple" },
             ].map((pkg) => (
               <div key={pkg.name} className={`bg-${pkg.color}-600/10 border border-${pkg.color}-500/20 rounded-2xl p-6 flex flex-col gap-3`}>
                 <p className="text-white font-semibold text-lg">{pkg.name}</p>
@@ -229,7 +229,7 @@ const Index = () => {
             ))}
           </div>
           <p className="text-center text-gray-500 text-sm">
-            Также доступна поштучная покупка токенов по 49 ₽ — в{" "}
+            Также доступна поштучная покупка токенов по 29 ₽ — в{" "}
             <a href="/master" className="text-violet-400 hover:text-violet-300 transition-colors">кабинете мастера</a>
           </p>
         </div>
