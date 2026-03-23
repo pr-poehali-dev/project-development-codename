@@ -66,7 +66,6 @@ const HomeCategoriesServices = ({
   setOrderModalOpen,
 }: HomeCategoriesServicesProps) => {
   const [searchQuery, setSearchQuery] = React.useState("");
-  const [expandedCategory, setExpandedCategory] = React.useState<string | null>(null);
   const [visibleCount, setVisibleCount] = React.useState(20);
   const q = searchQuery.trim().toLowerCase();
   const filtered = q
@@ -81,7 +80,7 @@ const HomeCategoriesServices = ({
 
   React.useEffect(() => {
     setVisibleCount(20);
-  }, [searchQuery, activeCategory, selectedCity]);
+  }, [searchQuery, selectedCity]);
 
   return (
     <>
@@ -98,64 +97,17 @@ const HomeCategoriesServices = ({
               <span className="text-xs font-medium text-center">Все</span>
             </a>
             {categories.map((cat) => (
-              <button
+              <a
                 key={cat.name}
-                onClick={() => setExpandedCategory(expandedCategory === cat.name ? null : cat.name)}
-                className={`flex flex-col items-center gap-2 p-4 rounded-xl border transition-all text-left ${
-                  expandedCategory === cat.name
-                    ? "bg-violet-600/15 border-violet-500/40 text-violet-300"
-                    : "bg-white/3 border-white/8 text-gray-400 hover:border-white/20 hover:text-white hover:bg-white/6"
-                }`}
+                href={`/category/${encodeURIComponent(cat.name)}`}
+                className="flex flex-col items-center gap-2 p-4 rounded-xl border transition-all bg-white/3 border-white/8 text-gray-400 hover:border-violet-500/40 hover:text-violet-300 hover:bg-violet-600/10"
               >
                 <Icon name={cat.icon} size={22} />
                 <span className="text-xs font-medium text-center leading-tight">{cat.name}</span>
-                <div className="flex items-center gap-1">
-                  <span className="text-[10px] text-gray-600">{cat.count}</span>
-                  {cat.subcategories.length > 0 && (
-                    <Icon
-                      name="ChevronDown"
-                      size={10}
-                      className={`text-gray-600 transition-transform ${expandedCategory === cat.name ? "rotate-180" : ""}`}
-                    />
-                  )}
-                </div>
-              </button>
+                <span className="text-[10px] text-gray-600">{cat.count}</span>
+              </a>
             ))}
           </div>
-
-          {/* Подкатегории */}
-          {expandedCategory && (() => {
-            const cat = categories.find(c => c.name === expandedCategory);
-            if (!cat || cat.subcategories.length === 0) return null;
-            return (
-              <div className="mt-4 p-5 rounded-2xl bg-white/3 border border-white/8 animate-in fade-in slide-in-from-top-2 duration-200">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center gap-2">
-                    <Icon name={cat.icon} size={16} className="text-violet-400" />
-                    <span className="text-sm font-semibold text-white">{cat.name}</span>
-                    <span className="text-xs text-gray-600">— выбери подкатегорию</span>
-                  </div>
-                  <a
-                    href={`/orders?category=${encodeURIComponent(cat.name)}`}
-                    className="text-xs text-violet-400 hover:text-violet-300 transition-colors"
-                  >
-                    Все в категории →
-                  </a>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  {cat.subcategories.map((sub) => (
-                    <a
-                      key={sub}
-                      href={`/orders?category=${encodeURIComponent(sub)}`}
-                      className="px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-sm text-gray-300 hover:border-violet-500/40 hover:text-violet-300 hover:bg-violet-600/10 transition-all"
-                    >
-                      {sub}
-                    </a>
-                  ))}
-                </div>
-              </div>
-            );
-          })()}
         </div>
       </section>
 
