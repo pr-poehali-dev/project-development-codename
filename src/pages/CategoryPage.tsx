@@ -46,7 +46,10 @@ export default function CategoryPage() {
   const seoDesc = cat
     ? `Найдите мастера по категории «${cat.name}»: ${cat.subcategories.slice(0, 4).join(", ")} и другие услуги. Быстро, удобно, надёжно.`
     : "";
-  useSeoMeta(seoTitle, seoDesc);
+  const canonical = cat
+    ? `${window.location.origin}/category/${encodeURIComponent(cat.name)}`
+    : undefined;
+  useSeoMeta(seoTitle, seoDesc, canonical);
 
   if (!cat) {
     return (
