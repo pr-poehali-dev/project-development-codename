@@ -56,6 +56,41 @@ export default function AdminPage() {
   const [balanceAmount, setBalanceAmount] = useState("");
   const [balanceComment, setBalanceComment] = useState("");
 
+  const [editModal, setEditModal] = useState<{ type: "master" | "customer"; data: Record<string, unknown> } | null>(null);
+  const [editForm, setEditForm] = useState<Record<string, string>>({});
+
+  const openEdit = (type: "master" | "customer", data: Record<string, unknown>) => {
+    setEditModal({ type, data });
+    if (type === "master") {
+      setEditForm({
+        name: String(data.name || ""),
+        phone: String(data.phone || ""),
+        email: String(data.email || ""),
+        city: String(data.city || ""),
+        category: String(data.category || ""),
+        about: String(data.about || ""),
+      });
+    } else {
+      setEditForm({
+        name: String(data.name || ""),
+        phone: String(data.phone || ""),
+        email: String(data.email || ""),
+      });
+    }
+  };
+
+  const saveEdit = async () => {
+    if (!editModal) return;
+    if (editModal.type === "master") {
+      await api("admin_update_master", "POST", { master_id: editModal.data.id, ...editForm }, token);
+      loadTab("masters", token);
+    } else {
+      await api("admin_update_customer", "POST", { customer_id: editModal.data.id, ...editForm }, token);
+      loadTab("customers", token);
+    }
+    setEditModal(null);
+  };
+
   const loadTab = useCallback(async (t: Tab, tk: string) => {
     setLoading(true);
     try {
@@ -288,6 +323,10 @@ export default function AdminPage() {
                     <div className="text-sm text-gray-500">{m.category} · Баланс: <b>{m.balance}</b> · ⭐ {Number(m.avg_rating).toFixed(1)} ({m.reviews_count})</div>
                   </div>
                   <div className="flex gap-2 flex-wrap">
+                    <Button size="sm" variant="outline" onClick={() => openEdit("master", m)}>
+                      <Icon name="Pencil" size={14} className="mr-1" />
+                      Редактировать
+                    </Button>
                     <Button
                       size="sm"
                       variant="outline"
@@ -325,14 +364,20 @@ export default function AdminPage() {
                     </div>
                     <div className="text-sm text-gray-500">{c.phone} · {c.email}</div>
                   </div>
-                  <Button
-                    size="sm"
-                    variant={c.is_blocked ? "default" : "destructive"}
-                    onClick={() => blockCustomer(c.id, !c.is_blocked)}
-                  >
-                    <Icon name={c.is_blocked ? "Unlock" : "Ban"} size={14} className="mr-1" />
-                    {c.is_blocked ? "Разблокировать" : "Заблокировать"}
-                  </Button>
+                  <div className="flex gap-2 flex-wrap">
+                    <Button size="sm" variant="outline" onClick={() => openEdit("customer", c)}>
+                      <Icon name="Pencil" size={14} className="mr-1" />
+                      Редактировать
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant={c.is_blocked ? "default" : "destructive"}
+                      onClick={() => blockCustomer(c.id, !c.is_blocked)}
+                    >
+                      <Icon name={c.is_blocked ? "Unlock" : "Ban"} size={14} className="mr-1" />
+                      {c.is_blocked ? "Разблокировать" : "Заблокировать"}
+                    </Button>
+                  </div>
                 </div>
               ))}
             </div>
@@ -434,6 +479,57 @@ export default function AdminPage() {
           </div>
         )}
       </main>
+
+      {/* Модалка редактирования */}
+      {editModal && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-md shadow-xl">
+            <h3 className="font-bold text-gray-800 mb-4">
+              Редактировать {editModal.type === "master" ? "мастера" : "заказчика"}
+            </h3>
+            <div className="space-y-3">
+              <div>
+                <label className="text-xs text-gray-500 mb-1 block">Имя *</label>
+                <Input value={editForm.name} onChange={e => setEditForm(f => ({ ...f, name: e.target.value }))} placeholder="Имя" />
+              </div>
+              <div>
+                <label className="text-xs text-gray-500 mb-1 block">Телефон *</label>
+                <Input value={editForm.phone} onChange={e => setEditForm(f => ({ ...f, phone: e.target.value }))} placeholder="Телефон" />
+              </div>
+              <div>
+                <label className="text-xs text-gray-500 mb-1 block">Email</label>
+                <Input value={editForm.email} onChange={e => setEditForm(f => ({ ...f, email: e.target.value }))} placeholder="Email" />
+              </div>
+              {editModal.type === "master" && (
+                <>
+                  <div>
+                    <label className="text-xs text-gray-500 mb-1 block">Город</label>
+                    <Input value={editForm.city} onChange={e => setEditForm(f => ({ ...f, city: e.target.value }))} placeholder="Город" />
+                  </div>
+                  <div>
+                    <label className="text-xs text-gray-500 mb-1 block">Категория</label>
+                    <Input value={editForm.category} onChange={e => setEditForm(f => ({ ...f, category: e.target.value }))} placeholder="Категория" />
+                  </div>
+                  <div>
+                    <label className="text-xs text-gray-500 mb-1 block">О себе</label>
+                    <textarea
+                      rows={3}
+                      value={editForm.about}
+                      onChange={e => setEditForm(f => ({ ...f, about: e.target.value }))}
+                      placeholder="О себе"
+                      className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-purple-400 resize-none"
+                    />
+                  </div>
+                </>
+              )}
+              <div className="flex gap-2 pt-1">
+                <Button className="flex-1 bg-purple-600 hover:bg-purple-700" onClick={saveEdit}>Сохранить</Button>
+                <Button variant="outline" onClick={() => setEditModal(null)}>Отмена</Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Модалка баланса */}
       {balanceModal && (

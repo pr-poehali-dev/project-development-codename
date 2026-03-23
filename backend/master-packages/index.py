@@ -258,6 +258,43 @@ def handler(event: dict, context) -> dict:
         return ok({'transactions': txs})
 
     # --- POST: действия admin ---
+    if method == 'POST' and action == 'admin_update_master':
+        master_id = body.get('master_id')
+        name = body.get('name', '').strip()
+        phone = body.get('phone', '').strip()
+        email = body.get('email', '').strip()
+        city = body.get('city', '').strip()
+        category = body.get('category', '').strip()
+        about = body.get('about', '').strip()
+        if not master_id or not name or not phone:
+            return err('Имя и телефон обязательны')
+        conn = get_conn()
+        cur = conn.cursor()
+        cur.execute(
+            f"UPDATE {SCHEMA}.masters SET name=%s, phone=%s, email=%s, city=%s, category=%s, about=%s WHERE id=%s",
+            (name, phone, email or None, city or None, category or None, about or None, master_id)
+        )
+        conn.commit()
+        conn.close()
+        return ok({'success': True})
+
+    if method == 'POST' and action == 'admin_update_customer':
+        customer_id = body.get('customer_id')
+        name = body.get('name', '').strip()
+        phone = body.get('phone', '').strip()
+        email = body.get('email', '').strip()
+        if not customer_id or not name or not phone:
+            return err('Имя и телефон обязательны')
+        conn = get_conn()
+        cur = conn.cursor()
+        cur.execute(
+            f"UPDATE {SCHEMA}.customers SET name=%s, phone=%s, email=%s WHERE id=%s",
+            (name, phone, email or None, customer_id)
+        )
+        conn.commit()
+        conn.close()
+        return ok({'success': True})
+
     if method == 'POST' and action == 'admin_block_master':
         master_id = body.get('master_id')
         block = body.get('block', True)
