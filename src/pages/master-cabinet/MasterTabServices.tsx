@@ -38,6 +38,7 @@ interface ServiceForm {
   title: string;
   description: string;
   category: string;
+  subcategories: string[];
   city: string;
   price: string;
 }
