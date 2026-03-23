@@ -1,6 +1,21 @@
 import { useParams } from "react-router-dom";
+import { useState, useEffect } from "react";
 import Icon from "@/components/ui/icon";
 import { useSeoMeta } from "@/hooks/useSeoMeta";
+
+const ORDERS_URL = "https://functions.poehali.dev/34db9bab-e58a-479e-b1cc-c27fb8e0b728";
+
+interface Order {
+  id: number;
+  title: string;
+  description: string;
+  category: string;
+  city: string;
+  budget: number | null;
+  contact_name: string;
+  status: string;
+  created_at: string;
+}
 
 const categories = [
   { name: "Авторемонт", icon: "Car", subcategories: ["Кузовной ремонт", "Автоэлектрика", "Шиномонтаж", "Детейлинг", "Диагностика", "Техническое обслуживание"] },
@@ -39,6 +54,23 @@ export default function CategoryPage() {
   const { name } = useParams<{ name: string }>();
   const decoded = decodeURIComponent(name || "");
   const cat = categories.find(c => c.name === decoded);
+  const hasSubcategories = (cat?.subcategories?.length ?? 0) > 0;
+
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [ordersLoading, setOrdersLoading] = useState(false);
+
+  useEffect(() => {
+    if (!cat || hasSubcategories) return;
+    setOrdersLoading(true);
+    fetch(`${ORDERS_URL}?tab=all`)
+      .then(r => r.json())
+      .then(data => {
+        const raw = typeof data === "string" ? JSON.parse(data) : data;
+        const all: Order[] = raw.orders || [];
+        setOrders(all.filter(o => o.category === cat.name));
+      })
+      .finally(() => setOrdersLoading(false));
+  }, [cat?.name]);
 
   const seoTitle = cat
     ? `${cat.name} — найти мастера | HandyMan`
@@ -93,36 +125,73 @@ export default function CategoryPage() {
             </div>
             <div>
               <h1 className="text-3xl font-extrabold">{cat.name}</h1>
-              <p className="text-gray-400 mt-1 text-sm">Выбери подкатегорию или смотри все заявки</p>
+              <p className="text-gray-400 mt-1 text-sm">{hasSubcategories ? "Выбери подкатегорию или смотри все заявки" : "Заявки в этой категории"}</p>
             </div>
           </div>
 
           {/* Подкатегории */}
-          {cat.subcategories.length > 0 ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-10">
-              {cat.subcategories.map((sub) => (
-                <a
-                  key={sub}
-                  href={`/orders?category=${encodeURIComponent(sub)}`}
-                  className="flex items-center justify-between p-4 rounded-xl bg-white/3 border border-white/8 hover:bg-violet-600/10 hover:border-violet-500/40 hover:text-violet-300 transition-all group"
-                >
-                  <span className="text-sm font-medium text-gray-200 group-hover:text-violet-300">{sub}</span>
-                  <Icon name="ArrowRight" size={16} className="text-gray-600 group-hover:text-violet-400 transition-colors" />
-                </a>
-              ))}
-            </div>
+          {hasSubcategories ? (
+            <>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-10">
+                {cat.subcategories.map((sub) => (
+                  <a
+                    key={sub}
+                    href={`/orders?category=${encodeURIComponent(sub)}`}
+                    className="flex items-center justify-between p-4 rounded-xl bg-white/3 border border-white/8 hover:bg-violet-600/10 hover:border-violet-500/40 hover:text-violet-300 transition-all group"
+                  >
+                    <span className="text-sm font-medium text-gray-200 group-hover:text-violet-300">{sub}</span>
+                    <Icon name="ArrowRight" size={16} className="text-gray-600 group-hover:text-violet-400 transition-colors" />
+                  </a>
+                ))}
+              </div>
+              <a
+                href={`/orders?category=${encodeURIComponent(cat.name)}`}
+                className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-violet-600 hover:bg-violet-500 text-white font-semibold text-sm transition-colors"
+              >
+                <Icon name="LayoutList" size={16} />
+                Все заявки в категории «{cat.name}»
+              </a>
+            </>
           ) : (
-            <p className="text-gray-500 mb-10">Подкатегорий нет — смотри все заявки ниже.</p>
+            /* Нет подкатегорий — показываем заявки сразу */
+            <div>
+              <h2 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                Заявки
+                {!ordersLoading && <span className="text-gray-500 text-base font-normal">{orders.length}</span>}
+              </h2>
+              {ordersLoading ? (
+                <div className="flex items-center gap-3 text-gray-500 py-8">
+                  <div className="w-5 h-5 border-2 border-violet-500 border-t-transparent rounded-full animate-spin" />
+                  Загрузка...
+                </div>
+              ) : orders.length === 0 ? (
+                <div className="text-center py-12">
+                  <Icon name="ClipboardList" size={32} className="mx-auto mb-3 text-gray-600" />
+                  <p className="text-gray-500">Заявок в этой категории пока нет</p>
+                </div>
+              ) : (
+                <div className="flex flex-col gap-3">
+                  {orders.map(o => (
+                    <a
+                      key={o.id}
+                      href={`/orders`}
+                      className="block p-4 rounded-xl bg-white/3 border border-white/8 hover:bg-white/6 hover:border-white/15 transition-all"
+                    >
+                      <div className="flex items-start justify-between gap-3 mb-1">
+                        <p className="text-white font-medium text-sm">{o.title}</p>
+                        {o.budget && <span className="text-emerald-400 text-xs whitespace-nowrap">до {o.budget.toLocaleString("ru-RU")} ₽</span>}
+                      </div>
+                      {o.description && <p className="text-gray-500 text-xs line-clamp-2 mb-2">{o.description}</p>}
+                      <div className="flex items-center gap-3 text-xs text-gray-600">
+                        {o.city && <span className="flex items-center gap-1"><Icon name="MapPin" size={10} />{o.city}</span>}
+                        <span>{new Date(o.created_at).toLocaleDateString("ru-RU", { day: "numeric", month: "short" })}</span>
+                      </div>
+                    </a>
+                  ))}
+                </div>
+              )}
+            </div>
           )}
-
-          {/* Кнопка — все заявки в категории */}
-          <a
-            href={`/orders?category=${encodeURIComponent(cat.name)}`}
-            className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-violet-600 hover:bg-violet-500 text-white font-semibold text-sm transition-colors"
-          >
-            <Icon name="LayoutList" size={16} />
-            Все заявки в категории «{cat.name}»
-          </a>
         </div>
       </section>
     </div>
