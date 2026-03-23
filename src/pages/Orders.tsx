@@ -3,6 +3,7 @@ import { useSeoMeta } from "@/hooks/useSeoMeta";
 import { Button } from "@/components/ui/button";
 import Icon from "@/components/ui/icon";
 import OrdersFilters from "@/pages/OrdersFilters";
+import { categories as CATEGORIES } from "@/components/home/categories";
 import OrderCard from "@/pages/OrderCard";
 import OrderResponseModal from "@/pages/OrderResponseModal";
 
@@ -96,7 +97,6 @@ const Orders = () => {
   }, [mainTab, masterId]);
 
   const cities = ["Все", ...Array.from(new Set(orders.map((o) => o.city).filter(Boolean)))];
-  const categories = Array.from(new Set(orders.map((o) => o.category)));
   const q = searchQuery.trim().toLowerCase();
   const filtered = orders.filter((o) =>
     (activeCategories.length === 0 || activeCategories.includes(o.category)) &&
@@ -183,7 +183,7 @@ const Orders = () => {
             setSelectedCity={setSelectedCity}
             activeCategories={activeCategories}
             setActiveCategories={setActiveCategories}
-            categories={categories}
+            categories={CATEGORIES.map(c => c.name)}
             cities={cities}
           />
 
