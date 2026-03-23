@@ -1,5 +1,6 @@
 import Icon from "@/components/ui/icon";
 import CitySelect from "@/components/ui/city-select";
+import ALL_CITIES from "@/data/cities";
 
 interface OrdersFiltersProps {
   mainTab: "all" | "active" | "done";
@@ -92,7 +93,7 @@ export default function OrdersFilters({
           onChange={setSelectedCity}
           allCitiesLabel="Все города"
           variant="glass"
-          cities={cities.filter(c => c !== "Все")}
+          cities={ALL_CITIES}
         />
         {selectedCity && (
           <button onClick={() => setSelectedCity("")} className="text-gray-500 hover:text-gray-300 text-sm flex items-center gap-1 transition-colors">
