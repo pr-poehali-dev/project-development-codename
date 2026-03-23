@@ -4,6 +4,15 @@ import { Button } from "@/components/ui/button";
 import Icon from "@/components/ui/icon";
 import OrdersFilters from "@/pages/OrdersFilters";
 import { categories as CATEGORIES } from "@/components/home/categories";
+
+const expandCategories = (selected: string[]): string[] => {
+  const result = new Set(selected);
+  for (const name of selected) {
+    const cat = CATEGORIES.find(c => c.name === name);
+    if (cat) cat.subcategories.forEach(s => result.add(s));
+  }
+  return Array.from(result);
+};
 import OrderCard from "@/pages/OrderCard";
 import OrderResponseModal from "@/pages/OrderResponseModal";
 
@@ -98,8 +107,9 @@ const Orders = () => {
 
   const cities = ["Все", ...Array.from(new Set(orders.map((o) => o.city).filter(Boolean)))];
   const q = searchQuery.trim().toLowerCase();
+  const expandedCategories = expandCategories(activeCategories);
   const filtered = orders.filter((o) =>
-    (activeCategories.length === 0 || activeCategories.includes(o.category)) &&
+    (activeCategories.length === 0 || expandedCategories.includes(o.category)) &&
     (!q || o.title.toLowerCase().includes(q) || o.description.toLowerCase().includes(q) || o.category.toLowerCase().includes(q))
   );
   const visible = filtered.slice(0, visibleCount);
