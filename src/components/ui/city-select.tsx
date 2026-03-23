@@ -134,8 +134,15 @@ export default function CitySelect({
                 {allCitiesLabel}
               </li>
             )}
-            {filtered.length === 0 && (
-              <li className="px-4 py-3 text-sm text-gray-500">Ничего не найдено</li>
+            {filtered.length === 0 && query.trim() && (
+              <li
+                role="option"
+                onClick={() => select(query.trim())}
+                className="px-4 py-2.5 text-sm cursor-pointer text-violet-400 hover:bg-violet-600/10 transition-colors flex items-center gap-2"
+              >
+                <Icon name="Plus" size={13} />
+                Использовать «{query.trim()}»
+              </li>
             )}
             {filtered.map((c) => (
               <li
