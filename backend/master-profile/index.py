@@ -563,6 +563,41 @@ def handler(event: dict, context) -> dict:
             cur.close(); conn.close()
             return {'statusCode': 200, 'headers': HEADERS, 'body': json.dumps({'success': True})}
 
+        # PUT: продление услуги на 30 дней
+        if body.get('action') == 'renew_service':
+            service_id = body.get('service_id')
+            master_id = body.get('master_id')
+            if not service_id or not master_id:
+                return {'statusCode': 400, 'headers': HEADERS, 'body': json.dumps({'error': 'Неверные данные'})}
+            conn = get_conn()
+            cur = conn.cursor()
+            cur.execute(f"SELECT balance FROM {SCHEMA}.masters WHERE id = %s", (int(master_id),))
+            m = cur.fetchone()
+            cur.execute(f"SELECT COUNT(*) as cnt FROM {SCHEMA}.master_services WHERE master_id = %s", (int(master_id),))
+            cnt = cur.fetchone()['cnt']
+            cost = 10 if cnt <= 1 else (8 if cnt == 2 else 6)
+            if not m or m['balance'] < cost:
+                cur.close(); conn.close()
+                return {'statusCode': 402, 'headers': HEADERS, 'body': json.dumps({'error': f'Недостаточно токенов. Нужно {cost} токенов.', 'no_balance': True, 'cost': cost})}
+            cur.execute(
+                f"UPDATE {SCHEMA}.master_services SET paid_until = GREATEST(COALESCE(paid_until, NOW()), NOW()) + INTERVAL '30 days', is_active = TRUE WHERE id = %s AND master_id = %s",
+                (int(service_id), int(master_id))
+            )
+            cur.execute(f"UPDATE {SCHEMA}.masters SET balance = balance - %s WHERE id = %s", (cost, int(master_id)))
+            cur.execute(
+                f"INSERT INTO {SCHEMA}.master_transactions (master_id, type, amount, description) VALUES (%s, 'spend', %s, %s)",
+                (int(master_id), cost, f"Продление услуги #{service_id} на 30 дней")
+            )
+            conn.commit()
+            cur.execute(f"SELECT paid_until FROM {SCHEMA}.master_services WHERE id = %s", (int(service_id),))
+            row = cur.fetchone()
+            cur.close(); conn.close()
+            return {'statusCode': 200, 'headers': HEADERS, 'body': json.dumps({
+                'success': True,
+                'cost': cost,
+                'paid_until': row['paid_until'].isoformat() if row and row['paid_until'] else None
+            })}
+
         # PUT: публикация новой услуги мастером (10/8/6 токенов / 30 дней)
         if body.get('action') == 'add_service':
             master_id = body.get('master_id')

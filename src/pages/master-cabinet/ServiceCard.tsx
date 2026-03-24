@@ -21,9 +21,10 @@ interface ServiceCardProps {
   onDelete: (id: number) => void;
   onBoost: (id: number) => void;
   onToggle: (id: number, isActive: boolean) => void;
+  onRenew: (id: number) => void;
 }
 
-export default function ServiceCard({ service: s, onEdit, onDelete, onBoost, onToggle }: ServiceCardProps) {
+export default function ServiceCard({ service: s, onEdit, onDelete, onBoost, onToggle, onRenew }: ServiceCardProps) {
   const now = new Date();
   const paidUntilDate = s.paid_until ? new Date(s.paid_until) : null;
   const isPaid = paidUntilDate && paidUntilDate > now;
@@ -89,6 +90,12 @@ export default function ServiceCard({ service: s, onEdit, onDelete, onBoost, onT
             className="text-xs px-2.5 py-1.5 rounded-lg border bg-red-600/10 text-red-400 border-red-500/20 hover:bg-red-600/20 transition-colors flex items-center gap-1"
           >
             <Icon name="Trash2" size={11} />Удалить
+          </button>
+          <button
+            onClick={() => onRenew(s.id)}
+            className="text-xs px-2.5 py-1.5 rounded-lg border bg-violet-600/15 text-violet-400 border-violet-500/20 hover:bg-violet-600/25 transition-colors flex items-center gap-1"
+          >
+            <Icon name="RefreshCw" size={11} />Продлить
           </button>
           <button
             onClick={() => onBoost(s.id)}

@@ -55,6 +55,7 @@ interface MasterTabServicesProps {
   onAddService: (e: React.FormEvent) => void;
   onToggleService: (serviceId: number, isActive: boolean) => void;
   onBoostService: (serviceId: number) => void;
+  onRenewService: (serviceId: number) => void;
   onUpdateService: (serviceId: number, data: ServiceForm) => Promise<void>;
   onDeleteService: (serviceId: number) => Promise<void>;
 }
@@ -70,6 +71,7 @@ export default function MasterTabServices({
   onAddService,
   onToggleService,
   onBoostService,
+  onRenewService,
   onUpdateService,
   onDeleteService,
 }: MasterTabServicesProps) {
@@ -157,6 +159,7 @@ export default function MasterTabServices({
               onEdit={openEditService}
               onDelete={setDeleteServiceId}
               onBoost={onBoostService}
+              onRenew={onRenewService}
               onToggle={onToggleService}
             />
           ))}

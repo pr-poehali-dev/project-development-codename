@@ -335,6 +335,28 @@ export default function MasterCabinet() {
     }
   };
 
+  const handleRenewService = async (serviceId: number) => {
+    if (!master) return;
+    const res = await fetch(PROFILE_URL, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "renew_service", service_id: serviceId, master_id: master.id }),
+    });
+    const data = await res.json();
+    if (data.success) {
+      setMyServices(prev => prev.map(s => s.id === serviceId ? { ...s, paid_until: data.paid_until, is_active: true } : s));
+      setMaster(m => m ? { ...m, balance: m.balance - data.cost } : m);
+      setServiceSuccess(`Услуга продлена на 30 дней! Списано ${data.cost} токенов.`);
+      setTimeout(() => setServiceSuccess(""), 4000);
+    } else if (data.no_balance) {
+      setServiceError(data.error || "Недостаточно токенов для продления.");
+      setTimeout(() => setServiceError(""), 4000);
+    } else {
+      setServiceError(data.error || "Ошибка при продлении услуги");
+      setTimeout(() => setServiceError(""), 4000);
+    }
+  };
+
   const handleSaveProfile = async (e: React.FormEvent) => {
     e.preventDefault();
     setProfileLoading(true); setProfileSuccess("");
@@ -436,6 +458,7 @@ export default function MasterCabinet() {
             onAddService={handleAddService}
             onToggleService={handleToggleService}
             onBoostService={handleBoostService}
+            onRenewService={handleRenewService}
             onUpdateService={handleUpdateService}
             onDeleteService={handleDeleteService}
           />
