@@ -44,10 +44,9 @@ export default function ServiceAddForm({
   onSubmit,
   onCancel,
 }: ServiceAddFormProps) {
-  const tokenCost = servicesCount === 0 ? "10" : servicesCount === 1 ? "8" : "6";
+  const tokenCost = servicesCount === 0 ? 10 : servicesCount === 1 ? 8 : 6;
   const addSubcategories = CATEGORIES.find(c => c.name === addMainCat)?.subcategories ?? [];
   const selectedSubs = serviceForm.subcategories || [];
-  const totalTokens = Math.max(selectedSubs.length, 1) * Number(tokenCost);
 
   const toggleSub = (sub: string) => {
     const next = selectedSubs.includes(sub)
@@ -62,7 +61,6 @@ export default function ServiceAddForm({
         <h3 className="text-white font-semibold">Новая услуга</h3>
         <span className="text-violet-400 text-sm font-medium">
           {tokenCost} токенов / 30 дней
-          {selectedSubs.length > 1 && <span className="ml-1 text-indigo-400">× {selectedSubs.length} = {totalTokens}</span>}
         </span>
       </div>
       <input
@@ -123,11 +121,7 @@ export default function ServiceAddForm({
               </button>
             ))}
           </div>
-          {selectedSubs.length > 1 && (
-            <p className="text-xs text-indigo-400/80 mt-2">
-              Будет создано {selectedSubs.length} отдельных услуги — по одной на каждую подкатегорию
-            </p>
-          )}
+
         </div>
       )}
       <input
@@ -140,7 +134,7 @@ export default function ServiceAddForm({
       <div className="flex gap-3 pt-1">
         <Button type="button" variant="ghost" className="flex-1 text-gray-400" onClick={onCancel}>Отмена</Button>
         <Button type="submit" disabled={serviceLoading} className="flex-1 bg-violet-600 hover:bg-violet-500 text-white">
-          {serviceLoading ? "Публикация..." : `Опубликовать — ${totalTokens} токенов`}
+          {serviceLoading ? "Публикация..." : `Опубликовать — ${tokenCost} токенов`}
         </Button>
       </div>
     </form>
