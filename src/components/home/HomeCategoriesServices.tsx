@@ -60,6 +60,7 @@ interface HomeCategoriesServicesProps {
   servicesLoading: boolean;
   setOrderForm: (fn: (f: { title: string; description: string; category: string; city: string; budget: string; contact_name: string; contact_phone: string; contact_email: string }) => { title: string; description: string; category: string; city: string; budget: string; contact_name: string; contact_phone: string; contact_email: string }) => void;
   setOrderModalOpen: (v: boolean) => void;
+  isMaster?: boolean;
 }
 
 const HomeCategoriesServices = ({
@@ -71,6 +72,7 @@ const HomeCategoriesServices = ({
   servicesLoading,
   setOrderForm,
   setOrderModalOpen,
+  isMaster = false,
 }: HomeCategoriesServicesProps) => {
   const [searchQuery, setSearchQuery] = React.useState("");
   const [visibleCount, setVisibleCount] = React.useState(20);
@@ -248,17 +250,19 @@ const HomeCategoriesServices = ({
                     </div>
                   </a>
 
-                  <Button
-                    size="sm"
-                    className="w-full bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white text-xs rounded-lg h-7"
-                    onClick={() => {
-                      setOrderForm(f => ({ ...f, category: service.category, city: service.city || "" }));
-                      setOrderModalOpen(true);
-                    }}
-                  >
-                    <Icon name="Send" size={11} className="mr-1" />
-                    Оставить заявку
-                  </Button>
+                  {!isMaster && (
+                    <Button
+                      size="sm"
+                      className="w-full bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white text-xs rounded-lg h-7"
+                      onClick={() => {
+                        setOrderForm(f => ({ ...f, category: service.category, city: service.city || "" }));
+                        setOrderModalOpen(true);
+                      }}
+                    >
+                      <Icon name="Send" size={11} className="mr-1" />
+                      Оставить заявку
+                    </Button>
+                  )}
                 </div>
               ))}
             </div>

@@ -200,6 +200,7 @@ const Index = () => {
         servicesLoading={servicesLoading}
         setOrderForm={setOrderForm}
         setOrderModalOpen={setOrderModalOpen}
+        isMaster={isMaster}
       />
 
       {/* Блок пакетов */}

@@ -52,7 +52,7 @@ export default function ServiceAddForm({
     const next = selectedSubs.includes(sub)
       ? selectedSubs.filter(s => s !== sub)
       : [...selectedSubs, sub];
-    setServiceForm(f => ({ ...f, subcategories: next, category: next[0] || addMainCat }));
+    setServiceForm(f => ({ ...f, subcategories: next, category: addMainCat || f.category }));
   };
 
   return (
