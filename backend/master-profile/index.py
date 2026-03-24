@@ -417,7 +417,7 @@ def handler(event: dict, context) -> dict:
             f"COUNT(DISTINCT ms.id) as services_count "
             f"FROM masters m "
             f"LEFT JOIN reviews r ON r.master_id = m.id "
-            f"LEFT JOIN master_services ms ON ms.master_id = m.id AND ms.is_active = TRUE "
+            f"LEFT JOIN master_services ms ON ms.master_id = m.id AND ms.is_active = TRUE AND (ms.paid_until IS NULL OR ms.paid_until > NOW()) "
             f"WHERE {where} "
             f"GROUP BY m.id, m.name, m.category, m.categories, m.city, m.about, m.avatar_color, m.created_at "
             f"ORDER BY rating DESC NULLS LAST, reviews_count DESC, m.created_at DESC LIMIT 100",
@@ -463,7 +463,7 @@ def handler(event: dict, context) -> dict:
         conn = get_conn()
         cur = conn.cursor()
 
-        conditions = ['ms.is_active = TRUE']
+        conditions = ['ms.is_active = TRUE', '(ms.paid_until IS NULL OR ms.paid_until > NOW())']
         args = []
         if selected_categories:
             placeholders = ','.join(['%s'] * len(selected_categories))
@@ -489,7 +489,7 @@ def handler(event: dict, context) -> dict:
             args
         )
         services = cur.fetchall()
-        cur.execute(f"SELECT DISTINCT city FROM {SCHEMA}.master_services WHERE is_active = TRUE ORDER BY city")
+        cur.execute(f"SELECT DISTINCT city FROM {SCHEMA}.master_services WHERE is_active = TRUE AND (paid_until IS NULL OR paid_until > NOW()) ORDER BY city")
         cities = [row['city'] for row in cur.fetchall()]
         cur.close(); conn.close()
 
