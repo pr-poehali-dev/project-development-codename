@@ -12,6 +12,7 @@ import Offer from "./pages/Offer";
 import MasterPage from "./pages/MasterPage";
 import AdminPage from "./pages/AdminPage";
 import CategoryPage from "./pages/CategoryPage";
+import Masters from "./pages/Masters";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -31,6 +32,7 @@ const App = () => (
           <Route path="/master-page" element={<MasterPage />} />
           <Route path="/admin" element={<AdminPage />} />
           <Route path="/category/:name" element={<CategoryPage />} />
+          <Route path="/masters" element={<Masters />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

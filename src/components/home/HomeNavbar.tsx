@@ -46,6 +46,7 @@ const HomeNavbar = ({
 
           <div className="hidden md:flex items-center gap-6">
             <a href="#categories" className="text-gray-400 hover:text-white text-sm transition-colors">Категории</a>
+            <a href="/masters" className="text-gray-400 hover:text-white text-sm transition-colors">Мастера</a>
             <a href="/orders" className="text-gray-400 hover:text-white text-sm transition-colors">Лента заявок</a>
             <a href="#pricing" className="text-gray-400 hover:text-white text-sm transition-colors">Тарифы</a>
           </div>
@@ -117,6 +118,7 @@ const HomeNavbar = ({
         {mobileMenuOpen && (
           <div className="md:hidden border-t border-white/10 px-4 py-4 space-y-3">
             <a href="#categories" className="block text-gray-400 hover:text-white text-sm">Категории</a>
+            <a href="/masters" className="block text-gray-400 hover:text-white text-sm">Мастера</a>
             <a href="/orders" className="block text-gray-400 hover:text-white text-sm">Лента заявок</a>
             <a href="#pricing" className="block text-gray-400 hover:text-white text-sm">Тарифы</a>
 

@@ -389,6 +389,69 @@ def handler(event: dict, context) -> dict:
             cur.close(); conn.close()
             return {'statusCode': 200, 'headers': HEADERS, 'body': json.dumps({'success': True, 'phone': master['phone']})}
 
+    # GET — список мастеров для страницы /masters
+    if method == 'GET' and params.get('action') == 'masters':
+        city = params.get('city', '').strip()
+        category = params.get('category', '').strip()
+        search = params.get('search', '').strip()
+
+        conn = get_conn()
+        cur = conn.cursor()
+
+        conditions = ['TRUE']
+        args = []
+        if city:
+            conditions.append('m.city ILIKE %s')
+            args.append(city)
+        if category:
+            conditions.append('(%s = ANY(m.categories) OR m.category ILIKE %s)')
+            args.extend([category, category])
+        if search:
+            conditions.append("(m.name ILIKE %s OR m.category ILIKE %s OR m.about ILIKE %s)")
+            args.extend([f'%{search}%', f'%{search}%', f'%{search}%'])
+
+        where = ' AND '.join(conditions)
+        cur.execute(
+            f"SELECT m.id, m.name, m.category, m.categories, m.city, m.about, m.avatar_color, m.created_at, "
+            f"ROUND(AVG(r.rating)::numeric, 1) as rating, COUNT(r.id) as reviews_count, "
+            f"COUNT(DISTINCT ms.id) as services_count "
+            f"FROM masters m "
+            f"LEFT JOIN reviews r ON r.master_id = m.id "
+            f"LEFT JOIN master_services ms ON ms.master_id = m.id AND ms.is_active = TRUE "
+            f"WHERE {where} "
+            f"GROUP BY m.id, m.name, m.category, m.categories, m.city, m.about, m.avatar_color, m.created_at "
+            f"ORDER BY rating DESC NULLS LAST, reviews_count DESC, m.created_at DESC LIMIT 100",
+            args
+        )
+        masters = cur.fetchall()
+        cur.execute("SELECT DISTINCT city FROM masters WHERE city IS NOT NULL AND city != '' ORDER BY city")
+        cities = [row['city'] for row in cur.fetchall()]
+        cur.execute("SELECT DISTINCT category FROM masters WHERE category IS NOT NULL AND category != '' ORDER BY category")
+        cats = [row['category'] for row in cur.fetchall()]
+        cur.close(); conn.close()
+
+        return {
+            'statusCode': 200,
+            'headers': HEADERS,
+            'body': json.dumps({
+                'masters': [{
+                    'id': m['id'],
+                    'name': m['name'],
+                    'category': m['category'],
+                    'categories': list(m['categories']) if m['categories'] else [],
+                    'city': m['city'] or '',
+                    'about': m['about'] or '',
+                    'avatar_color': m['avatar_color'] or '#7c3aed',
+                    'rating': float(m['rating']) if m['rating'] else None,
+                    'reviews_count': int(m['reviews_count']),
+                    'services_count': int(m['services_count']),
+                    'created_at': m['created_at'].isoformat() if m['created_at'] else None,
+                } for m in masters],
+                'cities': cities,
+                'categories': cats,
+            }, ensure_ascii=False)
+        }
+
     # GET — список услуг мастеров для главной страницы
     if method == 'GET' and params.get('action') == 'services':
         city = params.get('city', '').strip()

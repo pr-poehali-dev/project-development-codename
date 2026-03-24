@@ -1,6 +1,14 @@
 {
   "tests": [
     {
+      "name": "Список мастеров",
+      "method": "GET",
+      "path": "/?action=masters",
+      "expectedStatus": 200,
+      "expectedBody": {"masters": []},
+      "bodyMatcher": "partial"
+    },
+    {
       "name": "Получение профиля мастера",
       "method": "GET",
       "path": "/?phone=%2B79001234567",
