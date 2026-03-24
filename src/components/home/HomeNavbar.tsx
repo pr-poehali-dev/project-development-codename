@@ -164,7 +164,14 @@ const HomeNavbar = ({
               </a>
             )}
 
-            {(isMaster || !isCustomer) && (
+            {isMaster ? (
+              <a href="/master" onClick={() => setMobileMenuOpen(false)}>
+                <Button className="w-full bg-gradient-to-r from-violet-600 to-indigo-600 text-white text-sm mt-2">
+                  <Icon name="Briefcase" size={15} className="mr-2" />
+                  Кабинет мастера
+                </Button>
+              </a>
+            ) : !isCustomer && (
               <Button
                 onClick={() => { setMasterModalOpen(true); setMobileMenuOpen(false); }}
                 className="w-full bg-gradient-to-r from-violet-600 to-indigo-600 text-white text-sm mt-2"
