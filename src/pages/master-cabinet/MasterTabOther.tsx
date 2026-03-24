@@ -2,6 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import Icon from "@/components/ui/icon";
 import { categories } from "@/components/home/categories";
+import CitySelect from "@/components/ui/city-select";
 
 function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString("ru-RU", { day: "numeric", month: "short", year: "numeric" });
@@ -208,8 +209,7 @@ export default function MasterTabOther({
           </div>
           <div>
             <label className="text-xs text-gray-400 mb-1.5 block">Город</label>
-            <input value={editCity} onChange={e => setEditCity(e.target.value)} placeholder="Ваш город"
-              className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-violet-500 transition-colors" />
+            <CitySelect value={editCity} onChange={setEditCity} placeholder="Ваш город" />
           </div>
           <div>
             <label className="text-xs text-gray-400 mb-1.5 block">О себе</label>

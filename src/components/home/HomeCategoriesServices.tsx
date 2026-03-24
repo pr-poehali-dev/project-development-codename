@@ -2,6 +2,7 @@ import React from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import Icon from "@/components/ui/icon";
+import CitySelect from "@/components/ui/city-select";
 
 const categories = [
   { name: "Авторемонт", icon: "Car", count: 312, subcategories: ["Кузовной ремонт", "Автоэлектрика", "Шиномонтаж", "Детейлинг", "Диагностика", "Техническое обслуживание"] },
@@ -148,16 +149,13 @@ const HomeCategoriesServices = ({
               </div>
             </div>
             <div className="flex items-center gap-3">
-              {availableCities.length > 0 && (
-                <select
-                  value={selectedCity}
-                  onChange={e => setSelectedCityFilter(e.target.value)}
-                  className="bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-sm text-gray-300 focus:outline-none focus:border-violet-500"
-                >
-                  <option value="">Все города</option>
-                  {availableCities.map(c => <option key={c} value={c}>{c}</option>)}
-                </select>
-              )}
+              <CitySelect
+                value={selectedCity}
+                onChange={setSelectedCityFilter}
+                allCitiesLabel="Все города"
+                variant="glass"
+                className="w-44"
+              />
               <a href={activeCategory === "Все" ? "/orders" : `/orders?category=${encodeURIComponent(activeCategory)}`}>
                 <Button variant="ghost" className="text-gray-400 hover:text-white text-sm gap-2">
                   <Icon name="SlidersHorizontal" size={16} />

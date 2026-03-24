@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { categories as CATEGORIES } from "@/components/home/categories";
+import CitySelect from "@/components/ui/city-select";
 
 interface ServiceForm {
   title: string;
@@ -91,11 +92,10 @@ export default function ServiceAddForm({
           <option value="" disabled>Категория *</option>
           {CATEGORIES.map(c => <option key={c.name} value={c.name}>{c.name}</option>)}
         </select>
-        <input
-          placeholder={`Город (${master?.city || "укажите"})`}
+        <CitySelect
           value={serviceForm.city || master?.city || ""}
-          onChange={e => setServiceForm(f => ({ ...f, city: e.target.value }))}
-          className="bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-violet-500"
+          onChange={c => setServiceForm(f => ({ ...f, city: c }))}
+          placeholder={`Город (${master?.city || "укажите"})`}
         />
       </div>
       {addSubcategories.length > 0 && (
