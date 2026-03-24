@@ -24,11 +24,28 @@ interface ServiceCardProps {
 }
 
 export default function ServiceCard({ service: s, onEdit, onDelete, onBoost, onToggle }: ServiceCardProps) {
-  const isPaid = s.paid_until && new Date(s.paid_until) > new Date();
-  const isBoosted = s.boosted_until && new Date(s.boosted_until) > new Date();
+  const now = new Date();
+  const paidUntilDate = s.paid_until ? new Date(s.paid_until) : null;
+  const isPaid = paidUntilDate && paidUntilDate > now;
+  const isBoosted = s.boosted_until && new Date(s.boosted_until) > now;
+  const daysLeft = paidUntilDate ? Math.ceil((paidUntilDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)) : null;
+  const isExpiringSoon = daysLeft !== null && daysLeft >= 0 && daysLeft <= 5;
+  const isExpired = daysLeft !== null && daysLeft < 0;
 
   return (
-    <div className={`bg-white/4 border rounded-xl p-4 ${isBoosted ? "border-amber-500/30" : s.is_active ? "border-white/8" : "border-white/4 opacity-60"}`}>
+    <div className={`bg-white/4 border rounded-xl p-4 ${isBoosted ? "border-amber-500/30" : isExpiringSoon ? "border-orange-500/40" : s.is_active ? "border-white/8" : "border-white/4 opacity-60"}`}>
+      {isExpiringSoon && !isExpired && (
+        <div className="flex items-center gap-2 text-orange-400 text-xs bg-orange-500/10 border border-orange-500/20 rounded-lg px-3 py-2 mb-3">
+          <Icon name="Clock" size={13} />
+          <span>Объявление истекает через <strong>{daysLeft === 0 ? "менее суток" : `${daysLeft} дн.`}</strong> — продлите, чтобы не пропасть из поиска</span>
+        </div>
+      )}
+      {isExpired && (
+        <div className="flex items-center gap-2 text-red-400 text-xs bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2 mb-3">
+          <Icon name="AlertCircle" size={13} />
+          <span>Объявление истекло и скрыто из поиска — продлите для повторной публикации</span>
+        </div>
+      )}
       <div className="flex items-start justify-between gap-3">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap mb-1">
@@ -52,9 +69,9 @@ export default function ServiceCard({ service: s, onEdit, onDelete, onBoost, onT
               <Icon name="MapPin" size={10} />{s.city}
             </span>
             {s.price && <span className="text-emerald-400 text-xs">от {s.price.toLocaleString("ru-RU")} ₽</span>}
-            {isPaid && s.paid_until && (
-              <span className="text-violet-400 text-xs">
-                до {new Date(s.paid_until).toLocaleDateString("ru-RU", { day: "numeric", month: "short" })}
+            {isPaid && paidUntilDate && (
+              <span className={`text-xs ${isExpiringSoon ? "text-orange-400 font-medium" : "text-violet-400"}`}>
+                до {paidUntilDate.toLocaleDateString("ru-RU", { day: "numeric", month: "short" })}
               </span>
             )}
           </div>
