@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import Icon from "@/components/ui/icon";
 
@@ -31,6 +32,7 @@ const HomeNavbar = ({
   setLoginModalOpen,
 }: HomeNavbarProps) => {
   const isLoggedIn = isMaster || isCustomer;
+  const [installGuideOpen, setInstallGuideOpen] = useState(false);
 
   return (
     <>
@@ -59,6 +61,16 @@ const HomeNavbar = ({
                 className="text-gray-400 hover:text-white hover:bg-white/8 text-sm gap-2"
               >
                 <Icon name="Download" size={15} />
+                Приложение
+              </Button>
+            )}
+            {!installPrompt && !isInstalled && (
+              <Button
+                variant="ghost"
+                onClick={() => setInstallGuideOpen(true)}
+                className="text-gray-400 hover:text-white hover:bg-white/8 text-sm gap-2"
+              >
+                <Icon name="Smartphone" size={15} />
                 Приложение
               </Button>
             )}
@@ -171,9 +183,88 @@ const HomeNavbar = ({
                 Установить приложение
               </Button>
             )}
+            {!installPrompt && !isInstalled && (
+              <Button
+                variant="ghost"
+                onClick={() => { setInstallGuideOpen(true); setMobileMenuOpen(false); }}
+                className="w-full text-gray-300 hover:text-white hover:bg-white/10 text-sm gap-2 border border-white/10 mt-1"
+              >
+                <Icon name="Smartphone" size={15} />
+                Добавить на экран
+              </Button>
+            )}
           </div>
         )}
       </nav>
+
+      {/* Модалка — установка приложения */}
+      {installGuideOpen && (
+        <div className="fixed inset-0 bg-black/60 flex items-end sm:items-center justify-center z-50 p-4" onClick={() => setInstallGuideOpen(false)}>
+          <div className="bg-[#13161f] border border-white/10 rounded-2xl w-full max-w-md shadow-2xl" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between px-5 pt-5 pb-3 border-b border-white/8">
+              <div className="flex items-center gap-2">
+                <Icon name="Smartphone" size={20} className="text-violet-400" />
+                <h3 className="text-white font-bold text-base">Добавить на экран телефона</h3>
+              </div>
+              <button onClick={() => setInstallGuideOpen(false)} className="text-gray-500 hover:text-gray-300 transition-colors">
+                <Icon name="X" size={18} />
+              </button>
+            </div>
+
+            <div className="px-5 py-4 space-y-5">
+              {/* iPhone */}
+              <div>
+                <div className="flex items-center gap-2 mb-3">
+                  <span className="text-lg">🍎</span>
+                  <span className="text-white font-semibold text-sm">iPhone / iPad (Safari)</span>
+                </div>
+                <ol className="space-y-2">
+                  {[
+                    { icon: "Share2", text: 'Нажмите кнопку «Поделиться» (квадрат со стрелкой вверх) внизу экрана' },
+                    { icon: "PlusSquare", text: 'Прокрутите вниз и выберите «На экран "Домой"»' },
+                    { icon: "Check", text: 'Нажмите «Добавить» — иконка появится на рабочем столе' },
+                  ].map((step, i) => (
+                    <li key={i} className="flex items-start gap-3">
+                      <span className="w-5 h-5 rounded-full bg-violet-600/30 border border-violet-500/40 text-violet-300 text-xs flex items-center justify-center flex-shrink-0 mt-0.5 font-bold">{i + 1}</span>
+                      <div className="flex items-start gap-2">
+                        <Icon name={step.icon} size={14} className="text-violet-400 flex-shrink-0 mt-0.5" />
+                        <span className="text-gray-300 text-sm leading-snug">{step.text}</span>
+                      </div>
+                    </li>
+                  ))}
+                </ol>
+              </div>
+
+              <div className="border-t border-white/8" />
+
+              {/* Android */}
+              <div>
+                <div className="flex items-center gap-2 mb-3">
+                  <span className="text-lg">🤖</span>
+                  <span className="text-white font-semibold text-sm">Android (Chrome)</span>
+                </div>
+                <ol className="space-y-2">
+                  {[
+                    { icon: "MoreVertical", text: 'Нажмите три точки (⋮) в правом верхнем углу браузера' },
+                    { icon: "PlusSquare", text: 'Выберите «Добавить на главный экран»' },
+                    { icon: "Check", text: 'Подтвердите — иконка появится на рабочем столе' },
+                  ].map((step, i) => (
+                    <li key={i} className="flex items-start gap-3">
+                      <span className="w-5 h-5 rounded-full bg-indigo-600/30 border border-indigo-500/40 text-indigo-300 text-xs flex items-center justify-center flex-shrink-0 mt-0.5 font-bold">{i + 1}</span>
+                      <div className="flex items-start gap-2">
+                        <Icon name={step.icon} size={14} className="text-indigo-400 flex-shrink-0 mt-0.5" />
+                        <span className="text-gray-300 text-sm leading-snug">{step.text}</span>
+                      </div>
+                    </li>
+                  ))}
+                </ol>
+              </div>
+
+              <p className="text-gray-600 text-xs text-center pb-1">Сайт будет открываться как приложение — без адресной строки</p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Баннер для мастеров */}
       {isMaster && !masterBannerDismissed && (
