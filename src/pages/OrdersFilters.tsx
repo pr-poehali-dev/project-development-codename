@@ -14,6 +14,7 @@ interface OrdersFiltersProps {
   setActiveCategories: (v: string[]) => void;
   categories: string[];
   cities: string[];
+  lockedCategory?: string;
 }
 
 export default function OrdersFilters({
@@ -28,6 +29,7 @@ export default function OrdersFilters({
   setActiveCategories,
   categories,
   cities,
+  lockedCategory,
 }: OrdersFiltersProps) {
   const toggleCategory = (cat: string) => {
     if (activeCategories.includes(cat)) {
@@ -41,7 +43,18 @@ export default function OrdersFilters({
     <>
       {/* Поиск */}
       <div className="mb-6">
-        <h1 className="text-3xl sm:text-4xl font-extrabold mb-2">Лента заявок</h1>
+        {lockedCategory ? (
+          <div className="flex items-center gap-3 mb-3">
+            <a href={`/category/${encodeURIComponent(lockedCategory)}`} className="text-gray-500 hover:text-gray-300 transition-colors flex items-center gap-1 text-sm">
+              <Icon name="ArrowLeft" size={15} />
+              Назад
+            </a>
+            <div className="w-px h-4 bg-white/10" />
+            <h1 className="text-2xl sm:text-3xl font-extrabold">{lockedCategory}</h1>
+          </div>
+        ) : (
+          <h1 className="text-3xl sm:text-4xl font-extrabold mb-2">Лента заявок</h1>
+        )}
         <p className="text-gray-400 mb-5">Найди подходящий заказ и откликнись бесплатно — токены списываются только если заказчик выбрал тебя исполнителем</p>
         <div className="relative max-w-lg">
           <Icon name="Search" size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500" />
@@ -104,7 +117,7 @@ export default function OrdersFilters({
       </div>
 
       {/* Фильтр по категориям */}
-      <div className={`flex gap-2 flex-wrap mb-8 ${mainTab !== "all" ? "hidden" : ""}`}>
+      <div className={`flex gap-2 flex-wrap mb-8 ${mainTab !== "all" || lockedCategory ? "hidden" : ""}`}>
         {activeCategories.length > 0 && (
           <button
             onClick={() => setActiveCategories([])}

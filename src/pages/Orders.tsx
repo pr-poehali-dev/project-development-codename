@@ -39,6 +39,7 @@ const Orders = () => {
   const [loading, setLoading] = useState(true);
   const initialCategory = new URLSearchParams(window.location.search).get("category") || "";
   const [activeCategories, setActiveCategories] = useState<string[]>(initialCategory ? [initialCategory] : []);
+  const lockedCategory = initialCategory;
 
   const seoTitle = activeCategories.length === 1
     ? `${activeCategories[0]} — заявки на HandyMan`
@@ -200,6 +201,7 @@ const Orders = () => {
             setActiveCategories={setActiveCategories}
             categories={CATEGORIES.map(c => c.name)}
             cities={cities}
+            lockedCategory={lockedCategory}
           />
 
           {/* Список заявок */}
