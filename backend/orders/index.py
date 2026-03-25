@@ -168,6 +168,7 @@ def handler(event: dict, context) -> dict:
         params = event.get('queryStringParameters') or {}
         city_filter = params.get('city', '').strip()
         master_id = params.get('master_id', '').strip()
+        master_phone = params.get('master_phone', '').strip()
         tab = params.get('tab', 'all').strip()
 
         conn = get_conn()
@@ -175,7 +176,7 @@ def handler(event: dict, context) -> dict:
 
         if tab == 'active' and master_id:
             cur.execute(
-                f"SELECT o.id, o.title, o.description, o.category, o.city, o.budget, o.contact_name, o.status, o.created_at "
+                f"SELECT o.id, o.title, o.description, o.category, o.city, o.budget, o.contact_name, o.contact_phone, o.status, o.created_at "
                 f"FROM {SCHEMA}.orders o "
                 f"JOIN {SCHEMA}.responses r ON r.order_id = o.id "
                 "WHERE r.master_id = %s AND o.status = 'in_progress' "
@@ -184,7 +185,7 @@ def handler(event: dict, context) -> dict:
             )
         elif tab == 'done' and master_id:
             cur.execute(
-                f"SELECT o.id, o.title, o.description, o.category, o.city, o.budget, o.contact_name, o.status, o.created_at "
+                f"SELECT o.id, o.title, o.description, o.category, o.city, o.budget, o.contact_name, o.contact_phone, o.status, o.created_at "
                 f"FROM {SCHEMA}.orders o "
                 f"JOIN {SCHEMA}.responses r ON r.order_id = o.id "
                 "WHERE r.master_id = %s AND o.status = 'done' "
@@ -193,19 +194,22 @@ def handler(event: dict, context) -> dict:
             )
         elif city_filter:
             cur.execute(
-                f"SELECT id, title, description, category, city, budget, contact_name, status, created_at "
+                f"SELECT id, title, description, category, city, budget, contact_name, contact_phone, status, created_at "
                 f"FROM {SCHEMA}.orders WHERE city = %s AND status = 'new' ORDER BY created_at DESC LIMIT 50",
                 (city_filter,)
             )
         else:
             cur.execute(
-                f"SELECT id, title, description, category, city, budget, contact_name, status, created_at "
+                f"SELECT id, title, description, category, city, budget, contact_name, contact_phone, status, created_at "
                 f"FROM {SCHEMA}.orders WHERE status = 'new' ORDER BY created_at DESC LIMIT 50"
             )
 
         rows = cur.fetchall()
         cur.close()
         conn.close()
+
+        def normalize_phone(p):
+            return ''.join(filter(str.isdigit, p or ''))[-10:]
 
         orders = [
             {
@@ -218,6 +222,7 @@ def handler(event: dict, context) -> dict:
                 'contact_name': r['contact_name'],
                 'status': r['status'],
                 'created_at': r['created_at'].isoformat() if r['created_at'] else None,
+                'is_own': bool(master_phone and normalize_phone(master_phone) == normalize_phone(r.get('contact_phone', ''))),
             }
             for r in rows
         ]

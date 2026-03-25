@@ -12,6 +12,8 @@ interface Order {
   city: string;
   budget: number | null;
   contact_name: string;
+  contact_phone?: string;
+  is_own?: boolean;
   status: string;
   created_at: string;
 }
@@ -130,7 +132,16 @@ export default function OrderResponseModal({
               </div>
             )}
 
+            {/* Блокировка самоотклика */}
+            {masterId !== null && selectedOrder.is_own && (
+              <div className="bg-red-600/10 border border-red-500/20 rounded-xl px-4 py-3 flex items-center gap-2">
+                <Icon name="Ban" size={15} className="text-red-400 flex-shrink-0" />
+                <span className="text-red-300 text-sm">Нельзя откликаться на собственную заявку</span>
+              </div>
+            )}
+
             {/* Форма отклика */}
+            {!(masterId !== null && selectedOrder.is_own) && (
             <form onSubmit={onSubmit} className="space-y-3">
               <p className="text-sm font-semibold text-white">Ваш отклик</p>
               <div className="grid grid-cols-2 gap-3">
@@ -176,6 +187,7 @@ export default function OrderResponseModal({
                 {!responseLoading && <Icon name="ArrowRight" size={16} className="ml-2" />}
               </Button>
             </form>
+            )}
           </div>
         )}
       </DialogContent>

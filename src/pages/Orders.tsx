@@ -28,6 +28,8 @@ interface Order {
   city: string;
   budget: number | null;
   contact_name: string;
+  contact_phone?: string;
+  is_own?: boolean;
   status: string;
   created_at: string;
 }
@@ -79,8 +81,10 @@ const Orders = () => {
   useEffect(() => {
     if (mainTab === "all") {
       setLoading(true);
+      const savedPhone = localStorage.getItem("master_phone");
       const params = new URLSearchParams({ tab: "all" });
       if (selectedCity) params.set("city", selectedCity);
+      if (savedPhone) params.set("master_phone", savedPhone);
       fetch(`${ORDERS_URL}?${params}`)
         .then((r) => r.json())
         .then((data) => {
@@ -110,6 +114,7 @@ const Orders = () => {
   const expandedCategories = expandCategories(activeCategories);
   const filtered = orders.filter((o) =>
     (activeCategories.length === 0 || expandedCategories.includes(o.category)) &&
+    (!selectedCity || selectedCity === "Все" || o.city === selectedCity) &&
     (!q || o.title.toLowerCase().includes(q) || o.description.toLowerCase().includes(q) || o.category.toLowerCase().includes(q))
   );
   const visible = filtered.slice(0, visibleCount);
