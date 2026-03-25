@@ -221,10 +221,17 @@ export default function OrderCard({
                           </div>
                           {r.master_category && <p className="text-gray-500 text-xs mt-0.5">{r.master_category}</p>}
                         </div>
-                        <a href={`tel:${r.master_phone}`} className="flex items-center gap-1.5 text-emerald-400 text-sm font-medium hover:text-emerald-300 transition-colors flex-shrink-0">
-                          <Icon name="Phone" size={13} />
-                          {r.master_phone}
-                        </a>
+                        {isAccepted ? (
+                          <a href={`tel:${r.master_phone}`} className="flex items-center gap-1.5 text-emerald-400 text-sm font-medium hover:text-emerald-300 transition-colors flex-shrink-0">
+                            <Icon name="Phone" size={13} />
+                            {r.master_phone}
+                          </a>
+                        ) : (
+                          <span className="flex items-center gap-1.5 text-gray-600 text-xs flex-shrink-0">
+                            <Icon name="Lock" size={12} />
+                            Контакт скрыт
+                          </span>
+                        )}
                       </div>
                       {r.message && <p className="text-gray-300 text-sm mb-3">{r.message}</p>}
                       <div className="flex items-center gap-3 flex-wrap">

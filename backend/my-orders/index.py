@@ -112,7 +112,7 @@ def get_orders(cur, customer_id=None, phone=None):
             'responses': [{
                 'id': r['id'],
                 'master_name': r['master_name'],
-                'master_phone': r['master_phone'],
+                'master_phone': r['master_phone'] if r['id'] == o.get('accepted_response_id') else None,
                 'master_category': r['master_category'],
                 'message': r['message'],
                 'master_id': r['master_id'],
