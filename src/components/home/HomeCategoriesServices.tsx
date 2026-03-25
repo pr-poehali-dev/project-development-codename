@@ -94,13 +94,13 @@ const HomeCategoriesServices = ({
   return (
     <>
       {/* Категории */}
-      <section id="categories" className="py-14 px-4">
+      <section id="categories" className="py-16 px-4">
         <div className="max-w-7xl mx-auto">
           <h2 className="text-2xl font-bold mb-8 text-center">Категории услуг</h2>
           <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-3">
             <a
               href="/orders"
-              className="flex flex-col items-center gap-2 p-4 rounded-xl border transition-all bg-white/3 border-white/8 text-gray-400 hover:border-white/20 hover:text-white"
+              className="flex flex-col items-center justify-center gap-2 p-4 min-h-[90px] rounded-xl border transition-all bg-white/3 border-white/8 text-gray-400 hover:border-white/20 hover:text-white active:bg-white/10"
             >
               <Icon name="LayoutGrid" size={22} />
               <span className="text-xs font-medium text-center">Все</span>
@@ -109,7 +109,7 @@ const HomeCategoriesServices = ({
               <a
                 key={cat.name}
                 href={`/category/${encodeURIComponent(cat.name)}`}
-                className="flex flex-col items-center gap-2 p-4 rounded-xl border transition-all bg-white/3 border-white/8 text-gray-400 hover:border-violet-500/40 hover:text-violet-300 hover:bg-violet-600/10"
+                className="flex flex-col items-center justify-center gap-2 p-4 min-h-[90px] rounded-xl border transition-all bg-white/3 border-white/8 text-gray-400 hover:border-violet-500/40 hover:text-violet-300 hover:bg-violet-600/10 active:bg-violet-600/20"
               >
                 <Icon name={cat.icon} size={22} />
                 <span className="text-xs font-medium text-center leading-tight">{cat.name}</span>

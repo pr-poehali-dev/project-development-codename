@@ -237,7 +237,7 @@ const Index = () => {
       </section>
 
       {/* CTA */}
-      <section className="py-20 px-4 text-center">
+      <section className="py-16 px-4 text-center">
         <div className="max-w-2xl mx-auto">
           <h2 className="text-3xl sm:text-4xl font-extrabold mb-4">
             Готов предложить свои услуги?
@@ -250,7 +250,7 @@ const Index = () => {
               Стать мастером
               <Icon name="ArrowRight" size={18} className="ml-2" />
             </Button>
-            <Button onClick={() => setOrderModalOpen(true)} variant="outline" className="border-white/15 text-gray-300 hover:text-white hover:bg-white/8 px-8 py-3 text-base rounded-xl">
+            <Button onClick={() => setOrderModalOpen(true)} variant="outline" className="border-white/30 text-white hover:text-white hover:bg-white/10 px-8 py-3 text-base rounded-xl">
               Найти мастера
             </Button>
           </div>
