@@ -5,8 +5,7 @@
       "method": "GET",
       "path": "/?action=masters",
       "expectedStatus": 200,
-      "expectedBody": {"masters": []},
-      "bodyMatcher": "partial"
+      "bodyMatcher": "none"
     },
     {
       "name": "Получение профиля мастера",

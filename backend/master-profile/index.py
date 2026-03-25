@@ -813,7 +813,10 @@ def handler(event: dict, context) -> dict:
         cur.execute(f"SELECT ROUND(AVG(rating)::numeric,1) as avg, COUNT(*) as cnt FROM {SCHEMA}.reviews WHERE master_id = %s", (master['id'],))
         stats = cur.fetchone()
         cur.execute(
-            f"SELECT r.id, r.order_id, r.message, r.created_at, o.title as order_title, o.category as order_category, o.status as order_status, o.city as order_city "
+            f"SELECT r.id, r.order_id, r.message, r.created_at, o.title as order_title, o.category as order_category, o.status as order_status, o.city as order_city, "
+            f"CASE WHEN o.accepted_response_id = r.id THEN o.contact_phone ELSE NULL END as contact_phone, "
+            f"CASE WHEN o.accepted_response_id = r.id THEN o.contact_email ELSE NULL END as contact_email, "
+            f"CASE WHEN o.accepted_response_id = r.id THEN o.contact_name ELSE NULL END as contact_name "
             f"FROM {SCHEMA}.responses r JOIN {SCHEMA}.orders o ON o.id = r.order_id "
             f"WHERE r.master_id = %s ORDER BY r.created_at DESC LIMIT 50",
             (master['id'],)
@@ -847,6 +850,9 @@ def handler(event: dict, context) -> dict:
                     'order_city': r['order_city'],
                     'message': r['message'],
                     'created_at': r['created_at'].isoformat() if r['created_at'] else None,
+                    'contact_phone': r['contact_phone'],
+                    'contact_email': r['contact_email'],
+                    'contact_name': r['contact_name'],
                 } for r in my_responses],
                 'my_services': [{
                     'id': s['id'],
@@ -915,7 +921,10 @@ def handler(event: dict, context) -> dict:
         cur.execute("SELECT ROUND(AVG(rating)::numeric,1) as avg, COUNT(*) as cnt FROM reviews WHERE master_id = %s", (master['id'],))
         stats = cur.fetchone()
         cur.execute(
-            "SELECT r.id, r.order_id, r.message, r.created_at, o.title as order_title, o.category as order_category, o.status as order_status, o.city as order_city "
+            "SELECT r.id, r.order_id, r.message, r.created_at, o.title as order_title, o.category as order_category, o.status as order_status, o.city as order_city, "
+            "CASE WHEN o.accepted_response_id = r.id THEN o.contact_phone ELSE NULL END as contact_phone, "
+            "CASE WHEN o.accepted_response_id = r.id THEN o.contact_email ELSE NULL END as contact_email, "
+            "CASE WHEN o.accepted_response_id = r.id THEN o.contact_name ELSE NULL END as contact_name "
             "FROM responses r JOIN orders o ON o.id = r.order_id "
             "WHERE r.master_id = %s ORDER BY r.created_at DESC LIMIT 50",
             (master['id'],)
@@ -949,6 +958,9 @@ def handler(event: dict, context) -> dict:
                     'order_city': r['order_city'],
                     'message': r['message'],
                     'created_at': r['created_at'].isoformat() if r['created_at'] else None,
+                    'contact_phone': r['contact_phone'],
+                    'contact_email': r['contact_email'],
+                    'contact_name': r['contact_name'],
                 } for r in my_responses],
                 'my_services': [{
                     'id': s['id'], 'title': s['title'], 'description': s['description'],

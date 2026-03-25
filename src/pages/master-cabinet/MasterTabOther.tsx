@@ -36,6 +36,9 @@ interface MyResponse {
   order_city: string;
   message: string;
   created_at: string;
+  contact_phone?: string | null;
+  contact_email?: string | null;
+  contact_name?: string | null;
 }
 
 type Tab = "responses" | "history" | "profile";
@@ -121,6 +124,26 @@ export default function MasterTabOther({
                   <span className={`text-xs px-2 py-1 rounded-lg border flex-shrink-0 ${st.color}`}>{st.label}</span>
                 </div>
                 {r.message && <p className="text-gray-400 text-sm border-t border-white/6 pt-2 mt-2">{r.message}</p>}
+                {r.contact_phone && (
+                  <div className="flex flex-wrap items-center gap-3 border-t border-white/6 pt-2 mt-2">
+                    <a href={`tel:${r.contact_phone}`} className="flex items-center gap-1.5 text-emerald-400 text-sm font-medium hover:text-emerald-300 transition-colors">
+                      <Icon name="Phone" size={13} />
+                      {r.contact_phone}
+                    </a>
+                    {r.contact_email && (
+                      <a href={`mailto:${r.contact_email}`} className="flex items-center gap-1.5 text-gray-400 text-xs hover:text-gray-300 transition-colors">
+                        <Icon name="Mail" size={12} />
+                        {r.contact_email}
+                      </a>
+                    )}
+                    {r.contact_name && (
+                      <span className="text-gray-500 text-xs flex items-center gap-1">
+                        <Icon name="User" size={12} />
+                        {r.contact_name}
+                      </span>
+                    )}
+                  </div>
+                )}
               </div>
             );
           })
