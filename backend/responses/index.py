@@ -97,27 +97,49 @@ def handler(event: dict, context) -> dict:
                 'body': json.dumps({'error': 'Заполните все обязательные поля'})
             }
 
+        if not master_id:
+            return {'statusCode': 403, 'headers': HEADERS, 'body': json.dumps({'error': 'Необходимо войти в кабинет мастера'})}
+
         conn = get_conn()
         cur = conn.cursor()
 
         SCHEMA = os.environ.get("MAIN_DB_SCHEMA", "public")
+
+        # Проверяем что мастер существует
+        cur.execute(f"SELECT id, phone FROM {SCHEMA}.masters WHERE id = %s", (int(master_id),))
+        master_row = cur.fetchone()
+        if not master_row:
+            cur.close(); conn.close()
+            return {'statusCode': 403, 'headers': HEADERS, 'body': json.dumps({'error': 'Мастер не найден'})}
+
+        def normalize(p):
+            return ''.join(filter(str.isdigit, p or ''))[-10:]
+
         cur.execute(
-            f"SELECT o.title, o.contact_email, c.email as customer_email "
+            f"SELECT o.title, o.contact_email, o.contact_phone, c.email as customer_email "
             f"FROM {SCHEMA}.orders o "
             f"LEFT JOIN {SCHEMA}.customers c ON c.id = o.customer_id "
             f"WHERE o.id = %s",
             (int(order_id),)
         )
         order = cur.fetchone()
-        # Берём email заказчика: сначала из аккаунта, потом из поля contact_email
-        if order:
-            order = dict(order)
-            order['contact_email'] = order.get('customer_email') or order.get('contact_email') or ''
+        if not order:
+            cur.close(); conn.close()
+            return {'statusCode': 404, 'headers': HEADERS, 'body': json.dumps({'error': 'Заявка не найдена'})}
+
+        order = dict(order)
+
+        # Запрет самоотклика
+        if normalize(master_row['phone']) == normalize(order.get('contact_phone', '')):
+            cur.close(); conn.close()
+            return {'statusCode': 403, 'headers': HEADERS, 'body': json.dumps({'error': 'Нельзя откликаться на собственную заявку'})}
+
+        order['contact_email'] = order.get('customer_email') or order.get('contact_email') or ''
 
         cur.execute(
-            "INSERT INTO responses (order_id, master_name, master_phone, master_category, message, master_id) "
+            f"INSERT INTO {SCHEMA}.responses (order_id, master_name, master_phone, master_category, message, master_id) "
             "VALUES (%s, %s, %s, %s, %s, %s) RETURNING id",
-            (int(order_id), master_name, master_phone, master_category, message, int(master_id) if master_id else None)
+            (int(order_id), master_name, master_phone, master_category, message, int(master_id))
         )
         response_id = cur.fetchone()['id']
 
