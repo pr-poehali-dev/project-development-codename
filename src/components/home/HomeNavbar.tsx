@@ -118,13 +118,31 @@ const HomeNavbar = ({
             )}
           </div>
 
-          <Button
-            variant="ghost"
-            className="md:hidden text-gray-400 p-2"
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-          >
-            <Icon name={mobileMenuOpen ? "X" : "Menu"} size={20} />
-          </Button>
+          <div className="md:hidden flex items-center gap-2">
+            {isMaster && (
+              <a href="/master">
+                <Button size="sm" className="bg-gradient-to-r from-violet-600 to-indigo-600 text-white text-xs px-3 h-8">
+                  <Icon name="Briefcase" size={13} className="mr-1" />
+                  Кабинет
+                </Button>
+              </a>
+            )}
+            {isCustomer && (
+              <a href="/cabinet">
+                <Button size="sm" variant="ghost" className="text-gray-300 hover:text-white border border-white/10 text-xs px-3 h-8">
+                  <Icon name="LayoutDashboard" size={13} className="mr-1" />
+                  Кабинет
+                </Button>
+              </a>
+            )}
+            <Button
+              variant="ghost"
+              className="text-gray-400 p-2"
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            >
+              <Icon name={mobileMenuOpen ? "X" : "Menu"} size={20} />
+            </Button>
+          </div>
         </div>
 
         {mobileMenuOpen && (
