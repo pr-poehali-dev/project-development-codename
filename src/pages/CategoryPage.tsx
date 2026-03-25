@@ -58,6 +58,7 @@ export default function CategoryPage() {
 
   const [orders, setOrders] = useState<Order[]>([]);
   const [ordersLoading, setOrdersLoading] = useState(false);
+  const [filtersOpen, setFiltersOpen] = useState(false);
 
   useEffect(() => {
     if (!cat || hasSubcategories) return;
@@ -132,25 +133,43 @@ export default function CategoryPage() {
           {/* Подкатегории */}
           {hasSubcategories ? (
             <>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-10">
-                {cat.subcategories.map((sub) => (
-                  <a
-                    key={sub}
-                    href={`/orders?category=${encodeURIComponent(sub)}`}
-                    className="flex items-center justify-between p-4 rounded-xl bg-white/3 border border-white/8 hover:bg-violet-600/10 hover:border-violet-500/40 hover:text-violet-300 transition-all group"
-                  >
-                    <span className="text-sm font-medium text-gray-200 group-hover:text-violet-300">{sub}</span>
-                    <Icon name="ArrowRight" size={16} className="text-gray-600 group-hover:text-violet-400 transition-colors" />
-                  </a>
-                ))}
+              <div className="flex items-center gap-3 mb-6">
+                <a
+                  href={`/orders?category=${encodeURIComponent(cat.name)}`}
+                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-violet-600 hover:bg-violet-500 text-white font-semibold text-sm transition-colors"
+                >
+                  <Icon name="LayoutList" size={15} />
+                  Все заявки
+                </a>
+                <button
+                  onClick={() => setFiltersOpen(v => !v)}
+                  className={`inline-flex items-center gap-2 px-5 py-2.5 rounded-xl border text-sm font-medium transition-all ${
+                    filtersOpen
+                      ? "bg-violet-600/20 border-violet-500/50 text-violet-300"
+                      : "bg-white/4 border-white/10 text-gray-300 hover:border-white/20 hover:text-white"
+                  }`}
+                >
+                  <Icon name="SlidersHorizontal" size={15} />
+                  Подкатегории
+                  <span className="text-xs opacity-60">({cat.subcategories.length})</span>
+                  <Icon name={filtersOpen ? "ChevronUp" : "ChevronDown"} size={14} className="opacity-60" />
+                </button>
               </div>
-              <a
-                href={`/orders?category=${encodeURIComponent(cat.name)}`}
-                className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-violet-600 hover:bg-violet-500 text-white font-semibold text-sm transition-colors"
-              >
-                <Icon name="LayoutList" size={16} />
-                Все заявки в категории «{cat.name}»
-              </a>
+
+              {filtersOpen && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-8 animate-in fade-in slide-in-from-top-2 duration-200">
+                  {cat.subcategories.map((sub) => (
+                    <a
+                      key={sub}
+                      href={`/orders?category=${encodeURIComponent(sub)}`}
+                      className="flex items-center justify-between p-4 rounded-xl bg-white/3 border border-white/8 hover:bg-violet-600/10 hover:border-violet-500/40 hover:text-violet-300 transition-all group"
+                    >
+                      <span className="text-sm font-medium text-gray-200 group-hover:text-violet-300">{sub}</span>
+                      <Icon name="ArrowRight" size={16} className="text-gray-600 group-hover:text-violet-400 transition-colors" />
+                    </a>
+                  ))}
+                </div>
+              )}
             </>
           ) : (
             /* Нет подкатегорий — показываем заявки сразу */
