@@ -85,6 +85,11 @@ export default function Masters() {
     <div className="min-h-screen bg-[#0f1117] text-white">
       <nav className="bg-[#0f1117]/95 backdrop-blur border-b border-white/10 sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 flex items-center gap-3">
+          <button onClick={() => window.history.back()} className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors text-sm">
+            <Icon name="ArrowLeft" size={16} />
+            Назад
+          </button>
+          <Icon name="ChevronRight" size={16} className="text-gray-600" />
           <a href="/" className="flex items-center gap-3">
             <img
               src="https://cdn.poehali.dev/projects/b7f56b72-3dfb-49ff-a0ce-cff7b631f477/files/bb517738-7e1e-4e29-bd74-607574a9b222.jpg"
