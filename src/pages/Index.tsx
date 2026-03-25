@@ -94,6 +94,13 @@ const Index = () => {
 
   const [isMaster] = useState(() => typeof window !== "undefined" && !!localStorage.getItem("master_phone"));
   const [isCustomer] = useState(() => typeof window !== "undefined" && !!localStorage.getItem("customer_phone"));
+  const [showScrollTop, setShowScrollTop] = useState(false);
+
+  useEffect(() => {
+    const onScroll = () => setShowScrollTop(window.scrollY > 400);
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
   const [masterBannerDismissed, setMasterBannerDismissed] = useState(
     typeof window !== "undefined" && localStorage.getItem("master_banner_dismissed") === "1"
   );
@@ -306,6 +313,17 @@ const Index = () => {
           </div>
         </div>
       </footer>
+
+      {/* Кнопка "Наверх" */}
+      {showScrollTop && (
+        <button
+          onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+          className="fixed bottom-6 right-6 z-50 w-11 h-11 rounded-full bg-violet-600 hover:bg-violet-500 text-white shadow-lg shadow-violet-900/40 flex items-center justify-center transition-all duration-200 hover:scale-110"
+          aria-label="Наверх"
+        >
+          <Icon name="ArrowUp" size={20} />
+        </button>
+      )}
 
       <HomeModals
         loginModalOpen={loginModalOpen}
