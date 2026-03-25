@@ -92,8 +92,8 @@ const Index = () => {
       });
   }, []);
 
-  const isMaster = typeof window !== "undefined" && !!localStorage.getItem("master_phone");
-  const isCustomer = typeof window !== "undefined" && !!localStorage.getItem("customer_phone");
+  const [isMaster] = useState(() => typeof window !== "undefined" && !!localStorage.getItem("master_phone"));
+  const [isCustomer] = useState(() => typeof window !== "undefined" && !!localStorage.getItem("customer_phone"));
   const [masterBannerDismissed, setMasterBannerDismissed] = useState(
     typeof window !== "undefined" && localStorage.getItem("master_banner_dismissed") === "1"
   );
