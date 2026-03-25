@@ -250,7 +250,7 @@ const Index = () => {
               Стать мастером
               <Icon name="ArrowRight" size={18} className="ml-2" />
             </Button>
-            <Button onClick={() => setOrderModalOpen(true)} variant="outline" className="border-violet-500/60 text-violet-300 hover:text-violet-200 hover:bg-violet-600/10 hover:border-violet-400 px-8 py-3 text-base rounded-xl">
+            <Button onClick={() => setOrderModalOpen(true)} variant="ghost" className="border border-violet-500 text-violet-300 hover:text-violet-200 hover:bg-violet-600/15 px-8 py-3 text-base rounded-xl">
               Найти мастера
             </Button>
           </div>
