@@ -483,6 +483,100 @@ def handler(event: dict, context) -> dict:
             cur.close(); conn.close()
             return {'statusCode': 200, 'headers': HEADERS, 'body': json.dumps({'success': True, 'review_id': review_id})}
 
+        # ── ОТПРАВИТЬ СООБЩЕНИЕ В ЧАТ ──
+        if action == 'send_message':
+            inquiry_id = body.get('inquiry_id')
+            sender_role = body.get('sender_role')
+            sender_name = (body.get('sender_name') or '').strip()
+            text = (body.get('text') or '').strip()
+            if not all([inquiry_id, sender_role, sender_name, text]):
+                return {'statusCode': 400, 'headers': HEADERS, 'body': json.dumps({'error': 'Не все поля заполнены'})}
+            if sender_role not in ('customer', 'master'):
+                return {'statusCode': 400, 'headers': HEADERS, 'body': json.dumps({'error': 'Неверная роль'})}
+            conn = get_conn()
+            cur = conn.cursor()
+            cur.execute(
+                f"INSERT INTO {SCHEMA}.chat_messages (inquiry_id, sender_role, sender_name, text) VALUES (%s, %s, %s, %s) RETURNING id, created_at",
+                (int(inquiry_id), sender_role, sender_name, text)
+            )
+            row = cur.fetchone()
+            conn.commit()
+            cur.close(); conn.close()
+            return {'statusCode': 200, 'headers': HEADERS, 'body': json.dumps({
+                'success': True,
+                'message': {'id': row['id'], 'inquiry_id': int(inquiry_id), 'sender_role': sender_role, 'sender_name': sender_name, 'text': text, 'created_at': row['created_at'].isoformat()}
+            })}
+
+        # ── ПОЛУЧИТЬ СООБЩЕНИЯ ЧАТА ──
+        if action == 'get_messages':
+            inquiry_id = body.get('inquiry_id')
+            if not inquiry_id:
+                return {'statusCode': 400, 'headers': HEADERS, 'body': json.dumps({'error': 'inquiry_id обязателен'})}
+            conn = get_conn()
+            cur = conn.cursor()
+            cur.execute(
+                f"SELECT id, inquiry_id, sender_role, sender_name, text, created_at FROM {SCHEMA}.chat_messages WHERE inquiry_id=%s ORDER BY created_at ASC",
+                (int(inquiry_id),)
+            )
+            messages = cur.fetchall()
+            cur.close(); conn.close()
+            return {'statusCode': 200, 'headers': HEADERS, 'body': json.dumps({
+                'messages': [{'id': m['id'], 'inquiry_id': m['inquiry_id'], 'sender_role': m['sender_role'], 'sender_name': m['sender_name'], 'text': m['text'], 'created_at': m['created_at'].isoformat()} for m in messages]
+            })}
+
+        # ── МОИ ОБРАЩЕНИЯ К МАСТЕРАМ (для заказчика) ──
+        if action == 'get_customer_inquiries':
+            customer_email = (body.get('customer_email') or '').strip().lower()
+            customer_phone = (body.get('customer_phone') or '').strip()
+            if not customer_email and not customer_phone:
+                return {'statusCode': 400, 'headers': HEADERS, 'body': json.dumps({'error': 'Укажите email или телефон'})}
+            conn = get_conn()
+            cur = conn.cursor()
+            conditions = []
+            args = []
+            if customer_email:
+                conditions.append("LOWER(COALESCE(i.contact_email,'')) = %s")
+                args.append(customer_email)
+            if customer_phone:
+                cond = "COALESCE(i.contact_phone,'') = %s"
+                if conditions:
+                    conditions = [f"({conditions[0]} OR {cond})"]
+                    args.append(customer_phone)
+                else:
+                    conditions.append(cond)
+                    args.append(customer_phone)
+            where = ' AND '.join(conditions)
+            cur.execute(
+                f"SELECT i.id, i.master_id, i.service_id, i.contact_name, i.contact_phone, i.contact_email, i.message, i.is_read, i.created_at, "
+                f"m.name as master_name, m.city as master_city, m.category as master_category, m.avatar_color, "
+                f"ms.title as service_title "
+                f"FROM {SCHEMA}.master_inquiries i "
+                f"JOIN {SCHEMA}.masters m ON m.id = i.master_id "
+                f"LEFT JOIN {SCHEMA}.master_services ms ON ms.id = i.service_id "
+                f"WHERE {where} ORDER BY i.created_at DESC",
+                args
+            )
+            inquiries = cur.fetchall()
+            cur.close(); conn.close()
+            return {'statusCode': 200, 'headers': HEADERS, 'body': json.dumps({
+                'inquiries': [{
+                    'id': i['id'],
+                    'master_id': i['master_id'],
+                    'service_id': i['service_id'],
+                    'contact_name': i['contact_name'],
+                    'contact_phone': i['contact_phone'],
+                    'contact_email': i['contact_email'],
+                    'message': i['message'],
+                    'is_read': i['is_read'],
+                    'created_at': i['created_at'].isoformat() if i['created_at'] else None,
+                    'master_name': i['master_name'],
+                    'master_city': i['master_city'],
+                    'master_category': i['master_category'],
+                    'avatar_color': i['avatar_color'] or '#7c3aed',
+                    'service_title': i['service_title'],
+                } for i in inquiries]
+            }, ensure_ascii=False)}
+
         # Старый вход по телефону (обратная совместимость)
         phone = (body.get('phone') or '').strip()
         name = (body.get('name') or '').strip()
@@ -522,6 +616,22 @@ def handler(event: dict, context) -> dict:
 
     if method == 'GET':
         params = event.get('queryStringParameters') or {}
+
+        # GET messages для polling
+        if params.get('inquiry_id'):
+            inquiry_id = int(params['inquiry_id'])
+            conn = get_conn()
+            cur = conn.cursor()
+            cur.execute(
+                f"SELECT id, inquiry_id, sender_role, sender_name, text, created_at FROM {SCHEMA}.chat_messages WHERE inquiry_id=%s ORDER BY created_at ASC",
+                (inquiry_id,)
+            )
+            messages = cur.fetchall()
+            cur.close(); conn.close()
+            return {'statusCode': 200, 'headers': HEADERS, 'body': json.dumps({
+                'messages': [{'id': m['id'], 'inquiry_id': m['inquiry_id'], 'sender_role': m['sender_role'], 'sender_name': m['sender_name'], 'text': m['text'], 'created_at': m['created_at'].isoformat()} for m in messages]
+            })}
+
         phone = (params.get('phone') or '').strip()
         if not phone:
             return {'statusCode': 400, 'headers': HEADERS, 'body': json.dumps({'error': 'Укажите номер телефона'})}

@@ -128,7 +128,7 @@ export default function MasterCabinet() {
         )}
 
         {tab === "inquiries" && (
-          <MasterTabInquiries inquiries={profile.inquiries} />
+          <MasterTabInquiries inquiries={profile.inquiries} masterName={profile.master!.name} />
         )}
 
         {(tab === "responses" || tab === "history" || tab === "profile") && (

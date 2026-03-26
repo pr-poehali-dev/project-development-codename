@@ -356,6 +356,27 @@ def handler(event: dict, context) -> dict:
                     pass
             return {'statusCode': 200, 'headers': HEADERS, 'body': json.dumps({'success': True, 'id': inquiry_id})}
 
+        # ── ОТПРАВИТЬ СООБЩЕНИЕ В ЧАТ (мастер) ──
+        if body_raw.get('action') == 'send_message':
+            inquiry_id = body_raw.get('inquiry_id')
+            sender_name = (body_raw.get('sender_name') or '').strip()
+            text = (body_raw.get('text') or '').strip()
+            if not all([inquiry_id, sender_name, text]):
+                return {'statusCode': 400, 'headers': HEADERS, 'body': json.dumps({'error': 'Не все поля заполнены'})}
+            conn = get_conn()
+            cur = conn.cursor()
+            cur.execute(
+                f"INSERT INTO {SCHEMA}.chat_messages (inquiry_id, sender_role, sender_name, text) VALUES (%s, 'master', %s, %s) RETURNING id, created_at",
+                (int(inquiry_id), sender_name, text)
+            )
+            row = cur.fetchone()
+            conn.commit()
+            cur.close(); conn.close()
+            return {'statusCode': 200, 'headers': HEADERS, 'body': json.dumps({
+                'success': True,
+                'message': {'id': row['id'], 'inquiry_id': int(inquiry_id), 'sender_role': 'master', 'sender_name': sender_name, 'text': text, 'created_at': row['created_at'].isoformat()}
+            })}
+
         # ── ПОМЕТИТЬ ОБРАЩЕНИЯ КАК ПРОЧИТАННЫЕ ──
         if body_raw.get('action') == 'read_inquiries':
             master_id = body_raw.get('master_id')
@@ -811,6 +832,21 @@ def handler(event: dict, context) -> dict:
         conn.commit()
         cur.close(); conn.close()
         return {'statusCode': 200, 'headers': HEADERS, 'body': json.dumps({'success': True})}
+
+    # GET messages для polling (мастер)
+    if method == 'GET' and params.get('inquiry_id'):
+        inquiry_id = int(params['inquiry_id'])
+        conn = get_conn()
+        cur = conn.cursor()
+        cur.execute(
+            f"SELECT id, inquiry_id, sender_role, sender_name, text, created_at FROM {SCHEMA}.chat_messages WHERE inquiry_id=%s ORDER BY created_at ASC",
+            (inquiry_id,)
+        )
+        messages = cur.fetchall()
+        cur.close(); conn.close()
+        return {'statusCode': 200, 'headers': HEADERS, 'body': json.dumps({
+            'messages': [{'id': m['id'], 'inquiry_id': m['inquiry_id'], 'sender_role': m['sender_role'], 'sender_name': m['sender_name'], 'text': m['text'], 'created_at': m['created_at'].isoformat()} for m in messages]
+        })}
 
     # GET публичного профиля мастера по id
     if method == 'GET' and params.get('master_id'):

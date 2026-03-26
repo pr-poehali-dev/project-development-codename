@@ -2,7 +2,9 @@ import { useState, useEffect, useCallback } from "react";
 import CabinetAuth from "@/components/cabinet/CabinetAuth";
 import CabinetNav from "@/components/cabinet/CabinetNav";
 import CabinetOrderList from "@/components/cabinet/CabinetOrderList";
+import CustomerInquiries from "@/components/cabinet/CustomerInquiries";
 import OrderModal from "@/components/home/OrderModal";
+import Icon from "@/components/ui/icon";
 import { useCabinetAuth } from "@/pages/cabinet/useCabinetAuth";
 import { useCabinetOrders } from "@/pages/cabinet/useCabinetOrders";
 import { useCabinetProfile } from "@/pages/cabinet/useCabinetProfile";
@@ -51,6 +53,7 @@ export default function Cabinet() {
   const [customer, setCustomer] = useState<Customer | null>(null);
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(false);
+  const [cabinetTab, setCabinetTab] = useState<"orders" | "inquiries">("orders");
 
   const [editFieldSetters, setEditFieldSetters] = useState<{
     setEditName: (v: string) => void;
@@ -179,19 +182,50 @@ export default function Cabinet() {
         setOrderError={orders_.setOrderError}
         handleOrderSubmit={orders_.handleOrderSubmit}
       />
-      <CabinetOrderList
-        orders={orders}
-        customer={customer!}
-        reviewSuccess={orders_.reviewSuccess}
-        statusLoading={orders_.statusLoading}
-        selectMasterLoading={orders_.selectMasterLoading}
-        onStatusChange={orders_.handleStatusChange}
-        onSelectMaster={orders_.handleSelectMaster}
-        onReviewSubmit={orders_.handleReview}
-        onUpdateOrder={orders_.handleUpdateOrder}
-        onDeleteOrder={orders_.handleDeleteOrder}
-        onCreateOrder={() => orders_.setOrderModalOpen(true)}
-      />
+      {/* Переключатель вкладок */}
+      <div className="max-w-4xl mx-auto px-4 pt-6">
+        <div className="flex gap-2">
+          <button
+            onClick={() => setCabinetTab("orders")}
+            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-colors ${cabinetTab === "orders" ? "bg-violet-600 text-white" : "bg-white/5 text-gray-400 hover:text-white hover:bg-white/8"}`}
+          >
+            <Icon name="ClipboardList" size={15} />
+            Мои заявки
+            {orders.length > 0 && <span className={`text-xs px-1.5 py-0.5 rounded-md ${cabinetTab === "orders" ? "bg-white/20" : "bg-white/10"}`}>{orders.length}</span>}
+          </button>
+          <button
+            onClick={() => setCabinetTab("inquiries")}
+            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-colors ${cabinetTab === "inquiries" ? "bg-violet-600 text-white" : "bg-white/5 text-gray-400 hover:text-white hover:bg-white/8"}`}
+          >
+            <Icon name="MessageSquare" size={15} />
+            Мои обращения
+          </button>
+        </div>
+      </div>
+
+      {cabinetTab === "orders" && (
+        <CabinetOrderList
+          orders={orders}
+          customer={customer!}
+          reviewSuccess={orders_.reviewSuccess}
+          statusLoading={orders_.statusLoading}
+          selectMasterLoading={orders_.selectMasterLoading}
+          onStatusChange={orders_.handleStatusChange}
+          onSelectMaster={orders_.handleSelectMaster}
+          onReviewSubmit={orders_.handleReview}
+          onUpdateOrder={orders_.handleUpdateOrder}
+          onDeleteOrder={orders_.handleDeleteOrder}
+          onCreateOrder={() => orders_.setOrderModalOpen(true)}
+        />
+      )}
+
+      {cabinetTab === "inquiries" && (
+        <CustomerInquiries
+          customerName={customer!.name}
+          customerEmail={customer!.email}
+          customerPhone={customer!.phone}
+        />
+      )}
     </div>
   );
 }
