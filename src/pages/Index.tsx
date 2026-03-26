@@ -37,6 +37,7 @@ const Index = () => {
   );
   const [activeCategory, setActiveCategory] = useState("Все");
   const [selectedCity, setSelectedCityFilter] = useState("");
+  const [heroSearchQuery, setHeroSearchQuery] = useState("");
   const [services, setServices] = useState<Service[]>([]);
   const [availableCities, setAvailableCities] = useState<string[]>([]);
   const [servicesLoading, setServicesLoading] = useState(false);
@@ -196,7 +197,7 @@ const Index = () => {
         setLoginModalOpen={setLoginModalOpen}
       />
 
-      <HomeHeroStats />
+      <HomeHeroStats onSearch={setHeroSearchQuery} />
 
       <HomeCategoriesServices
         activeCategory={activeCategory}
@@ -208,6 +209,7 @@ const Index = () => {
         setOrderForm={setOrderForm}
         setOrderModalOpen={setOrderModalOpen}
         isMaster={isMaster}
+        heroSearchQuery={heroSearchQuery}
       />
 
       {/* Блок пакетов */}

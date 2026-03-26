@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/button";
 import Icon from "@/components/ui/icon";
+import CitySelect from "@/components/ui/city-select";
 
 const inputCls = "w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-violet-500 transition-colors";
 
@@ -20,6 +21,8 @@ interface CabinetAuthProps {
   setLoginPhone: (v: string) => void;
   loginEmail: string;
   setLoginEmail: (v: string) => void;
+  loginCity: string;
+  setLoginCity: (v: string) => void;
   regCode: string;
   setRegCode: (v: string) => void;
   regPassword: string;
@@ -53,6 +56,7 @@ export default function CabinetAuth({
   loginName, setLoginName,
   loginPhone, setLoginPhone,
   loginEmail, setLoginEmail,
+  loginCity, setLoginCity,
   regCode, setRegCode,
   regPassword, setRegPassword,
   regPasswordConfirm, setRegPasswordConfirm,
@@ -183,6 +187,10 @@ export default function CabinetAuth({
                 <label className="text-sm text-gray-400 mb-1.5 block">Email</label>
                 <input type="email" required value={loginEmail} onChange={e => setLoginEmail(e.target.value)}
                   placeholder="email@example.com" className={inputCls} />
+              </div>
+              <div>
+                <label className="text-sm text-gray-400 mb-1.5 block">Город *</label>
+                <CitySelect value={loginCity} onChange={setLoginCity} variant="glass" className="w-full" required />
               </div>
               {loginError && <p className="text-amber-400 text-sm">{loginError}</p>}
               <Button type="submit" disabled={loginLoading} className="bg-gradient-to-r from-violet-600 to-indigo-600 text-white w-full">

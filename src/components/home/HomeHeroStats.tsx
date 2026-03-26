@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import Icon from "@/components/ui/icon";
@@ -9,7 +10,20 @@ const stats = [
   { label: "Категорий услуг", value: "20+", icon: "Grid3x3" },
 ];
 
-const HomeHeroStats = () => {
+interface HomeHeroStatsProps {
+  onSearch?: (query: string) => void;
+}
+
+const HomeHeroStats = ({ onSearch }: HomeHeroStatsProps) => {
+  const [heroSearch, setHeroSearch] = useState("");
+
+  const handleSearch = () => {
+    if (!heroSearch.trim()) return;
+    if (onSearch) onSearch(heroSearch.trim());
+    const el = document.getElementById("services-section");
+    if (el) el.scrollIntoView({ behavior: "smooth" });
+  };
+
   return (
     <>
       {/* Герой */}
@@ -36,11 +50,17 @@ const HomeHeroStats = () => {
             <div className="flex-1 relative">
               <Icon name="Search" size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500" />
               <input
+                value={heroSearch}
+                onChange={e => setHeroSearch(e.target.value)}
+                onKeyDown={e => e.key === "Enter" && handleSearch()}
                 className="w-full bg-white/5 border border-white/10 rounded-xl pl-10 pr-4 py-3 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-violet-500 transition-colors"
                 placeholder="Например: сантехник, ремонт авто, маникюр..."
               />
             </div>
-            <Button className="bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white px-6 py-3 rounded-xl text-sm font-medium">
+            <Button
+              onClick={handleSearch}
+              className="bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white px-6 py-3 rounded-xl text-sm font-medium"
+            >
               Найти
             </Button>
           </div>

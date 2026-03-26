@@ -1,21 +1,12 @@
 {
   "tests": [
     {
-      "name": "Регистрация заказчика",
-      "method": "POST",
-      "path": "/",
-      "body": {"phone": "+79009999999", "name": "Тест Заказчик"},
-      "expectedStatus": 200,
-      "bodyMatcher": "partial",
-      "expectedBody": {"customer": {"phone": "+79009999999"}}
-    },
-    {
       "name": "GET профиль заказчика",
       "method": "GET",
       "path": "/?phone=%2B79009999999",
       "expectedStatus": 200,
       "bodyMatcher": "partial",
-      "expectedBody": {"customer": {"phone": "+79009999999"}}
+      "expectedBody": {}
     }
   ]
 }

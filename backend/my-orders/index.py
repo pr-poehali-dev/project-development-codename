@@ -141,12 +141,15 @@ def handler(event: dict, context) -> dict:
             email = (body.get('email') or '').strip().lower()
             phone = (body.get('phone') or '').strip()
             name = (body.get('name') or '').strip()
+            city = (body.get('city') or '').strip()
             if not email:
                 return {'statusCode': 400, 'headers': HEADERS, 'body': json.dumps({'error': 'Укажите email'})}
             if not name:
                 return {'statusCode': 400, 'headers': HEADERS, 'body': json.dumps({'error': 'Укажите имя'})}
             if not phone:
                 return {'statusCode': 400, 'headers': HEADERS, 'body': json.dumps({'error': 'Укажите телефон'})}
+            if not city:
+                return {'statusCode': 400, 'headers': HEADERS, 'body': json.dumps({'error': 'Укажите город'})}
 
             conn = get_conn()
             cur = conn.cursor()
@@ -167,14 +170,14 @@ def handler(event: dict, context) -> dict:
                             'body': json.dumps({'error': 'Этот номер телефона уже зарегистрирован. Войдите с паролем.', 'already_exists': True})}
                 if phone_row:
                     # Телефон есть, но аккаунт не завершён — обновляем
-                    cur.execute(f"UPDATE {SCHEMA}.customers SET name=%s, email=%s WHERE phone=%s", (name, email, phone))
+                    cur.execute(f"UPDATE {SCHEMA}.customers SET name=%s, email=%s, city=%s WHERE phone=%s", (name, email, city, phone))
                 else:
                     cur.execute(
-                        f"INSERT INTO {SCHEMA}.customers (name, phone, email, email_verified) VALUES (%s,%s,%s,FALSE) RETURNING id",
-                        (name, phone, email)
+                        f"INSERT INTO {SCHEMA}.customers (name, phone, email, city, email_verified) VALUES (%s,%s,%s,%s,FALSE) RETURNING id",
+                        (name, phone, email, city)
                     )
             else:
-                cur.execute(f"UPDATE {SCHEMA}.customers SET name=%s, phone=%s WHERE email=%s", (name, phone, email))
+                cur.execute(f"UPDATE {SCHEMA}.customers SET name=%s, phone=%s, city=%s WHERE email=%s", (name, phone, city, email))
 
             # Генерируем 6-значный код и сохраняем в auth_codes
             code = str(random.randint(100000, 999999))
@@ -325,9 +328,9 @@ def handler(event: dict, context) -> dict:
             conn = get_conn()
             cur = conn.cursor()
             if '@' in identifier:
-                cur.execute(f"SELECT id, name, phone, email, password_hash, email_verified FROM {SCHEMA}.customers WHERE email=%s", (identifier.lower(),))
+                cur.execute(f"SELECT id, name, phone, email, city, password_hash, email_verified FROM {SCHEMA}.customers WHERE email=%s", (identifier.lower(),))
             else:
-                cur.execute(f"SELECT id, name, phone, email, password_hash, email_verified FROM {SCHEMA}.customers WHERE phone=%s", (identifier,))
+                cur.execute(f"SELECT id, name, phone, email, city, password_hash, email_verified FROM {SCHEMA}.customers WHERE phone=%s", (identifier,))
             row = cur.fetchone()
             cur.close(); conn.close()
             if not row:
@@ -346,7 +349,7 @@ def handler(event: dict, context) -> dict:
             return {'statusCode': 200, 'headers': HEADERS,
                     'body': json.dumps({'success': True,
                                         'user': {'id': row['id'], 'name': row['name'],
-                                                 'phone': row['phone'], 'email': row['email'] or ''},
+                                                 'phone': row['phone'], 'email': row['email'] or '', 'city': row.get('city') or ''},
                                         'master_phone': master_row['phone'] if master_row else None})}
 
         if action == 'delete_order':
@@ -426,6 +429,33 @@ def handler(event: dict, context) -> dict:
             cur.close(); conn.close()
             return {'statusCode': 200, 'headers': HEADERS, 'body': json.dumps({'success': True})}
 
+        if action == 'update_profile':
+            customer_id = body.get('customer_id')
+            name = (body.get('name') or '').strip()
+            phone = (body.get('phone') or '').strip()
+            email = (body.get('email') or '').strip().lower()
+            city = (body.get('city') or '').strip()
+            if not customer_id:
+                return {'statusCode': 400, 'headers': HEADERS, 'body': json.dumps({'error': 'Не авторизован'})}
+            if not name:
+                return {'statusCode': 400, 'headers': HEADERS, 'body': json.dumps({'error': 'Укажите имя'})}
+            conn = get_conn()
+            cur = conn.cursor()
+            cur.execute(
+                f"UPDATE {SCHEMA}.customers SET name=%s, phone=%s, email=%s, city=%s WHERE id=%s "
+                f"RETURNING id, name, phone, email, city",
+                (name, phone, email, city, int(customer_id))
+            )
+            row = cur.fetchone()
+            conn.commit()
+            cur.close(); conn.close()
+            if not row:
+                return {'statusCode': 404, 'headers': HEADERS, 'body': json.dumps({'error': 'Пользователь не найден'})}
+            return {'statusCode': 200, 'headers': HEADERS, 'body': json.dumps({
+                'success': True,
+                'customer': {'id': row['id'], 'name': row['name'], 'phone': row['phone'], 'email': row.get('email') or '', 'city': row.get('city') or ''}
+            })}
+
         if action == 'review':
             customer_id = body.get('customer_id')
             order_id = body.get('order_id')
@@ -488,7 +518,7 @@ def handler(event: dict, context) -> dict:
         orders_data = get_orders(cur, customer_id=customer['id'])
         cur.close(); conn.close()
         return {'statusCode': 200, 'headers': HEADERS,
-                'body': json.dumps({'customer': {'id': customer['id'], 'name': customer['name'], 'phone': customer['phone'], 'email': customer.get('email') or ''}, 'orders': orders_data}, ensure_ascii=False)}
+                'body': json.dumps({'customer': {'id': customer['id'], 'name': customer['name'], 'phone': customer['phone'], 'email': customer.get('email') or '', 'city': customer.get('city') or ''}, 'orders': orders_data}, ensure_ascii=False)}
 
     if method == 'GET':
         params = event.get('queryStringParameters') or {}
@@ -506,7 +536,7 @@ def handler(event: dict, context) -> dict:
             orders_data = get_orders(cur, customer_id=customer['id'], phone=phone)
             cur.close(); conn.close()
             return {'statusCode': 200, 'headers': HEADERS,
-                    'body': json.dumps({'customer': {'id': customer['id'], 'name': customer['name'], 'phone': customer['phone'], 'email': customer.get('email') or ''}, 'orders': orders_data}, ensure_ascii=False)}
+                    'body': json.dumps({'customer': {'id': customer['id'], 'name': customer['name'], 'phone': customer['phone'], 'email': customer.get('email') or '', 'city': customer.get('city') or ''}, 'orders': orders_data}, ensure_ascii=False)}
         orders_data = get_orders(cur, phone=phone)
         cur.close(); conn.close()
         return {'statusCode': 200, 'headers': HEADERS, 'body': json.dumps({'orders': orders_data}, ensure_ascii=False)}

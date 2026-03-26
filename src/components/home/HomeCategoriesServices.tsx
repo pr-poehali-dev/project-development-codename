@@ -61,6 +61,7 @@ interface HomeCategoriesServicesProps {
   setOrderForm: (fn: (f: { title: string; description: string; category: string; city: string; budget: string; contact_name: string; contact_phone: string; contact_email: string }) => { title: string; description: string; category: string; city: string; budget: string; contact_name: string; contact_phone: string; contact_email: string }) => void;
   setOrderModalOpen: (v: boolean) => void;
   isMaster?: boolean;
+  heroSearchQuery?: string;
 }
 
 const HomeCategoriesServices = ({
@@ -73,9 +74,14 @@ const HomeCategoriesServices = ({
   setOrderForm,
   setOrderModalOpen,
   isMaster = false,
+  heroSearchQuery = "",
 }: HomeCategoriesServicesProps) => {
   const [searchQuery, setSearchQuery] = React.useState("");
   const [visibleCount, setVisibleCount] = React.useState(20);
+
+  React.useEffect(() => {
+    if (heroSearchQuery) setSearchQuery(heroSearchQuery);
+  }, [heroSearchQuery]);
   const q = searchQuery.trim().toLowerCase();
   const filtered = q
     ? services.filter(s =>
@@ -121,7 +127,7 @@ const HomeCategoriesServices = ({
       </section>
 
       {/* Карточки услуг */}
-      <section className="pb-20 px-4">
+      <section id="services-section" className="pb-20 px-4">
         <div className="max-w-7xl mx-auto">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
             <div className="flex items-center gap-4 flex-wrap">

@@ -45,6 +45,7 @@ interface Customer {
   name: string;
   phone: string;
   email: string;
+  city?: string;
 }
 
 export default function Cabinet() {
@@ -61,6 +62,7 @@ export default function Cabinet() {
   const [loginName, setLoginName] = useState("");
   const [loginPhone, setLoginPhone] = useState("");
   const [loginEmail, setLoginEmail] = useState("");
+  const [loginCity, setLoginCity] = useState("");
   const [regCode, setRegCode] = useState("");
   const [regPassword, setRegPassword] = useState("");
   const [regPasswordConfirm, setRegPasswordConfirm] = useState("");
@@ -92,6 +94,16 @@ export default function Cabinet() {
   const [pwError, setPwError] = useState("");
   const [pwSuccess, setPwSuccess] = useState("");
 
+  // Редактирование профиля
+  const [showEditProfile, setShowEditProfile] = useState(false);
+  const [editName, setEditName] = useState("");
+  const [editPhone, setEditPhone] = useState("");
+  const [editEmail, setEditEmail] = useState("");
+  const [editCity, setEditCity] = useState("");
+  const [editLoading, setEditLoading] = useState(false);
+  const [editError, setEditError] = useState("");
+  const [editSuccess, setEditSuccess] = useState("");
+
   useEffect(() => {
     const saved = localStorage.getItem("customer_phone");
     if (saved) loadProfile(saved);
@@ -114,6 +126,10 @@ export default function Cabinet() {
         setCustomer(parsed.customer);
         setOrders(parsed.orders || []);
         localStorage.setItem("customer_phone", parsed.customer.phone);
+        setEditName(parsed.customer.name || "");
+        setEditPhone(parsed.customer.phone || "");
+        setEditEmail(parsed.customer.email || "");
+        setEditCity(parsed.customer.city || "");
       }
     } finally {
       setLoading(false);
@@ -151,7 +167,7 @@ export default function Cabinet() {
       const res = await fetch(AUTH_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "register", email: loginEmail, phone: loginPhone, name: loginName }),
+        body: JSON.stringify({ action: "register", email: loginEmail, phone: loginPhone, name: loginName, city: loginCity }),
       });
       const data = await res.json();
       const parsed = typeof data === "string" ? JSON.parse(data) : data;
@@ -356,6 +372,28 @@ export default function Cabinet() {
     }
   };
 
+  const handleSaveProfile = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!customer) return;
+    setEditLoading(true); setEditError(""); setEditSuccess("");
+    try {
+      const res = await fetch(MY_ORDERS_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "update_profile", customer_id: customer.id, name: editName, phone: editPhone, email: editEmail, city: editCity }),
+      });
+      const data = await res.json();
+      const d = typeof data === "string" ? JSON.parse(data) : data;
+      if (d.error) { setEditError(d.error); return; }
+      if (d.success && d.customer) {
+        setCustomer(d.customer);
+        localStorage.setItem("customer_phone", d.customer.phone);
+        setEditSuccess("Профиль сохранён!");
+        setTimeout(() => setEditSuccess(""), 3000);
+      }
+    } finally { setEditLoading(false); }
+  };
+
   const handleChangePassword = async (e: React.FormEvent) => {
     e.preventDefault();
     if (pwNew !== pwConfirm) { setPwError("Пароли не совпадают"); return; }
@@ -388,6 +426,7 @@ export default function Cabinet() {
         loginName={loginName} setLoginName={setLoginName}
         loginPhone={loginPhone} setLoginPhone={setLoginPhone}
         loginEmail={loginEmail} setLoginEmail={setLoginEmail}
+        loginCity={loginCity} setLoginCity={setLoginCity}
         regCode={regCode} setRegCode={setRegCode}
         regPassword={regPassword} setRegPassword={setRegPassword}
         regPasswordConfirm={regPasswordConfirm} setRegPasswordConfirm={setRegPasswordConfirm}
@@ -429,6 +468,13 @@ export default function Cabinet() {
         onChangePassword={handleChangePassword}
         onLogout={handleLogout}
         onCreateOrder={() => setOrderModalOpen(true)}
+        showEditProfile={showEditProfile} setShowEditProfile={setShowEditProfile}
+        editName={editName} setEditName={setEditName}
+        editPhone={editPhone} setEditPhone={setEditPhone}
+        editEmail={editEmail} setEditEmail={setEditEmail}
+        editCity={editCity} setEditCity={setEditCity}
+        editLoading={editLoading} editError={editError} editSuccess={editSuccess}
+        onSaveProfile={handleSaveProfile}
       />
       <OrderModal
         orderModalOpen={orderModalOpen}
