@@ -834,6 +834,32 @@ def handler(event: dict, context) -> dict:
         cur.close(); conn.close()
         return {'statusCode': 200, 'headers': HEADERS, 'body': json.dumps({'success': True})}
 
+    # GET: быстрая проверка непрочитанных обращений для polling
+    if method == 'GET' and params.get('action') == 'unread' and params.get('master_id'):
+        master_id = int(params['master_id'])
+        conn = get_conn()
+        cur = conn.cursor()
+        cur.execute(f"SELECT COUNT(*) as cnt FROM {SCHEMA}.master_inquiries WHERE master_id=%s AND is_read=FALSE", (master_id,))
+        row = cur.fetchone()
+        # Также получаем новые обращения (последние 50)
+        cur.execute(
+            f"SELECT id, service_id, contact_name, contact_phone, contact_email, message, is_read, created_at "
+            f"FROM {SCHEMA}.master_inquiries WHERE master_id=%s ORDER BY created_at DESC LIMIT 50",
+            (master_id,)
+        )
+        inquiries = cur.fetchall()
+        cur.close(); conn.close()
+        return {'statusCode': 200, 'headers': HEADERS, 'body': json.dumps({
+            'unread_inquiries': int(row['cnt']),
+            'inquiries': [{
+                'id': i['id'], 'service_id': i['service_id'],
+                'contact_name': i['contact_name'], 'contact_phone': i['contact_phone'],
+                'contact_email': i['contact_email'], 'message': i['message'],
+                'is_read': i['is_read'],
+                'created_at': i['created_at'].isoformat() if i['created_at'] else None,
+            } for i in inquiries]
+        })}
+
     # GET messages для polling (мастер)
     if method == 'GET' and params.get('inquiry_id'):
         inquiry_id = int(params['inquiry_id'])

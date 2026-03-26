@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 
 const PROFILE_URL = "https://functions.poehali.dev/de274bd5-3f08-42d8-9aac-b373bb34b900";
 
@@ -117,6 +117,29 @@ export function useMasterProfile() {
     setUnreadInquiries(0);
     setInquiries(prev => prev.map(i => ({ ...i, is_read: true })));
   };
+
+  // Polling: проверяем новые обращения каждые 15 секунд
+  const masterRef = useRef<Master | null>(null);
+  masterRef.current = master;
+
+  useEffect(() => {
+    const poll = async () => {
+      const m = masterRef.current;
+      if (!m) return;
+      try {
+        const res = await fetch(`${PROFILE_URL}?action=unread&master_id=${m.id}`);
+        const data = await res.json();
+        if (typeof data.unread_inquiries === 'number') {
+          setUnreadInquiries(data.unread_inquiries);
+        }
+        if (data.inquiries) {
+          setInquiries(data.inquiries);
+        }
+      } catch { /* тихо игнорируем */ }
+    };
+    const interval = setInterval(poll, 15000);
+    return () => clearInterval(interval);
+  }, []);
 
   return {
     phone, setPhone,

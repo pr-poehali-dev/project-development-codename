@@ -54,6 +54,7 @@ export default function Cabinet() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(false);
   const [cabinetTab, setCabinetTab] = useState<"orders" | "inquiries">("orders");
+  const [inquiryCount, setInquiryCount] = useState(0);
 
   const [editFieldSetters, setEditFieldSetters] = useState<{
     setEditName: (v: string) => void;
@@ -108,6 +109,25 @@ export default function Cabinet() {
     }
     if (!orders_.orderModalOpen) { orders_.setOrderSent(false); orders_.setOrderError(""); }
   }, [orders_.orderModalOpen]);
+
+  // Polling: счётчик обращений к мастерам каждые 15 сек
+  useEffect(() => {
+    if (!customer) return;
+    const poll = async () => {
+      try {
+        const res = await fetch(MY_ORDERS_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "get_customer_inquiries", customer_email: customer.email, customer_phone: customer.phone }),
+        });
+        const data = await res.json();
+        setInquiryCount((data.inquiries || []).length);
+      } catch { /* игнорируем */ }
+    };
+    poll();
+    const interval = setInterval(poll, 15000);
+    return () => clearInterval(interval);
+  }, [customer?.id]);
 
   if (!customer && !loading) {
     return (
@@ -199,6 +219,7 @@ export default function Cabinet() {
           >
             <Icon name="MessageSquare" size={15} />
             Мои обращения
+            {inquiryCount > 0 && <span className={`text-xs px-1.5 py-0.5 rounded-md ${cabinetTab === "inquiries" ? "bg-white/20" : "bg-white/10"}`}>{inquiryCount}</span>}
           </button>
         </div>
       </div>

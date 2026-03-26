@@ -37,20 +37,23 @@ export default function CustomerInquiries({ customerName, customerEmail, custome
   const [loading, setLoading] = useState(true);
   const [chatInquiry, setChatInquiry] = useState<Inquiry | null>(null);
 
+  const loadInquiries = async (showLoader = false) => {
+    if (showLoader) setLoading(true);
+    try {
+      const res = await fetch(MY_ORDERS_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "get_customer_inquiries", customer_email: customerEmail, customer_phone: customerPhone }),
+      });
+      const data = await res.json();
+      setInquiries(data.inquiries || []);
+    } finally { if (showLoader) setLoading(false); }
+  };
+
   useEffect(() => {
-    const load = async () => {
-      setLoading(true);
-      try {
-        const res = await fetch(MY_ORDERS_URL, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ action: "get_customer_inquiries", customer_email: customerEmail, customer_phone: customerPhone }),
-        });
-        const data = await res.json();
-        setInquiries(data.inquiries || []);
-      } finally { setLoading(false); }
-    };
-    load();
+    loadInquiries(true);
+    const interval = setInterval(() => loadInquiries(false), 15000);
+    return () => clearInterval(interval);
   }, [customerEmail, customerPhone]);
 
   if (loading) return (
