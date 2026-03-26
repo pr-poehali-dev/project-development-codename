@@ -111,7 +111,7 @@ export default function Cabinet() {
 
   useEffect(() => {
     if (orderModalOpen && customer) {
-      setOrderForm(f => ({ ...f, contact_name: customer.name, contact_phone: customer.phone, contact_email: customer.email }));
+      setOrderForm(f => ({ ...f, contact_name: customer.name, contact_phone: customer.phone, contact_email: customer.email, city: f.city || customer.city || "" }));
     }
     if (!orderModalOpen) { setOrderSent(false); setOrderError(""); }
   }, [orderModalOpen]);
