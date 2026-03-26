@@ -1,8 +1,10 @@
 import { useState, useEffect } from "react";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import Icon from "@/components/ui/icon";
 
 const PROFILE_URL = "https://functions.poehali.dev/de274bd5-3f08-42d8-9aac-b373bb34b900";
+const inputCls = "w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-violet-500 transition-colors";
 
 interface Master {
   id: number;
@@ -57,6 +59,12 @@ export default function MasterPage() {
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
 
+  const [contactOpen, setContactOpen] = useState(false);
+  const [contactForm, setContactForm] = useState({ name: "", phone: "", email: "", message: "" });
+  const [contactLoading, setContactLoading] = useState(false);
+  const [contactSent, setContactSent] = useState(false);
+  const [contactError, setContactError] = useState("");
+
   useEffect(() => {
     const masterId = new URLSearchParams(window.location.search).get("id");
     if (!masterId) { setNotFound(true); setLoading(false); return; }
@@ -74,6 +82,29 @@ export default function MasterPage() {
       })
       .finally(() => setLoading(false));
   }, []);
+
+  const handleContactSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!master) return;
+    setContactLoading(true); setContactError("");
+    try {
+      const res = await fetch(PROFILE_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "contact_master",
+          master_id: master.id,
+          contact_name: contactForm.name,
+          contact_phone: contactForm.phone,
+          contact_email: contactForm.email,
+          message: contactForm.message,
+        }),
+      });
+      const data = await res.json();
+      if (data.error) { setContactError(data.error); return; }
+      setContactSent(true);
+    } finally { setContactLoading(false); }
+  };
 
   if (loading) return (
     <div className="min-h-screen bg-[#080b12] flex items-center justify-center">
@@ -188,18 +219,70 @@ export default function MasterPage() {
           </>
         )}
 
-        {/* Кнопка — оставить заявку */}
+        {/* Кнопка — написать мастеру */}
         <div className="bg-gradient-to-r from-violet-600/15 to-indigo-600/10 border border-violet-500/20 rounded-2xl p-5 mb-8 flex flex-col sm:flex-row items-center justify-between gap-4">
           <div>
             <p className="text-white font-semibold">Нужна помощь {master?.name?.split(" ")[0]}?</p>
-            <p className="text-gray-400 text-sm mt-0.5">Оставьте заявку — мастер откликнется в ближайшее время</p>
+            <p className="text-gray-400 text-sm mt-0.5">Напишите напрямую — мастер получит уведомление</p>
           </div>
-          <a href="/" className="flex-shrink-0">
-            <button className="bg-violet-600 hover:bg-violet-500 text-white px-5 py-2.5 rounded-xl text-sm font-medium transition-colors whitespace-nowrap">
-              Создать заявку
-            </button>
-          </a>
+          <Button
+            onClick={() => { setContactOpen(true); setContactSent(false); setContactError(""); }}
+            className="flex-shrink-0 bg-violet-600 hover:bg-violet-500 text-white px-5 py-2.5 rounded-xl text-sm font-medium"
+          >
+            <Icon name="MessageSquare" size={15} className="mr-2" />
+            Написать мастеру
+          </Button>
         </div>
+
+        {/* Модальное окно обращения */}
+        {contactOpen && (
+          <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center px-4" onClick={() => setContactOpen(false)}>
+            <div className="bg-[#0f1117] border border-white/10 rounded-2xl p-6 w-full max-w-md" onClick={e => e.stopPropagation()}>
+              <div className="flex items-center justify-between mb-5">
+                <div>
+                  <h3 className="text-white font-semibold">Написать {master?.name?.split(" ")[0]}</h3>
+                  <p className="text-gray-500 text-xs mt-0.5">Мастер получит email и уведомление в кабинете</p>
+                </div>
+                <button onClick={() => setContactOpen(false)} className="text-gray-500 hover:text-gray-300 transition-colors">
+                  <Icon name="X" size={18} />
+                </button>
+              </div>
+              {contactSent ? (
+                <div className="text-center py-6">
+                  <div className="w-14 h-14 rounded-full bg-emerald-600/20 flex items-center justify-center mx-auto mb-4">
+                    <Icon name="CheckCircle" size={28} className="text-emerald-400" />
+                  </div>
+                  <p className="text-white font-semibold mb-1">Сообщение отправлено!</p>
+                  <p className="text-gray-400 text-sm">Мастер получил уведомление и свяжется с вами</p>
+                  <Button onClick={() => setContactOpen(false)} className="mt-5 bg-violet-600 hover:bg-violet-500 text-white w-full">Закрыть</Button>
+                </div>
+              ) : (
+                <form onSubmit={handleContactSubmit} className="flex flex-col gap-3">
+                  <div>
+                    <label className="text-xs text-gray-400 mb-1.5 block">Ваше имя *</label>
+                    <input required value={contactForm.name} onChange={e => setContactForm(f => ({ ...f, name: e.target.value }))} placeholder="Иван Иванов" className={inputCls} />
+                  </div>
+                  <div>
+                    <label className="text-xs text-gray-400 mb-1.5 block">Телефон</label>
+                    <input type="tel" value={contactForm.phone} onChange={e => setContactForm(f => ({ ...f, phone: e.target.value }))} placeholder="+7 (999) 000-00-00" className={inputCls} />
+                  </div>
+                  <div>
+                    <label className="text-xs text-gray-400 mb-1.5 block">Email</label>
+                    <input type="email" value={contactForm.email} onChange={e => setContactForm(f => ({ ...f, email: e.target.value }))} placeholder="email@example.com" className={inputCls} />
+                  </div>
+                  <div>
+                    <label className="text-xs text-gray-400 mb-1.5 block">Сообщение *</label>
+                    <textarea required rows={3} value={contactForm.message} onChange={e => setContactForm(f => ({ ...f, message: e.target.value }))} placeholder="Что нужно сделать?" className={`${inputCls} resize-none`} />
+                  </div>
+                  {contactError && <p className="text-amber-400 text-sm">{contactError}</p>}
+                  <Button type="submit" disabled={contactLoading} className="bg-gradient-to-r from-violet-600 to-indigo-600 text-white w-full mt-1">
+                    {contactLoading ? "Отправка..." : "Отправить"}
+                  </Button>
+                </form>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* Отзывы */}
         <h2 className="text-lg font-semibold text-white mb-4">

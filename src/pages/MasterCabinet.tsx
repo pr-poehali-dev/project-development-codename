@@ -4,6 +4,7 @@ import MasterCabinetHeader from "@/pages/master-cabinet/MasterCabinetHeader";
 import MasterTabBalance from "@/pages/master-cabinet/MasterTabBalance";
 import MasterTabServices from "@/pages/master-cabinet/MasterTabServices";
 import MasterTabOther from "@/pages/master-cabinet/MasterTabOther";
+import MasterTabInquiries from "@/pages/master-cabinet/MasterTabInquiries";
 
 const PROFILE_URL = "https://functions.poehali.dev/de274bd5-3f08-42d8-9aac-b373bb34b900";
 const PACKAGES_URL = "https://functions.poehali.dev/a097fcb4-fb63-44d8-9784-e4fa20009cb4";
@@ -61,6 +62,17 @@ interface Package {
   price: number;
 }
 
+interface Inquiry {
+  id: number;
+  service_id: number | null;
+  contact_name: string;
+  contact_phone: string | null;
+  contact_email: string | null;
+  message: string;
+  is_read: boolean;
+  created_at: string;
+}
+
 export default function MasterCabinet() {
   const [phone, setPhone] = useState("");
   const [inputPhone, setInputPhone] = useState("");
@@ -78,9 +90,11 @@ export default function MasterCabinet() {
   const [checkoutPaymentId, setCheckoutPaymentId] = useState<number | null>(null);
   const initialTab = new URLSearchParams(window.location.search).get("tab");
   const initialPaymentId = new URLSearchParams(window.location.search).get("payment_id");
-  const [tab, setTab] = useState<"balance" | "history" | "responses" | "services" | "profile">(
-    initialTab === "services" || initialTab === "responses" || initialTab === "history" || initialTab === "profile" ? initialTab as "services" | "responses" | "history" | "profile" : "balance"
+  const [tab, setTab] = useState<"balance" | "history" | "responses" | "services" | "profile" | "inquiries">(
+    initialTab === "services" || initialTab === "responses" || initialTab === "history" || initialTab === "profile" || initialTab === "inquiries" ? initialTab as "services" | "responses" | "history" | "profile" | "inquiries" : "balance"
   );
+  const [inquiries, setInquiries] = useState<Inquiry[]>([]);
+  const [unreadInquiries, setUnreadInquiries] = useState(0);
 
   // Смена пароля
   const [pwOld, setPwOld] = useState("");
@@ -159,6 +173,8 @@ export default function MasterCabinet() {
         setTransactions(data.transactions || []);
         setMyResponses(data.my_responses || []);
         setMyServices(data.my_services || []);
+        setInquiries(data.inquiries || []);
+        setUnreadInquiries(data.unread_inquiries || 0);
         localStorage.setItem("master_phone", p);
         setEditName(data.master?.name || "");
         setEditCity(data.master?.city || "");
@@ -424,9 +440,17 @@ export default function MasterCabinet() {
       <MasterCabinetHeader
         master={master!}
         tab={tab}
-        setTab={setTab}
+        setTab={(t) => {
+          setTab(t);
+          if (t === "inquiries" && unreadInquiries > 0) {
+            fetch(PROFILE_URL, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "read_inquiries", master_id: master?.id }) });
+            setUnreadInquiries(0);
+            setInquiries(prev => prev.map(i => ({ ...i, is_read: true })));
+          }
+        }}
         myServices={myServices}
         myResponses={myResponses}
+        unreadInquiries={unreadInquiries}
         buySuccess={buySuccess}
         serviceSuccess={serviceSuccess}
         serviceError={serviceError}
@@ -462,6 +486,10 @@ export default function MasterCabinet() {
             onUpdateService={handleUpdateService}
             onDeleteService={handleDeleteService}
           />
+        )}
+
+        {tab === "inquiries" && (
+          <MasterTabInquiries inquiries={inquiries} />
         )}
 
         {(tab === "responses" || tab === "history" || tab === "profile") && (

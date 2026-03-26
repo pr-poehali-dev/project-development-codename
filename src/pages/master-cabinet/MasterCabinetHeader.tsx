@@ -10,7 +10,7 @@ interface Master {
   created_at: string;
 }
 
-type Tab = "balance" | "history" | "responses" | "services" | "profile";
+type Tab = "balance" | "history" | "responses" | "services" | "profile" | "inquiries";
 
 interface MasterCabinetHeaderProps {
   master: Master;
@@ -18,6 +18,7 @@ interface MasterCabinetHeaderProps {
   setTab: (t: Tab) => void;
   myServices: { id: number }[];
   myResponses: { id: number }[];
+  unreadInquiries?: number;
   buySuccess: string;
   serviceSuccess: string;
   serviceError: string;
@@ -30,6 +31,7 @@ export default function MasterCabinetHeader({
   setTab,
   myServices,
   myResponses,
+  unreadInquiries = 0,
   buySuccess,
   serviceSuccess,
   serviceError,
@@ -97,7 +99,7 @@ export default function MasterCabinetHeader({
         )}
 
         {/* Вкладки */}
-        <div className="grid grid-cols-5 gap-1 bg-white/4 rounded-xl p-1 mb-6">
+        <div className="grid grid-cols-6 gap-1 bg-white/4 rounded-xl p-1 mb-6">
           <button onClick={() => setTab("balance")} className={`py-2 rounded-lg text-xs font-medium transition-all ${tab === "balance" ? "bg-violet-600 text-white" : "text-gray-400 hover:text-white"}`}>
             Баланс
           </button>
@@ -108,6 +110,10 @@ export default function MasterCabinetHeader({
           <button onClick={() => setTab("responses")} className={`py-2 rounded-lg text-xs font-medium transition-all flex items-center justify-center gap-1 ${tab === "responses" ? "bg-violet-600 text-white" : "text-gray-400 hover:text-white"}`}>
             Отклики
             {myResponses.length > 0 && <span className={`text-[10px] px-1 py-0.5 rounded ${tab === "responses" ? "bg-white/20" : "bg-white/10"}`}>{myResponses.length}</span>}
+          </button>
+          <button onClick={() => setTab("inquiries")} className={`py-2 rounded-lg text-xs font-medium transition-all flex items-center justify-center gap-1 ${tab === "inquiries" ? "bg-violet-600 text-white" : "text-gray-400 hover:text-white"}`}>
+            Клиенты
+            {unreadInquiries > 0 && <span className="text-[10px] px-1 py-0.5 rounded bg-amber-500 text-white">{unreadInquiries}</span>}
           </button>
           <button onClick={() => setTab("history")} className={`py-2 rounded-lg text-xs font-medium transition-all ${tab === "history" ? "bg-violet-600 text-white" : "text-gray-400 hover:text-white"}`}>
             История

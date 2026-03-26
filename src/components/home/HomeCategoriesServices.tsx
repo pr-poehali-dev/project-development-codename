@@ -64,6 +64,9 @@ interface HomeCategoriesServicesProps {
   heroSearchQuery?: string;
 }
 
+const PROFILE_URL = "https://functions.poehali.dev/de274bd5-3f08-42d8-9aac-b373bb34b900";
+const inputCls = "w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-violet-500 transition-colors";
+
 const HomeCategoriesServices = ({
   activeCategory,
   selectedCity,
@@ -78,6 +81,36 @@ const HomeCategoriesServices = ({
 }: HomeCategoriesServicesProps) => {
   const [searchQuery, setSearchQuery] = React.useState("");
   const [visibleCount, setVisibleCount] = React.useState(20);
+
+  const [contactMaster, setContactMaster] = React.useState<{ id: number; name: string; serviceId?: number } | null>(null);
+  const [contactForm, setContactForm] = React.useState({ name: "", phone: "", email: "", message: "" });
+  const [contactLoading, setContactLoading] = React.useState(false);
+  const [contactSent, setContactSent] = React.useState(false);
+  const [contactError, setContactError] = React.useState("");
+
+  const handleContactSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!contactMaster) return;
+    setContactLoading(true); setContactError("");
+    try {
+      const res = await fetch(PROFILE_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "contact_master",
+          master_id: contactMaster.id,
+          service_id: contactMaster.serviceId,
+          contact_name: contactForm.name,
+          contact_phone: contactForm.phone,
+          contact_email: contactForm.email,
+          message: contactForm.message,
+        }),
+      });
+      const data = await res.json();
+      if (data.error) { setContactError(data.error); return; }
+      setContactSent(true);
+    } finally { setContactLoading(false); }
+  };
 
   React.useEffect(() => {
     if (heroSearchQuery) setSearchQuery(heroSearchQuery);
@@ -261,12 +294,14 @@ const HomeCategoriesServices = ({
                       size="sm"
                       className="w-full bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white text-xs rounded-lg h-7"
                       onClick={() => {
-                        setOrderForm(f => ({ ...f, category: service.category, city: service.city || "" }));
-                        setOrderModalOpen(true);
+                        setContactMaster({ id: service.master_id, name: service.master_name, serviceId: service.id });
+                        setContactForm({ name: "", phone: "", email: "", message: "" });
+                        setContactSent(false);
+                        setContactError("");
                       }}
                     >
-                      <Icon name="Send" size={11} className="mr-1" />
-                      Оставить заявку
+                      <Icon name="MessageSquare" size={11} className="mr-1" />
+                      Написать мастеру
                     </Button>
                   )}
                 </div>
@@ -287,6 +322,56 @@ const HomeCategoriesServices = ({
           )}
         </div>
       </section>
+
+      {/* Модальное окно: написать мастеру */}
+      {contactMaster && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center px-4" onClick={() => setContactMaster(null)}>
+          <div className="bg-[#0f1117] border border-white/10 rounded-2xl p-6 w-full max-w-md" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-5">
+              <div>
+                <h3 className="text-white font-semibold">Написать {contactMaster.name}</h3>
+                <p className="text-gray-500 text-xs mt-0.5">Мастер получит email и уведомление в кабинете</p>
+              </div>
+              <button onClick={() => setContactMaster(null)} className="text-gray-500 hover:text-gray-300 transition-colors">
+                <Icon name="X" size={18} />
+              </button>
+            </div>
+            {contactSent ? (
+              <div className="text-center py-6">
+                <div className="w-14 h-14 rounded-full bg-emerald-600/20 flex items-center justify-center mx-auto mb-4">
+                  <Icon name="CheckCircle" size={28} className="text-emerald-400" />
+                </div>
+                <p className="text-white font-semibold mb-1">Сообщение отправлено!</p>
+                <p className="text-gray-400 text-sm">Мастер получил уведомление и свяжется с вами</p>
+                <Button onClick={() => setContactMaster(null)} className="mt-5 bg-violet-600 hover:bg-violet-500 text-white w-full">Закрыть</Button>
+              </div>
+            ) : (
+              <form onSubmit={handleContactSubmit} className="flex flex-col gap-3">
+                <div>
+                  <label className="text-xs text-gray-400 mb-1.5 block">Ваше имя *</label>
+                  <input required value={contactForm.name} onChange={e => setContactForm(f => ({ ...f, name: e.target.value }))} placeholder="Иван Иванов" className={inputCls} />
+                </div>
+                <div>
+                  <label className="text-xs text-gray-400 mb-1.5 block">Телефон</label>
+                  <input type="tel" value={contactForm.phone} onChange={e => setContactForm(f => ({ ...f, phone: e.target.value }))} placeholder="+7 (999) 000-00-00" className={inputCls} />
+                </div>
+                <div>
+                  <label className="text-xs text-gray-400 mb-1.5 block">Email</label>
+                  <input type="email" value={contactForm.email} onChange={e => setContactForm(f => ({ ...f, email: e.target.value }))} placeholder="email@example.com" className={inputCls} />
+                </div>
+                <div>
+                  <label className="text-xs text-gray-400 mb-1.5 block">Сообщение *</label>
+                  <textarea required rows={3} value={contactForm.message} onChange={e => setContactForm(f => ({ ...f, message: e.target.value }))} placeholder="Что нужно сделать?" className={`${inputCls} resize-none`} />
+                </div>
+                {contactError && <p className="text-amber-400 text-sm">{contactError}</p>}
+                <Button type="submit" disabled={contactLoading} className="bg-gradient-to-r from-violet-600 to-indigo-600 text-white w-full mt-1">
+                  {contactLoading ? "Отправка..." : "Отправить"}
+                </Button>
+              </form>
+            )}
+          </div>
+        </div>
+      )}
     </>
   );
 };

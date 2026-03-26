@@ -94,6 +94,40 @@ def send_code_email(to_email: str, code: str):
         server.sendmail(user, to_email, msg.as_string())
 
 
+def send_inquiry_email(to_email: str, master_name: str, from_name: str, from_phone: str, from_email: str, message: str):
+    host = os.environ['SMTP_HOST']
+    port = int(os.environ['SMTP_PORT'])
+    user = os.environ['SMTP_USER']
+    pw = os.environ['SMTP_PASS']
+    msg = MIMEMultipart('alternative')
+    msg['Subject'] = f'Новое обращение от {from_name} — HandyMan'
+    msg['From'] = f'HandyMan <{user}>'
+    msg['To'] = to_email
+    contact_lines = ""
+    if from_phone:
+        contact_lines += f'<p style="margin:4px 0;color:#d1d5db;font-size:14px;">📞 Телефон: <a href="tel:{from_phone}" style="color:#a78bfa;">{from_phone}</a></p>'
+    if from_email:
+        contact_lines += f'<p style="margin:4px 0;color:#d1d5db;font-size:14px;">✉️ Email: <a href="mailto:{from_email}" style="color:#a78bfa;">{from_email}</a></p>'
+    html = f"""
+    <div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:32px;background:#0a0d16;border-radius:16px;">
+      <h2 style="color:#fff;margin-bottom:4px;">HandyMan</h2>
+      <p style="color:#9ca3af;font-size:14px;margin-bottom:20px;">Привет, {master_name}! Вам написал новый клиент.</p>
+      <div style="background:#1e1b4b;border:1px solid #4c1d95;border-radius:12px;padding:20px;margin-bottom:20px;">
+        <p style="color:#a78bfa;font-weight:600;font-size:16px;margin:0 0 12px 0;">{from_name}</p>
+        {contact_lines}
+        <p style="color:#e5e7eb;font-size:14px;margin:12px 0 0 0;border-top:1px solid #3730a3;padding-top:12px;">«{message}»</p>
+      </div>
+      <p style="color:#6b7280;font-size:12px;">Войдите в кабинет мастера на HandyMan, чтобы ответить клиенту.</p>
+    </div>
+    """
+    msg.attach(MIMEText(f'Новое обращение от {from_name}\nТелефон: {from_phone}\nEmail: {from_email}\n\n{message}', 'plain'))
+    msg.attach(MIMEText(html, 'html'))
+    ctx = ssl.create_default_context()
+    with smtplib.SMTP_SSL(host, port, context=ctx) as server:
+        server.login(user, pw)
+        server.sendmail(user, to_email, msg.as_string())
+
+
 def master_to_dict(m):
     cats = m['categories'] if m['categories'] else []
     if not cats and m['category']:
@@ -286,6 +320,53 @@ def handler(event: dict, context) -> dict:
                     'body': json.dumps({'success': True,
                                         'user': {'id': user_row['id'], 'name': user_row['name'],
                                                  'phone': user_row['phone'], 'email': user_row['email'] or ''}})}
+
+        # ── ПРЯМОЕ ОБРАЩЕНИЕ К МАСТЕРУ ──
+        if body_raw.get('action') == 'contact_master':
+            master_id = body_raw.get('master_id')
+            service_id = body_raw.get('service_id')
+            contact_name = (body_raw.get('contact_name') or '').strip()
+            contact_phone = (body_raw.get('contact_phone') or '').strip()
+            contact_email = (body_raw.get('contact_email') or '').strip().lower()
+            message = (body_raw.get('message') or '').strip()
+            if not master_id:
+                return {'statusCode': 400, 'headers': HEADERS, 'body': json.dumps({'error': 'Не указан мастер'})}
+            if not contact_name:
+                return {'statusCode': 400, 'headers': HEADERS, 'body': json.dumps({'error': 'Укажите ваше имя'})}
+            if not message:
+                return {'statusCode': 400, 'headers': HEADERS, 'body': json.dumps({'error': 'Напишите сообщение'})}
+            conn = get_conn()
+            cur = conn.cursor()
+            cur.execute(f"SELECT name, email FROM {SCHEMA}.masters WHERE id=%s", (int(master_id),))
+            master_row = cur.fetchone()
+            if not master_row:
+                cur.close(); conn.close()
+                return {'statusCode': 404, 'headers': HEADERS, 'body': json.dumps({'error': 'Мастер не найден'})}
+            cur.execute(
+                f"INSERT INTO {SCHEMA}.master_inquiries (master_id, service_id, contact_name, contact_phone, contact_email, message) VALUES (%s, %s, %s, %s, %s, %s) RETURNING id",
+                (int(master_id), int(service_id) if service_id else None, contact_name, contact_phone or None, contact_email or None, message)
+            )
+            inquiry_id = cur.fetchone()['id']
+            conn.commit()
+            cur.close(); conn.close()
+            if master_row['email']:
+                try:
+                    send_inquiry_email(master_row['email'], master_row['name'], contact_name, contact_phone, contact_email, message)
+                except Exception:
+                    pass
+            return {'statusCode': 200, 'headers': HEADERS, 'body': json.dumps({'success': True, 'id': inquiry_id})}
+
+        # ── ПОМЕТИТЬ ОБРАЩЕНИЯ КАК ПРОЧИТАННЫЕ ──
+        if body_raw.get('action') == 'read_inquiries':
+            master_id = body_raw.get('master_id')
+            if not master_id:
+                return {'statusCode': 400, 'headers': HEADERS, 'body': json.dumps({'error': 'Не авторизован'})}
+            conn = get_conn()
+            cur = conn.cursor()
+            cur.execute(f"UPDATE {SCHEMA}.master_inquiries SET is_read=TRUE WHERE master_id=%s AND is_read=FALSE", (int(master_id),))
+            conn.commit()
+            cur.close(); conn.close()
+            return {'statusCode': 200, 'headers': HEADERS, 'body': json.dumps({'success': True})}
 
         # ── ОБНОВЛЕНИЕ ПРОФИЛЯ ──
         if body_raw.get('action') == 'update_profile':
@@ -827,6 +908,14 @@ def handler(event: dict, context) -> dict:
             (master['id'],)
         )
         my_services = cur.fetchall()
+        cur.execute(
+            f"SELECT id, service_id, contact_name, contact_phone, contact_email, message, is_read, created_at "
+            f"FROM {SCHEMA}.master_inquiries WHERE master_id = %s ORDER BY created_at DESC LIMIT 50",
+            (master['id'],)
+        )
+        inquiries = cur.fetchall()
+        cur.execute(f"SELECT COUNT(*) as cnt FROM {SCHEMA}.master_inquiries WHERE master_id=%s AND is_read=FALSE", (master['id'],))
+        unread_inquiries = cur.fetchone()['cnt']
         cur.close(); conn.close()
 
         return {
@@ -836,6 +925,17 @@ def handler(event: dict, context) -> dict:
                 'master': master_to_dict(master),
                 'rating': float(stats['avg']) if stats['avg'] else None,
                 'reviews_total': stats['cnt'],
+                'unread_inquiries': int(unread_inquiries),
+                'inquiries': [{
+                    'id': i['id'],
+                    'service_id': i['service_id'],
+                    'contact_name': i['contact_name'],
+                    'contact_phone': i['contact_phone'],
+                    'contact_email': i['contact_email'],
+                    'message': i['message'],
+                    'is_read': i['is_read'],
+                    'created_at': i['created_at'].isoformat() if i['created_at'] else None,
+                } for i in inquiries],
                 'transactions': [{
                     'id': t['id'], 'type': t['type'], 'amount': t['amount'],
                     'description': t['description'],
