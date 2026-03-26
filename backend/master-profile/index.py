@@ -94,6 +94,34 @@ def send_code_email(to_email: str, code: str):
         server.sendmail(user, to_email, msg.as_string())
 
 
+def send_chat_notification_email(to_email: str, to_name: str, from_name: str, text: str, cabinet_url: str):
+    host = os.environ['SMTP_HOST']
+    port = int(os.environ['SMTP_PORT'])
+    user = os.environ['SMTP_USER']
+    pw = os.environ['SMTP_PASS']
+    msg = MIMEMultipart('alternative')
+    msg['Subject'] = f'Новое сообщение от {from_name} — HandyMan'
+    msg['From'] = f'HandyMan <{user}>'
+    msg['To'] = to_email
+    html = f"""
+    <div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:32px;background:#0a0d16;border-radius:16px;">
+      <h2 style="color:#fff;margin-bottom:4px;">HandyMan</h2>
+      <p style="color:#9ca3af;font-size:14px;margin-bottom:20px;">Привет, {to_name}! Мастер {from_name} написал вам:</p>
+      <div style="background:#1e1b4b;border:1px solid #4c1d95;border-radius:12px;padding:20px;margin-bottom:20px;">
+        <p style="color:#e5e7eb;font-size:14px;margin:0;">«{text}»</p>
+      </div>
+      <a href="{cabinet_url}" style="display:inline-block;background:#7c3aed;color:#fff;padding:12px 24px;border-radius:10px;text-decoration:none;font-size:14px;font-weight:600;">Открыть кабинет</a>
+      <p style="color:#6b7280;font-size:12px;margin-top:20px;">Войдите в кабинет HandyMan, чтобы ответить мастеру.</p>
+    </div>
+    """
+    msg.attach(MIMEText(f'Сообщение от мастера {from_name}:\n\n{text}\n\nОткрыть кабинет: {cabinet_url}', 'plain'))
+    msg.attach(MIMEText(html, 'html'))
+    ctx = ssl.create_default_context()
+    with smtplib.SMTP_SSL(host, port, context=ctx) as server:
+        server.login(user, pw)
+        server.sendmail(user, to_email, msg.as_string())
+
+
 def send_inquiry_email(to_email: str, master_name: str, from_name: str, from_phone: str, from_email: str, message: str):
     host = os.environ['SMTP_HOST']
     port = int(os.environ['SMTP_PORT'])
@@ -371,7 +399,24 @@ def handler(event: dict, context) -> dict:
             )
             row = cur.fetchone()
             conn.commit()
+            # Отправляем email заказчику
+            cur.execute(
+                f"SELECT contact_name, contact_email FROM {SCHEMA}.master_inquiries WHERE id = %s",
+                (int(inquiry_id),)
+            )
+            inq = cur.fetchone()
             cur.close(); conn.close()
+            if inq and inq['contact_email']:
+                try:
+                    send_chat_notification_email(
+                        to_email=inq['contact_email'],
+                        to_name=inq['contact_name'],
+                        from_name=sender_name,
+                        text=text,
+                        cabinet_url='https://handyman.poehali.dev/cabinet'
+                    )
+                except Exception:
+                    pass
             return {'statusCode': 200, 'headers': HEADERS, 'body': json.dumps({
                 'success': True,
                 'message': {'id': row['id'], 'inquiry_id': int(inquiry_id), 'sender_role': 'master', 'sender_name': sender_name, 'text': text, 'created_at': row['created_at'].isoformat()}

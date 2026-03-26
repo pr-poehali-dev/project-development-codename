@@ -38,6 +38,34 @@ def verify_password(password: str, stored_hash: str) -> bool:
     return hashlib.sha256((salt + password).encode()).hexdigest() == h
 
 
+def send_chat_email(to_email: str, to_name: str, from_name: str, text: str, cabinet_url: str):
+    host = os.environ['SMTP_HOST']
+    port = int(os.environ['SMTP_PORT'])
+    user = os.environ['SMTP_USER']
+    pw = os.environ['SMTP_PASS']
+    msg = MIMEMultipart('alternative')
+    msg['Subject'] = f'Новое сообщение от {from_name} — HandyMan'
+    msg['From'] = f'HandyMan <{user}>'
+    msg['To'] = to_email
+    html = f"""
+    <div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:32px;background:#0a0d16;border-radius:16px;">
+      <h2 style="color:#fff;margin-bottom:4px;">HandyMan</h2>
+      <p style="color:#9ca3af;font-size:14px;margin-bottom:20px;">Привет, {to_name}! Вам написал {from_name}:</p>
+      <div style="background:#1e1b4b;border:1px solid #4c1d95;border-radius:12px;padding:20px;margin-bottom:20px;">
+        <p style="color:#e5e7eb;font-size:14px;margin:0;">«{text}»</p>
+      </div>
+      <a href="{cabinet_url}" style="display:inline-block;background:#7c3aed;color:#fff;padding:12px 24px;border-radius:10px;text-decoration:none;font-size:14px;font-weight:600;">Открыть кабинет</a>
+      <p style="color:#6b7280;font-size:12px;margin-top:20px;">Войдите в кабинет HandyMan, чтобы ответить.</p>
+    </div>
+    """
+    msg.attach(MIMEText(f'Новое сообщение от {from_name}:\n\n{text}\n\nОткрыть: {cabinet_url}', 'plain'))
+    msg.attach(MIMEText(html, 'html'))
+    ctx = ssl.create_default_context()
+    with smtplib.SMTP_SSL(host, port, context=ctx) as server:
+        server.login(user, pw)
+        server.sendmail(user, to_email, msg.as_string())
+
+
 def send_code_email(to_email: str, code: str, name: str = ""):
     host = os.environ['SMTP_HOST']
     port = int(os.environ['SMTP_PORT'])
@@ -501,7 +529,27 @@ def handler(event: dict, context) -> dict:
             )
             row = cur.fetchone()
             conn.commit()
+            # Отправляем email получателю (мастеру)
+            cur.execute(
+                f"SELECT i.contact_name, i.contact_email, m.name as master_name, m.email as master_email "
+                f"FROM {SCHEMA}.master_inquiries i "
+                f"JOIN {SCHEMA}.masters m ON m.id = i.master_id "
+                f"WHERE i.id = %s",
+                (int(inquiry_id),)
+            )
+            inq = cur.fetchone()
             cur.close(); conn.close()
+            if inq and inq['master_email'] and sender_role == 'customer':
+                try:
+                    send_chat_email(
+                        to_email=inq['master_email'],
+                        to_name=inq['master_name'],
+                        from_name=sender_name,
+                        text=text,
+                        cabinet_url='https://handyman.poehali.dev/master?tab=inquiries'
+                    )
+                except Exception:
+                    pass
             return {'statusCode': 200, 'headers': HEADERS, 'body': json.dumps({
                 'success': True,
                 'message': {'id': row['id'], 'inquiry_id': int(inquiry_id), 'sender_role': sender_role, 'sender_name': sender_name, 'text': text, 'created_at': row['created_at'].isoformat()}
