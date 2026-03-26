@@ -55,6 +55,7 @@ export default function Cabinet() {
   const [loading, setLoading] = useState(false);
   const [cabinetTab, setCabinetTab] = useState<"orders" | "inquiries">("orders");
   const [inquiryCount, setInquiryCount] = useState(0);
+  const [unreadMessages, setUnreadMessages] = useState(0);
 
   const [editFieldSetters, setEditFieldSetters] = useState<{
     setEditName: (v: string) => void;
@@ -110,7 +111,7 @@ export default function Cabinet() {
     if (!orders_.orderModalOpen) { orders_.setOrderSent(false); orders_.setOrderError(""); }
   }, [orders_.orderModalOpen]);
 
-  // Polling: счётчик обращений к мастерам каждые 15 сек
+  // Polling: счётчик обращений + непрочитанных сообщений каждые 15 сек
   useEffect(() => {
     if (!customer) return;
     const poll = async () => {
@@ -121,7 +122,20 @@ export default function Cabinet() {
           body: JSON.stringify({ action: "get_customer_inquiries", customer_email: customer.email, customer_phone: customer.phone }),
         });
         const data = await res.json();
-        setInquiryCount((data.inquiries || []).length);
+        const inqs: { id: number }[] = data.inquiries || [];
+        setInquiryCount(inqs.length);
+        // Считаем непрочитанные сообщения от мастеров по всем чатам
+        let totalUnread = 0;
+        await Promise.all(inqs.map(async (inq) => {
+          try {
+            const r = await fetch(`${MY_ORDERS_URL}?inquiry_id=${inq.id}`);
+            const d = await r.json();
+            const msgs: { id: number; sender_role: string }[] = d.messages || [];
+            const lastSeen = parseInt(localStorage.getItem(`chat_last_seen_${inq.id}`) || "0", 10);
+            totalUnread += msgs.filter(m => m.sender_role === "master" && m.id > lastSeen).length;
+          } catch { /* игнор */ }
+        }));
+        setUnreadMessages(totalUnread);
       } catch { /* игнорируем */ }
     };
     poll();
@@ -219,7 +233,12 @@ export default function Cabinet() {
           >
             <Icon name="MessageSquare" size={15} />
             Мои обращения
-            {inquiryCount > 0 && <span className={`text-xs px-1.5 py-0.5 rounded-md ${cabinetTab === "inquiries" ? "bg-white/20" : "bg-white/10"}`}>{inquiryCount}</span>}
+            {unreadMessages > 0 && (
+              <span className="text-xs px-1.5 py-0.5 rounded-md bg-amber-500 text-white font-medium">{unreadMessages}</span>
+            )}
+            {unreadMessages === 0 && inquiryCount > 0 && (
+              <span className={`text-xs px-1.5 py-0.5 rounded-md ${cabinetTab === "inquiries" ? "bg-white/20" : "bg-white/10"}`}>{inquiryCount}</span>
+            )}
           </button>
         </div>
       </div>
@@ -245,6 +264,7 @@ export default function Cabinet() {
           customerName={customer!.name}
           customerEmail={customer!.email}
           customerPhone={customer!.phone}
+          onUnreadChange={(count) => { setUnreadMessages(count); setInquiryCount(prev => prev); }}
         />
       )}
     </div>

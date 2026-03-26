@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import Icon from "@/components/ui/icon";
 import ChatModal from "@/components/chat/ChatModal";
@@ -26,16 +26,31 @@ interface CustomerInquiriesProps {
   customerName: string;
   customerEmail: string;
   customerPhone: string;
+  onUnreadChange?: (count: number) => void;
 }
 
 function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString("ru-RU", { day: "numeric", month: "short", year: "numeric" });
 }
 
-export default function CustomerInquiries({ customerName, customerEmail, customerPhone }: CustomerInquiriesProps) {
+function getLastSeenKey(inquiryId: number) {
+  return `chat_last_seen_${inquiryId}`;
+}
+
+function getLastSeenMsgId(inquiryId: number): number {
+  return parseInt(localStorage.getItem(getLastSeenKey(inquiryId)) || "0", 10);
+}
+
+function setLastSeenMsgId(inquiryId: number, msgId: number) {
+  localStorage.setItem(getLastSeenKey(inquiryId), String(msgId));
+}
+
+export default function CustomerInquiries({ customerName, customerEmail, customerPhone, onUnreadChange }: CustomerInquiriesProps) {
   const [inquiries, setInquiries] = useState<Inquiry[]>([]);
   const [loading, setLoading] = useState(true);
   const [chatInquiry, setChatInquiry] = useState<Inquiry | null>(null);
+  // unread[inquiryId] = число непрочитанных сообщений от мастера
+  const [unread, setUnread] = useState<Record<number, number>>({});
 
   const loadInquiries = async (showLoader = false) => {
     if (showLoader) setLoading(true);
@@ -50,11 +65,55 @@ export default function CustomerInquiries({ customerName, customerEmail, custome
     } finally { if (showLoader) setLoading(false); }
   };
 
+  const checkUnread = useCallback(async (inquiryList: Inquiry[]) => {
+    const newUnread: Record<number, number> = {};
+    await Promise.all(inquiryList.map(async (inq) => {
+      try {
+        const res = await fetch(`${MY_ORDERS_URL}?inquiry_id=${inq.id}`);
+        const data = await res.json();
+        const messages: { id: number; sender_role: string }[] = data.messages || [];
+        const lastSeen = getLastSeenMsgId(inq.id);
+        const unreadCount = messages.filter(m => m.sender_role === "master" && m.id > lastSeen).length;
+        newUnread[inq.id] = unreadCount;
+      } catch { newUnread[inq.id] = 0; }
+    }));
+    setUnread(newUnread);
+    const total = Object.values(newUnread).reduce((a, b) => a + b, 0);
+    onUnreadChange?.(total);
+  }, [onUnreadChange]);
+
   useEffect(() => {
     loadInquiries(true);
     const interval = setInterval(() => loadInquiries(false), 15000);
     return () => clearInterval(interval);
   }, [customerEmail, customerPhone]);
+
+  useEffect(() => {
+    if (inquiries.length === 0) return;
+    checkUnread(inquiries);
+    const interval = setInterval(() => checkUnread(inquiries), 10000);
+    return () => clearInterval(interval);
+  }, [inquiries, checkUnread]);
+
+  const openChat = (inq: Inquiry) => {
+    // Помечаем все сообщения как прочитанные
+    fetch(`${MY_ORDERS_URL}?inquiry_id=${inq.id}`)
+      .then(r => r.json())
+      .then(data => {
+        const messages: { id: number }[] = data.messages || [];
+        if (messages.length > 0) {
+          const maxId = Math.max(...messages.map(m => m.id));
+          setLastSeenMsgId(inq.id, maxId);
+        }
+      });
+    setUnread(prev => {
+      const next = { ...prev, [inq.id]: 0 };
+      const total = Object.values(next).reduce((a, b) => a + b, 0);
+      onUnreadChange?.(total);
+      return next;
+    });
+    setChatInquiry(inq);
+  };
 
   if (loading) return (
     <div className="flex items-center justify-center py-16">
@@ -67,7 +126,7 @@ export default function CustomerInquiries({ customerName, customerEmail, custome
       <div className="flex items-center justify-between mb-6">
         <div>
           <h2 className="text-xl font-bold text-white">Мои обращения</h2>
-          <p className="text-gray-500 text-sm mt-0.5">Объявления мастеров, на которые вы откликнулись</p>
+          <p className="text-gray-500 text-sm mt-0.5">Мастера, которым вы написали напрямую</p>
         </div>
         {inquiries.length > 0 && (
           <span className="text-gray-500 text-sm">{inquiries.length} {inquiries.length === 1 ? "обращение" : inquiries.length < 5 ? "обращения" : "обращений"}</span>
@@ -87,58 +146,71 @@ export default function CustomerInquiries({ customerName, customerEmail, custome
         </div>
       ) : (
         <div className="space-y-3">
-          {inquiries.map((inq) => (
-            <div key={inq.id} className="bg-white/4 border border-white/8 rounded-2xl p-4 hover:border-white/12 transition-all">
-              <div className="flex items-start gap-4">
-                <a href={`/master-page?id=${inq.master_id}`} className="flex-shrink-0">
-                  <div
-                    className="w-12 h-12 rounded-xl flex items-center justify-center font-bold text-white text-lg"
-                    style={{ background: `linear-gradient(135deg, ${inq.avatar_color}, #4f46e5)` }}
-                  >
-                    {inq.master_name?.[0]?.toUpperCase()}
-                  </div>
-                </a>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-start justify-between gap-2 mb-1.5">
-                    <div>
-                      <a href={`/master-page?id=${inq.master_id}`} className="text-white font-semibold text-sm hover:text-violet-300 transition-colors">
-                        {inq.master_name}
-                      </a>
-                      <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-                        {inq.master_category && (
-                          <span className="text-violet-400 text-xs">{inq.master_category}</span>
-                        )}
-                        {inq.master_city && (
-                          <span className="text-gray-600 text-xs flex items-center gap-0.5">
-                            <Icon name="MapPin" size={10} />{inq.master_city}
+          {inquiries.map((inq) => {
+            const unreadCount = unread[inq.id] || 0;
+            return (
+              <div
+                key={inq.id}
+                className={`border rounded-2xl p-4 transition-all ${unreadCount > 0 ? "bg-violet-600/8 border-violet-500/30" : "bg-white/4 border-white/8 hover:border-white/12"}`}
+              >
+                <div className="flex items-start gap-4">
+                  <a href={`/master-page?id=${inq.master_id}`} className="flex-shrink-0">
+                    <div
+                      className="w-12 h-12 rounded-xl flex items-center justify-center font-bold text-white text-lg"
+                      style={{ background: `linear-gradient(135deg, ${inq.avatar_color}, #4f46e5)` }}
+                    >
+                      {inq.master_name?.[0]?.toUpperCase()}
+                    </div>
+                  </a>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-start justify-between gap-2 mb-1.5">
+                      <div>
+                        <a href={`/master-page?id=${inq.master_id}`} className="text-white font-semibold text-sm hover:text-violet-300 transition-colors">
+                          {inq.master_name}
+                        </a>
+                        <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                          {inq.master_category && (
+                            <span className="text-violet-400 text-xs">{inq.master_category}</span>
+                          )}
+                          {inq.master_city && (
+                            <span className="text-gray-600 text-xs flex items-center gap-0.5">
+                              <Icon name="MapPin" size={10} />{inq.master_city}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        {unreadCount > 0 && (
+                          <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-500 text-white font-medium">
+                            {unreadCount} новых
                           </span>
                         )}
+                        <span className="text-gray-600 text-xs">{formatDate(inq.created_at)}</span>
                       </div>
                     </div>
-                    <span className="text-gray-600 text-xs flex-shrink-0">{formatDate(inq.created_at)}</span>
+
+                    {inq.service_title && (
+                      <div className="flex items-center gap-1.5 mb-2">
+                        <Icon name="Briefcase" size={11} className="text-violet-400" />
+                        <span className="text-violet-300 text-xs">{inq.service_title}</span>
+                      </div>
+                    )}
+
+                    <p className="text-gray-400 text-sm leading-relaxed line-clamp-2 mb-3">«{inq.message}»</p>
+
+                    <Button
+                      size="sm"
+                      onClick={() => openChat(inq)}
+                      className={`text-xs h-8 px-4 gap-1.5 relative ${unreadCount > 0 ? "bg-amber-500 hover:bg-amber-400 text-white" : "bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white"}`}
+                    >
+                      <Icon name="MessageSquare" size={13} />
+                      {unreadCount > 0 ? `Ответил мастер (${unreadCount})` : "Чат с мастером"}
+                    </Button>
                   </div>
-
-                  {inq.service_title && (
-                    <div className="flex items-center gap-1.5 mb-2">
-                      <Icon name="Briefcase" size={11} className="text-violet-400" />
-                      <span className="text-violet-300 text-xs">{inq.service_title}</span>
-                    </div>
-                  )}
-
-                  <p className="text-gray-400 text-sm leading-relaxed line-clamp-2 mb-3">«{inq.message}»</p>
-
-                  <Button
-                    size="sm"
-                    onClick={() => setChatInquiry(inq)}
-                    className="bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white text-xs h-8 px-4 gap-1.5"
-                  >
-                    <Icon name="MessageSquare" size={13} />
-                    Чат с мастером
-                  </Button>
                 </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
 
