@@ -1,14 +1,13 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import CabinetAuth from "@/components/cabinet/CabinetAuth";
 import CabinetNav from "@/components/cabinet/CabinetNav";
 import CabinetOrderList from "@/components/cabinet/CabinetOrderList";
 import OrderModal from "@/components/home/OrderModal";
-
-const ORDERS_URL = "https://functions.poehali.dev/34db9bab-e58a-479e-b1cc-c27fb8e0b728";
+import { useCabinetAuth } from "@/pages/cabinet/useCabinetAuth";
+import { useCabinetOrders } from "@/pages/cabinet/useCabinetOrders";
+import { useCabinetProfile } from "@/pages/cabinet/useCabinetProfile";
 
 const MY_ORDERS_URL = "https://functions.poehali.dev/458454d0-900d-46a1-9bff-15ecce0839e0";
-const PROFILE_URL = "https://functions.poehali.dev/de274bd5-3f08-42d8-9aac-b373bb34b900";
-const AUTH_URL = MY_ORDERS_URL;
 
 interface Review {
   id: number;
@@ -53,70 +52,14 @@ export default function Cabinet() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(false);
 
-  // Форма входа
-  const [loginMode, setLoginMode] = useState<"login" | "register" | "reset">("login");
-  const [regStep, setRegStep] = useState<"form" | "code" | "password">("form");
-  const [resetStep, setResetStep] = useState<"email" | "code_password">("email");
-  const [loginIdentifier, setLoginIdentifier] = useState("");
-  const [loginPassword, setLoginPassword] = useState("");
-  const [loginName, setLoginName] = useState("");
-  const [loginPhone, setLoginPhone] = useState("");
-  const [loginEmail, setLoginEmail] = useState("");
-  const [loginCity, setLoginCity] = useState("");
-  const [regCode, setRegCode] = useState("");
-  const [regPassword, setRegPassword] = useState("");
-  const [regPasswordConfirm, setRegPasswordConfirm] = useState("");
-  const [resetEmail, setResetEmail] = useState("");
-  const [resetCode, setResetCode] = useState("");
-  const [resetPassword, setResetPassword] = useState("");
-  const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
-  const [loginError, setLoginError] = useState("");
-  const [loginLoading, setLoginLoading] = useState(false);
+  const [editFieldSetters, setEditFieldSetters] = useState<{
+    setEditName: (v: string) => void;
+    setEditPhone: (v: string) => void;
+    setEditEmail: (v: string) => void;
+    setEditCity: (v: string) => void;
+  } | null>(null);
 
-  // Создание заявки
-  const [orderModalOpen, setOrderModalOpen] = useState(false);
-  const [orderForm, setOrderForm] = useState({ title: "", description: "", category: "", city: "", budget: "", contact_name: "", contact_phone: "", contact_email: "" });
-  const [orderSent, setOrderSent] = useState(false);
-  const [orderLoading, setOrderLoading] = useState(false);
-  const [orderError, setOrderError] = useState("");
-
-  const [statusLoading, setStatusLoading] = useState<number | null>(null);
-  const [selectMasterLoading, setSelectMasterLoading] = useState<number | null>(null);
-
-  const [reviewSuccess, setReviewSuccess] = useState("");
-
-  // Смена пароля
-  const [showPwForm, setShowPwForm] = useState(false);
-  const [pwOld, setPwOld] = useState("");
-  const [pwNew, setPwNew] = useState("");
-  const [pwConfirm, setPwConfirm] = useState("");
-  const [pwLoading, setPwLoading] = useState(false);
-  const [pwError, setPwError] = useState("");
-  const [pwSuccess, setPwSuccess] = useState("");
-
-  // Редактирование профиля
-  const [showEditProfile, setShowEditProfile] = useState(false);
-  const [editName, setEditName] = useState("");
-  const [editPhone, setEditPhone] = useState("");
-  const [editEmail, setEditEmail] = useState("");
-  const [editCity, setEditCity] = useState("");
-  const [editLoading, setEditLoading] = useState(false);
-  const [editError, setEditError] = useState("");
-  const [editSuccess, setEditSuccess] = useState("");
-
-  useEffect(() => {
-    const saved = localStorage.getItem("customer_phone");
-    if (saved) loadProfile(saved);
-  }, []);
-
-  useEffect(() => {
-    if (orderModalOpen && customer) {
-      setOrderForm(f => ({ ...f, contact_name: customer.name, contact_phone: customer.phone, contact_email: customer.email, city: f.city || customer.city || "" }));
-    }
-    if (!orderModalOpen) { setOrderSent(false); setOrderError(""); }
-  }, [orderModalOpen]);
-
-  const loadProfile = async (phone: string) => {
+  const loadProfile = useCallback(async (phone: string) => {
     setLoading(true);
     try {
       const res = await fetch(`${MY_ORDERS_URL}?phone=${encodeURIComponent(phone)}`);
@@ -126,321 +69,69 @@ export default function Cabinet() {
         setCustomer(parsed.customer);
         setOrders(parsed.orders || []);
         localStorage.setItem("customer_phone", parsed.customer.phone);
-        setEditName(parsed.customer.name || "");
-        setEditPhone(parsed.customer.phone || "");
-        setEditEmail(parsed.customer.email || "");
-        setEditCity(parsed.customer.city || "");
+        if (editFieldSetters) {
+          editFieldSetters.setEditName(parsed.customer.name || "");
+          editFieldSetters.setEditPhone(parsed.customer.phone || "");
+          editFieldSetters.setEditEmail(parsed.customer.email || "");
+          editFieldSetters.setEditCity(parsed.customer.city || "");
+        }
       }
     } finally {
       setLoading(false);
     }
-  };
+  }, [editFieldSetters]);
 
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoginLoading(true);
-    setLoginError("");
-    try {
-      const res = await fetch(AUTH_URL, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "auth_login", email: loginIdentifier.includes("@") ? loginIdentifier : undefined, phone: !loginIdentifier.includes("@") ? loginIdentifier : undefined, password: loginPassword }),
-      });
-      const data = await res.json();
-      const parsed = typeof data === "string" ? JSON.parse(data) : data;
-      if (parsed.error) { setLoginError(parsed.error); return; }
-      if (parsed.success) {
-        localStorage.setItem("customer_phone", parsed.user.phone);
-        if (parsed.master_phone) localStorage.setItem("master_phone", parsed.master_phone);
-        await loadProfile(parsed.user.phone);
-      }
-    } finally {
-      setLoginLoading(false);
-    }
-  };
+  const auth = useCabinetAuth({ loadProfile, setCustomer, setOrders });
+  const orders_ = useCabinetOrders({ customer, orders, setOrders, loadProfile });
+  const profile = useCabinetProfile({ customer, setCustomer });
 
-  const handleRegister = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoginLoading(true);
-    setLoginError("");
-    try {
-      const res = await fetch(AUTH_URL, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "register", email: loginEmail, phone: loginPhone, name: loginName, city: loginCity }),
-      });
-      const data = await res.json();
-      const parsed = typeof data === "string" ? JSON.parse(data) : data;
-      if (parsed.error) {
-        if (parsed.already_exists) setLoginMode("login");
-        setLoginError(parsed.error);
-        return;
-      }
-      if (parsed.success) setRegStep("code");
-    } finally {
-      setLoginLoading(false);
-    }
-  };
-
-  const handleVerifyCode = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoginLoading(true);
-    setLoginError("");
-    try {
-      const res = await fetch(AUTH_URL, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "verify_code", email: loginEmail, code: regCode }),
-      });
-      const data = await res.json();
-      const parsed = typeof data === "string" ? JSON.parse(data) : data;
-      if (parsed.error) { setLoginError(parsed.error); return; }
-      if (parsed.success) setRegStep("password");
-    } finally {
-      setLoginLoading(false);
-    }
-  };
-
-  const handleSetPassword = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (regPassword !== regPasswordConfirm) { setLoginError("Пароли не совпадают"); return; }
-    if (regPassword.length < 6) { setLoginError("Пароль минимум 6 символов"); return; }
-    setLoginLoading(true); setLoginError("");
-    try {
-      const res = await fetch(AUTH_URL, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "set_password", email: loginEmail, password: regPassword }),
-      });
-      const data = await res.json();
-      const parsed = typeof data === "string" ? JSON.parse(data) : data;
-      if (parsed.error) { setLoginError(parsed.error); return; }
-      if (parsed.success) {
-        localStorage.setItem("customer_phone", parsed.user.phone);
-        await loadProfile(parsed.user.phone);
-      }
-    } finally { setLoginLoading(false); }
-  };
-
-  const handleResetRequest = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoginLoading(true); setLoginError("");
-    try {
-      const res = await fetch(AUTH_URL, { method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "reset_password_request", email: resetEmail }) });
-      const d = await res.json();
-      const parsed = typeof d === "string" ? JSON.parse(d) : d;
-      if (parsed.error) { setLoginError(parsed.error); return; }
-      if (parsed.success) setResetStep("code_password");
-    } finally { setLoginLoading(false); }
-  };
-
-  const handleResetConfirm = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (resetPassword !== resetPasswordConfirm) { setLoginError("Пароли не совпадают"); return; }
-    if (resetPassword.length < 6) { setLoginError("Пароль минимум 6 символов"); return; }
-    setLoginLoading(true); setLoginError("");
-    try {
-      const res = await fetch(AUTH_URL, { method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "reset_password_confirm", email: resetEmail, code: resetCode, password: resetPassword }) });
-      const d = await res.json();
-      const parsed = typeof d === "string" ? JSON.parse(d) : d;
-      if (parsed.error) { setLoginError(parsed.error); return; }
-      if (parsed.success) {
-        localStorage.setItem("customer_phone", parsed.user.phone);
-        await loadProfile(parsed.user.phone);
-      }
-    } finally { setLoginLoading(false); }
-  };
-
-  const handleLogout = () => {
-    localStorage.removeItem("customer_phone");
-    setCustomer(null);
-    setOrders([]);
-    setLoginIdentifier("");
-    setLoginPassword("");
-  };
-
-  const handleOrderSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setOrderLoading(true); setOrderError("");
-    try {
-      const res = await fetch(ORDERS_URL, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(orderForm),
-      });
-      const data = await res.json();
-      const parsed = typeof data === "string" ? JSON.parse(data) : data;
-      if (parsed.error) { setOrderError(parsed.error); return; }
-      setOrderSent(true);
-      if (customer) await loadProfile(customer.phone);
-    } finally { setOrderLoading(false); }
-  };
-
-  const handleDeleteOrder = async (orderId: number) => {
-    if (!customer) return;
-    const res = await fetch(MY_ORDERS_URL, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ action: "delete_order", order_id: orderId, customer_id: customer.id }),
+  useEffect(() => {
+    setEditFieldSetters({
+      setEditName: profile.setEditName,
+      setEditPhone: profile.setEditPhone,
+      setEditEmail: profile.setEditEmail,
+      setEditCity: profile.setEditCity,
     });
-    const data = await res.json();
-    const parsed = typeof data === "string" ? JSON.parse(data) : data;
-    if (parsed.success) {
-      setOrders(prev => prev.filter(o => o.id !== orderId));
+  }, [profile.setEditName, profile.setEditPhone, profile.setEditEmail, profile.setEditCity]);
+
+  useEffect(() => {
+    const saved = localStorage.getItem("customer_phone");
+    if (saved) loadProfile(saved);
+  }, []);
+
+  useEffect(() => {
+    if (orders_.orderModalOpen && customer) {
+      orders_.setOrderForm(f => ({ ...f, contact_name: customer.name, contact_phone: customer.phone, contact_email: customer.email, city: f.city || customer.city || "" }));
     }
-  };
-
-  const handleUpdateOrder = async (orderId: number, data: { title: string; description: string; category: string; city: string; budget: string }) => {
-    if (!customer) return;
-    await fetch(MY_ORDERS_URL, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        action: "update_order",
-        order_id: orderId,
-        customer_id: customer.id,
-        title: data.title,
-        description: data.description,
-        category: data.category,
-        city: data.city,
-        budget: data.budget ? parseInt(data.budget) : null,
-      }),
-    });
-    setOrders(prev => prev.map(o => o.id === orderId ? {
-      ...o,
-      title: data.title,
-      description: data.description,
-      category: data.category,
-      city: data.city,
-      budget: data.budget ? parseInt(data.budget) : null,
-    } : o));
-  };
-
-  const handleSelectMaster = async (orderId: number, responseId: number) => {
-    if (!customer) return;
-    setSelectMasterLoading(responseId);
-    await fetch(MY_ORDERS_URL, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ action: "select_master", order_id: orderId, response_id: responseId, customer_id: customer.id }),
-    });
-    await loadProfile(customer.phone);
-    setSelectMasterLoading(null);
-  };
-
-  const handleStatusChange = async (orderId: number, status: string) => {
-    if (!customer) return;
-    setStatusLoading(orderId);
-    await fetch(PROFILE_URL, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ order_id: orderId, status, customer_id: customer.id }),
-    });
-    setOrders((prev) => prev.map((o) => o.id === orderId ? { ...o, status } : o));
-    setStatusLoading(null);
-  };
-
-  const handleReview = async (
-    e: React.FormEvent,
-    form: { orderId: number; masterName: string; masterId: number | null },
-    rating: number,
-    comment: string,
-  ) => {
-    e.preventDefault();
-    if (!customer) return;
-    const res = await fetch(MY_ORDERS_URL, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        action: "review",
-        customer_id: customer.id,
-        order_id: form.orderId,
-        master_name: form.masterName,
-        master_id: form.masterId,
-        rating,
-        comment,
-      }),
-    });
-    const data = await res.json();
-    const parsed = typeof data === "string" ? JSON.parse(data) : data;
-    if (parsed.success) {
-      setReviewSuccess("Отзыв отправлен!");
-      await loadProfile(customer.phone);
-      setTimeout(() => setReviewSuccess(""), 3000);
-    }
-  };
-
-  const handleSaveProfile = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!customer) return;
-    setEditLoading(true); setEditError(""); setEditSuccess("");
-    try {
-      const res = await fetch(MY_ORDERS_URL, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "update_profile", customer_id: customer.id, name: editName, phone: editPhone, email: editEmail, city: editCity }),
-      });
-      const data = await res.json();
-      const d = typeof data === "string" ? JSON.parse(data) : data;
-      if (d.error) { setEditError(d.error); return; }
-      if (d.success && d.customer) {
-        setCustomer(d.customer);
-        localStorage.setItem("customer_phone", d.customer.phone);
-        setEditSuccess("Профиль сохранён!");
-        setTimeout(() => setEditSuccess(""), 3000);
-      }
-    } finally { setEditLoading(false); }
-  };
-
-  const handleChangePassword = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (pwNew !== pwConfirm) { setPwError("Пароли не совпадают"); return; }
-    if (pwNew.length < 6) { setPwError("Минимум 6 символов"); return; }
-    setPwLoading(true); setPwError(""); setPwSuccess("");
-    try {
-      const res = await fetch(AUTH_URL, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "change_password", customer_id: customer?.id, old_password: pwOld, new_password: pwNew }),
-      });
-      const data = await res.json();
-      const d = typeof data === "string" ? JSON.parse(data) : data;
-      if (d.error) { setPwError(d.error); return; }
-      setPwSuccess("Пароль изменён!");
-      setPwOld(""); setPwNew(""); setPwConfirm("");
-      setShowPwForm(false);
-      setTimeout(() => setPwSuccess(""), 3000);
-    } finally { setPwLoading(false); }
-  };
+    if (!orders_.orderModalOpen) { orders_.setOrderSent(false); orders_.setOrderError(""); }
+  }, [orders_.orderModalOpen]);
 
   if (!customer && !loading) {
     return (
       <CabinetAuth
-        loginMode={loginMode} setLoginMode={(m) => { setLoginMode(m); setLoginError(""); }}
-        regStep={regStep} setRegStep={setRegStep}
-        resetStep={resetStep} setResetStep={setResetStep}
-        loginIdentifier={loginIdentifier} setLoginIdentifier={setLoginIdentifier}
-        loginPassword={loginPassword} setLoginPassword={setLoginPassword}
-        loginName={loginName} setLoginName={setLoginName}
-        loginPhone={loginPhone} setLoginPhone={setLoginPhone}
-        loginEmail={loginEmail} setLoginEmail={setLoginEmail}
-        loginCity={loginCity} setLoginCity={setLoginCity}
-        regCode={regCode} setRegCode={setRegCode}
-        regPassword={regPassword} setRegPassword={setRegPassword}
-        regPasswordConfirm={regPasswordConfirm} setRegPasswordConfirm={setRegPasswordConfirm}
-        resetEmail={resetEmail} setResetEmail={setResetEmail}
-        resetCode={resetCode} setResetCode={setResetCode}
-        resetPassword={resetPassword} setResetPassword={setResetPassword}
-        resetPasswordConfirm={resetPasswordConfirm} setResetPasswordConfirm={setResetPasswordConfirm}
-        loginError={loginError} loginLoading={loginLoading}
-        onLogin={handleLogin}
-        onRegister={handleRegister}
-        onVerifyCode={handleVerifyCode}
-        onSetPassword={handleSetPassword}
-        onResetRequest={handleResetRequest}
-        onResetConfirm={handleResetConfirm}
+        loginMode={auth.loginMode} setLoginMode={auth.setLoginMode}
+        regStep={auth.regStep} setRegStep={auth.setRegStep}
+        resetStep={auth.resetStep} setResetStep={auth.setResetStep}
+        loginIdentifier={auth.loginIdentifier} setLoginIdentifier={auth.setLoginIdentifier}
+        loginPassword={auth.loginPassword} setLoginPassword={auth.setLoginPassword}
+        loginName={auth.loginName} setLoginName={auth.setLoginName}
+        loginPhone={auth.loginPhone} setLoginPhone={auth.setLoginPhone}
+        loginEmail={auth.loginEmail} setLoginEmail={auth.setLoginEmail}
+        loginCity={auth.loginCity} setLoginCity={auth.setLoginCity}
+        regCode={auth.regCode} setRegCode={auth.setRegCode}
+        regPassword={auth.regPassword} setRegPassword={auth.setRegPassword}
+        regPasswordConfirm={auth.regPasswordConfirm} setRegPasswordConfirm={auth.setRegPasswordConfirm}
+        resetEmail={auth.resetEmail} setResetEmail={auth.setResetEmail}
+        resetCode={auth.resetCode} setResetCode={auth.setResetCode}
+        resetPassword={auth.resetPassword} setResetPassword={auth.setResetPassword}
+        resetPasswordConfirm={auth.resetPasswordConfirm} setResetPasswordConfirm={auth.setResetPasswordConfirm}
+        loginError={auth.loginError} loginLoading={auth.loginLoading}
+        onLogin={auth.handleLogin}
+        onRegister={auth.handleRegister}
+        onVerifyCode={auth.handleVerifyCode}
+        onSetPassword={auth.handleSetPassword}
+        onResetRequest={auth.handleResetRequest}
+        onResetConfirm={auth.handleResetConfirm}
       />
     );
   }
@@ -460,46 +151,46 @@ export default function Cabinet() {
     <div className="min-h-screen bg-[#0f1117] text-white">
       <CabinetNav
         customer={customer!}
-        showPwForm={showPwForm} setShowPwForm={setShowPwForm}
-        pwOld={pwOld} setPwOld={setPwOld}
-        pwNew={pwNew} setPwNew={setPwNew}
-        pwConfirm={pwConfirm} setPwConfirm={setPwConfirm}
-        pwLoading={pwLoading} pwError={pwError} setPwError={setPwError} pwSuccess={pwSuccess}
-        onChangePassword={handleChangePassword}
-        onLogout={handleLogout}
-        onCreateOrder={() => setOrderModalOpen(true)}
-        showEditProfile={showEditProfile} setShowEditProfile={setShowEditProfile}
-        editName={editName} setEditName={setEditName}
-        editPhone={editPhone} setEditPhone={setEditPhone}
-        editEmail={editEmail} setEditEmail={setEditEmail}
-        editCity={editCity} setEditCity={setEditCity}
-        editLoading={editLoading} editError={editError} editSuccess={editSuccess}
-        onSaveProfile={handleSaveProfile}
+        showPwForm={profile.showPwForm} setShowPwForm={profile.setShowPwForm}
+        pwOld={profile.pwOld} setPwOld={profile.setPwOld}
+        pwNew={profile.pwNew} setPwNew={profile.setPwNew}
+        pwConfirm={profile.pwConfirm} setPwConfirm={profile.setPwConfirm}
+        pwLoading={profile.pwLoading} pwError={profile.pwError} setPwError={profile.setPwError} pwSuccess={profile.pwSuccess}
+        onChangePassword={profile.handleChangePassword}
+        onLogout={auth.handleLogout}
+        onCreateOrder={() => orders_.setOrderModalOpen(true)}
+        showEditProfile={profile.showEditProfile} setShowEditProfile={profile.setShowEditProfile}
+        editName={profile.editName} setEditName={profile.setEditName}
+        editPhone={profile.editPhone} setEditPhone={profile.setEditPhone}
+        editEmail={profile.editEmail} setEditEmail={profile.setEditEmail}
+        editCity={profile.editCity} setEditCity={profile.setEditCity}
+        editLoading={profile.editLoading} editError={profile.editError} editSuccess={profile.editSuccess}
+        onSaveProfile={profile.handleSaveProfile}
       />
       <OrderModal
-        orderModalOpen={orderModalOpen}
-        setOrderModalOpen={setOrderModalOpen}
-        orderForm={orderForm}
-        setOrderForm={setOrderForm}
-        orderSent={orderSent}
-        setOrderSent={setOrderSent}
-        orderLoading={orderLoading}
-        orderError={orderError}
-        setOrderError={setOrderError}
-        handleOrderSubmit={handleOrderSubmit}
+        orderModalOpen={orders_.orderModalOpen}
+        setOrderModalOpen={orders_.setOrderModalOpen}
+        orderForm={orders_.orderForm}
+        setOrderForm={orders_.setOrderForm}
+        orderSent={orders_.orderSent}
+        setOrderSent={orders_.setOrderSent}
+        orderLoading={orders_.orderLoading}
+        orderError={orders_.orderError}
+        setOrderError={orders_.setOrderError}
+        handleOrderSubmit={orders_.handleOrderSubmit}
       />
       <CabinetOrderList
         orders={orders}
         customer={customer!}
-        reviewSuccess={reviewSuccess}
-        statusLoading={statusLoading}
-        selectMasterLoading={selectMasterLoading}
-        onStatusChange={handleStatusChange}
-        onSelectMaster={handleSelectMaster}
-        onReviewSubmit={handleReview}
-        onUpdateOrder={handleUpdateOrder}
-        onDeleteOrder={handleDeleteOrder}
-        onCreateOrder={() => setOrderModalOpen(true)}
+        reviewSuccess={orders_.reviewSuccess}
+        statusLoading={orders_.statusLoading}
+        selectMasterLoading={orders_.selectMasterLoading}
+        onStatusChange={orders_.handleStatusChange}
+        onSelectMaster={orders_.handleSelectMaster}
+        onReviewSubmit={orders_.handleReview}
+        onUpdateOrder={orders_.handleUpdateOrder}
+        onDeleteOrder={orders_.handleDeleteOrder}
+        onCreateOrder={() => orders_.setOrderModalOpen(true)}
       />
     </div>
   );
