@@ -612,6 +612,7 @@ def handler(event: dict, context) -> dict:
                     'rating': float(s['rating']) if s['rating'] else None,
                     'reviews_count': int(s['reviews_count']),
                     'created_at': s['created_at'].isoformat() if s['created_at'] else None,
+                    'boosted_until': s['boosted_until'].isoformat() if s['boosted_until'] else None,
                 } for s in services],
                 'cities': cities,
             }, ensure_ascii=False)

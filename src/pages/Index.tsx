@@ -24,6 +24,7 @@ interface Service {
   avatar_color: string;
   rating: number | null;
   reviews_count: number;
+  boosted_until: string | null;
 }
 
 const ORDERS_URL = "https://functions.poehali.dev/34db9bab-e58a-479e-b1cc-c27fb8e0b728";
