@@ -75,6 +75,10 @@ export default function CabinetNav({
             </a>
           </div>
           <div className="flex items-center gap-3">
+            <a href="/masters" className="hidden sm:flex items-center gap-1.5 h-9 px-4 rounded-lg border border-white/10 text-gray-300 hover:text-white hover:border-white/20 text-sm transition-colors">
+              <Icon name="Search" size={15} />
+              Найти мастера
+            </a>
             <Button onClick={onCreateOrder} className="bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white text-sm h-9 px-4 hidden sm:flex items-center gap-1.5">
               <Icon name="Plus" size={15} />
               Создать заявку
