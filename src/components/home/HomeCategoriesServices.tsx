@@ -49,6 +49,7 @@ interface Service {
   avatar_color: string;
   rating: number | null;
   reviews_count: number;
+  boosted_until: string | null;
 }
 
 interface HomeCategoriesServicesProps {
@@ -229,11 +230,20 @@ const HomeCategoriesServices = ({
           ) : (
             <>
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
-              {visible.map((service) => (
+              {visible.map((service) => {
+                const isBoosted = !!service.boosted_until && new Date(service.boosted_until) > new Date();
+                return (
                 <div
                   key={service.id}
-                  className="group bg-white/4 border border-white/8 rounded-xl p-3.5 hover:border-violet-500/40 hover:bg-white/6 transition-all flex flex-col"
+                  className={`group rounded-xl p-3.5 transition-all flex flex-col relative ${
+                    isBoosted
+                      ? "bg-gradient-to-b from-amber-500/8 to-white/4 border border-amber-500/30 hover:border-amber-400/50"
+                      : "bg-white/4 border border-white/8 hover:border-violet-500/40 hover:bg-white/6"
+                  }`}
                 >
+                  {isBoosted && (
+                    <div className="absolute -top-px left-3 right-3 h-px bg-gradient-to-r from-transparent via-amber-400/60 to-transparent rounded-full" />
+                  )}
                   <a href={`/master-page?id=${service.master_id}`} className="block flex-1">
                     <div className="flex items-start justify-between mb-2.5">
                       <Badge
@@ -242,7 +252,12 @@ const HomeCategoriesServices = ({
                       >
                         {service.category}
                       </Badge>
-                      {service.rating ? (
+                      {isBoosted ? (
+                        <span className="flex items-center gap-0.5 text-amber-400 text-[10px] font-medium">
+                          <Icon name="Zap" size={10} />
+                          Топ
+                        </span>
+                      ) : service.rating ? (
                         <div className="flex items-center gap-0.5 text-amber-400 text-xs">
                           <Icon name="Star" size={11} />
                           <span>{service.rating}</span>
@@ -305,7 +320,8 @@ const HomeCategoriesServices = ({
                     </Button>
                   )}
                 </div>
-              ))}
+                );
+              })}
             </div>
             {visibleCount < filtered.length && (
               <div className="text-center mt-8">
