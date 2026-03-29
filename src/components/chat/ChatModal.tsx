@@ -177,56 +177,57 @@ export default function ChatModal({
           </div>
         )}
 
-        {/* Статус договорённости */}
-        {dealStatus === "deal" ? (
-          <div className="mx-4 mt-3 mb-1 bg-emerald-600/15 border border-emerald-500/30 rounded-xl px-4 py-3 flex-shrink-0">
-            <p className="text-emerald-400 font-semibold text-sm flex items-center gap-2">
-              <Icon name="CheckCircle" size={16} /> Договорились!
-            </p>
-            {contacts && (
-              <div className="mt-2 text-sm text-gray-300 space-y-1">
-                {myRole === "master" && contacts.name && <p>👤 {contacts.name}</p>}
-                {myRole === "master" && contacts.phone && <p>📞 {contacts.phone}</p>}
-                {myRole === "master" && contacts.email && <p>✉️ {contacts.email}</p>}
-                {myRole === "customer" && contacts.master_name && <p>👤 {contacts.master_name}</p>}
-                {myRole === "customer" && contacts.master_email && <p>✉️ {contacts.master_email}</p>}
-              </div>
-            )}
-          </div>
-        ) : dealStatus === "no_deal" ? (
-          <div className="mx-4 mt-3 mb-1 bg-red-600/10 border border-red-500/20 rounded-xl px-4 py-2.5 flex-shrink-0">
-            <p className="text-red-400 text-sm flex items-center gap-2">
-              <Icon name="XCircle" size={15} /> Не договорились
-            </p>
-          </div>
-        ) : (
-          <div className="mx-4 mt-3 mb-1 bg-white/4 border border-white/8 rounded-xl px-4 py-3 flex-shrink-0">
-            <p className="text-gray-400 text-xs mb-2 flex items-center gap-1.5">
-              <Icon name="Lock" size={12} className="text-amber-400" />
-              Контакты откроются только после взаимного подтверждения
-            </p>
-            <div className="flex gap-2 flex-wrap">
-              {dealStatus !== "deal" && !myConfirmed && (
-                <Button
-                  size="sm"
-                  onClick={handleDeal}
-                  disabled={dealLoading}
-                  className="bg-emerald-600 hover:bg-emerald-500 text-white text-xs h-8 px-3 gap-1.5"
-                >
-                  <Icon name="Handshake" size={13} /> Договорились
-                </Button>
+        {/* Сообщения */}
+        <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3 min-h-0">
+          {/* Статус договорённости — прокручивается вместе с чатом */}
+          {dealStatus === "deal" ? (
+            <div className="bg-emerald-600/15 border border-emerald-500/30 rounded-xl px-4 py-3">
+              <p className="text-emerald-400 font-semibold text-sm flex items-center gap-2">
+                <Icon name="CheckCircle" size={16} /> Договорились!
+              </p>
+              {contacts && (
+                <div className="mt-2 text-sm text-gray-300 space-y-1">
+                  {myRole === "master" && contacts.name && <p>👤 {contacts.name}</p>}
+                  {myRole === "master" && contacts.phone && <p>📞 {contacts.phone}</p>}
+                  {myRole === "master" && contacts.email && <p>✉️ {contacts.email}</p>}
+                  {myRole === "customer" && contacts.master_name && <p>👤 {contacts.master_name}</p>}
+                  {myRole === "customer" && contacts.master_email && <p>✉️ {contacts.master_email}</p>}
+                </div>
               )}
-              {myConfirmed && !partnerConfirmed && (
-                <span className="text-xs text-amber-400 flex items-center gap-1.5 py-1">
-                  <Icon name="Clock" size={12} /> Вы подтвердили — ждём {partnerName}
-                </span>
-              )}
-              {partnerConfirmed && !myConfirmed && (
-                <span className="text-xs text-violet-400 flex items-center gap-1.5 py-1">
-                  <Icon name="Bell" size={12} /> {partnerName} подтвердил(а) — подтвердите и вы
-                </span>
-              )}
-              {dealStatus !== "deal" && (
+            </div>
+          ) : dealStatus === "no_deal" ? (
+            <div className="bg-red-600/10 border border-red-500/20 rounded-xl px-4 py-2.5">
+              <p className="text-red-400 text-sm flex items-center gap-2">
+                <Icon name="XCircle" size={15} /> Не договорились
+              </p>
+            </div>
+          ) : (
+            <div className="bg-white/4 border border-white/8 rounded-xl px-4 py-3">
+              <p className="text-gray-400 text-xs mb-2 flex items-center gap-1.5">
+                <Icon name="Lock" size={12} className="text-amber-400" />
+                Контакты откроются только после взаимного подтверждения
+              </p>
+              <div className="flex gap-2 flex-wrap">
+                {!myConfirmed && (
+                  <Button
+                    size="sm"
+                    onClick={handleDeal}
+                    disabled={dealLoading}
+                    className="bg-emerald-600 hover:bg-emerald-500 text-white text-xs h-8 px-3 gap-1.5"
+                  >
+                    <Icon name="Handshake" size={13} /> Договорились
+                  </Button>
+                )}
+                {myConfirmed && !partnerConfirmed && (
+                  <span className="text-xs text-amber-400 flex items-center gap-1.5 py-1">
+                    <Icon name="Clock" size={12} /> Вы подтвердили — ждём {partnerName}
+                  </span>
+                )}
+                {partnerConfirmed && !myConfirmed && (
+                  <span className="text-xs text-violet-400 flex items-center gap-1.5 py-1">
+                    <Icon name="Bell" size={12} /> {partnerName} подтвердил(а) — подтвердите и вы
+                  </span>
+                )}
                 <Button
                   size="sm"
                   variant="ghost"
@@ -236,13 +237,9 @@ export default function ChatModal({
                 >
                   <Icon name="X" size={12} /> Не договорились
                 </Button>
-              )}
+              </div>
             </div>
-          </div>
-        )}
-
-        {/* Сообщения */}
-        <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3 min-h-0">
+          )}
           {messages.length === 0 && (
             <div className="text-center py-8 text-gray-600 text-sm">
               <Icon name="MessageSquare" size={28} className="mx-auto mb-2 opacity-30" />
