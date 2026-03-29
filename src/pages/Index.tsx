@@ -203,7 +203,7 @@ const Index = () => {
         <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3">
           <p className="text-sm text-gray-300">
             <span className="text-white font-semibold">Готов предложить свои услуги?</span>
-            {" "}Размести объявление бесплатно и получай заказы уже сегодня
+            {" "}Зарегистрируйся как мастер и получай заказы от клиентов уже сегодня
           </p>
           <div className="flex gap-2 flex-shrink-0">
             <Button onClick={() => setMasterModalOpen(true)} size="sm" className="bg-violet-600 hover:bg-violet-500 text-white text-xs px-4 rounded-lg">
@@ -272,7 +272,7 @@ const Index = () => {
             Готов предложить свои услуги?
           </h2>
           <p className="text-gray-400 mb-8">
-            Размести свои услуги бесплатно и получай заказы от клиентов уже сегодня
+            Размещай объявления, откликайся на заявки и находи клиентов в своём городе
           </p>
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
             <Button onClick={() => setMasterModalOpen(true)} className="bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white px-8 py-3 text-base rounded-xl">
