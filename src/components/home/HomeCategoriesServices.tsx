@@ -89,6 +89,28 @@ const HomeCategoriesServices = ({
   const [contactSent, setContactSent] = React.useState(false);
   const [contactError, setContactError] = React.useState("");
 
+  React.useEffect(() => {
+    if (!contactMaster) return;
+    try {
+      const saved = localStorage.getItem("customer_profile");
+      if (saved) {
+        const p = JSON.parse(saved);
+        setContactForm(f => ({
+          ...f,
+          name: p.name || f.name,
+          phone: p.phone || f.phone,
+          email: p.email || f.email,
+        }));
+        return;
+      }
+      // Запасной вариант — если есть только телефон
+      const phone = localStorage.getItem("customer_phone");
+      if (phone) {
+        setContactForm(f => ({ ...f, phone: phone || f.phone }));
+      }
+    } catch { /* ignore */ }
+  }, [contactMaster]);
+
   const handleContactSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!contactMaster) return;
