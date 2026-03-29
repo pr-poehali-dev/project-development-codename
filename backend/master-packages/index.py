@@ -6,8 +6,12 @@ import json
 import os
 import hashlib
 import secrets
+import smtplib
+import ssl
 import psycopg2
 from psycopg2.extras import RealDictCursor
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
 
 SCHEMA = "t_p86314354_project_development_"
 
@@ -612,4 +616,130 @@ def handler(event: dict, context) -> dict:
         conn.close()
         return ok({'success': True})
 
+    # ── ПОДДЕРЖКА: создать тикет (публичный endpoint) ──
+    if method == 'POST' and action == 'support_create':
+        name = (body.get('name') or '').strip()
+        email = (body.get('email') or '').strip().lower()
+        subject = (body.get('subject') or 'other').strip()
+        message = (body.get('message') or '').strip()
+        if not message:
+            return err('Напишите сообщение')
+        conn = get_conn()
+        cur = conn.cursor()
+        cur.execute(
+            f"INSERT INTO {SCHEMA}.support_tickets (name, email, subject, message) VALUES (%s, %s, %s, %s) RETURNING id",
+            (name or None, email or None, subject, message)
+        )
+        ticket_id = cur.fetchone()['id']
+        conn.commit()
+        cur.close(); conn.close()
+        # Уведомляем админа на почту
+        try:
+            _send_support_notify(ticket_id, name, email, subject, message)
+        except Exception:
+            pass
+        return ok({'success': True, 'ticket_id': ticket_id})
+
+    # ── ПОДДЕРЖКА: список тикетов (только для админа) ──
+    if method == 'GET' and action == 'admin_tickets':
+        if not check_auth(event):
+            return err('Не авторизован', 401)
+        conn = get_conn()
+        cur = conn.cursor()
+        cur.execute(f"SELECT * FROM {SCHEMA}.support_tickets ORDER BY created_at DESC LIMIT 200")
+        tickets = cur.fetchall()
+        cur.close(); conn.close()
+        return ok({'tickets': tickets})
+
+    # ── ПОДДЕРЖКА: ответить на тикет (только для админа) ──
+    if method == 'POST' and action == 'admin_reply_ticket':
+        if not check_auth(event):
+            return err('Не авторизован', 401)
+        ticket_id = body.get('ticket_id')
+        reply = (body.get('reply') or '').strip()
+        if not ticket_id or not reply:
+            return err('ticket_id и reply обязательны')
+        conn = get_conn()
+        cur = conn.cursor()
+        cur.execute(
+            f"UPDATE {SCHEMA}.support_tickets SET admin_reply=%s, status='replied', replied_at=NOW() WHERE id=%s RETURNING name, email, subject",
+            (reply, int(ticket_id))
+        )
+        row = cur.fetchone()
+        conn.commit()
+        cur.close(); conn.close()
+        if row and row['email']:
+            try:
+                _send_support_reply(row['email'], row['name'] or 'Пользователь', row['subject'], reply)
+            except Exception:
+                pass
+        return ok({'success': True})
+
+    # ── ПОДДЕРЖКА: удалить тикет (только для админа) ──
+    if method == 'POST' and action == 'admin_delete_ticket':
+        if not check_auth(event):
+            return err('Не авторизован', 401)
+        ticket_id = body.get('ticket_id')
+        conn = get_conn()
+        cur = conn.cursor()
+        cur.execute(f"DELETE FROM {SCHEMA}.support_tickets WHERE id=%s", (int(ticket_id),))
+        conn.commit()
+        cur.close(); conn.close()
+        return ok({'success': True})
+
     return err('Метод или action не поддерживается', 405)
+
+
+def _send_support_notify(ticket_id: int, name: str, email: str, subject: str, message: str):
+    host = os.environ['SMTP_HOST']
+    port = int(os.environ['SMTP_PORT'])
+    user = os.environ['SMTP_USER']
+    pw = os.environ['SMTP_PASS']
+    subjects_map = {'question': 'Вопрос', 'complaint': 'Жалоба', 'bug': 'Технический сбой', 'other': 'Другое'}
+    subj_label = subjects_map.get(subject, subject)
+    msg = MIMEMultipart('alternative')
+    msg['Subject'] = f'[HandyMan #{ticket_id}] Обращение в поддержку: {subj_label}'
+    msg['From'] = f'HandyMan <{user}>'
+    msg['To'] = user
+    html = f"""<div style="font-family:sans-serif;max-width:520px;margin:0 auto;padding:32px;background:#0a0d16;border-radius:16px;">
+      <h2 style="color:#fff;">HandyMan — Поддержка #{ticket_id}</h2>
+      <div style="background:#1e1b4b;border:1px solid #4c1d95;border-radius:12px;padding:20px;margin:16px 0;">
+        <p style="color:#9ca3af;font-size:13px;margin:0 0 4px;">От: <b style="color:#e5e7eb;">{name or '—'}</b> ({email or 'email не указан'})</p>
+        <p style="color:#9ca3af;font-size:13px;margin:0 0 12px;">Тема: <b style="color:#a78bfa;">{subj_label}</b></p>
+        <p style="color:#e5e7eb;font-size:14px;white-space:pre-wrap;">{message}</p>
+      </div>
+      <p style="color:#6b7280;font-size:12px;">Войдите в <a href="https://handyman.poehali.dev/admin" style="color:#7c3aed;">админ-панель</a>, чтобы ответить.</p>
+    </div>"""
+    msg.attach(MIMEText(f'Обращение #{ticket_id} от {name} ({email}):\n\n{message}', 'plain'))
+    msg.attach(MIMEText(html, 'html'))
+    ctx = ssl.create_default_context()
+    with smtplib.SMTP_SSL(host, port, context=ctx) as server:
+        server.login(user, pw)
+        server.sendmail(user, user, msg.as_string())
+
+
+def _send_support_reply(to_email: str, to_name: str, subject: str, reply: str):
+    host = os.environ['SMTP_HOST']
+    port = int(os.environ['SMTP_PORT'])
+    user = os.environ['SMTP_USER']
+    pw = os.environ['SMTP_PASS']
+    subjects_map = {'question': 'Вопрос', 'complaint': 'Жалоба', 'bug': 'Технический сбой', 'other': 'Другое'}
+    subj_label = subjects_map.get(subject, subject)
+    msg = MIMEMultipart('alternative')
+    msg['Subject'] = f'Ответ поддержки HandyMan на ваш запрос: {subj_label}'
+    msg['From'] = f'Поддержка HandyMan <{user}>'
+    msg['To'] = to_email
+    html = f"""<div style="font-family:sans-serif;max-width:520px;margin:0 auto;padding:32px;background:#0a0d16;border-radius:16px;">
+      <h2 style="color:#fff;">Ответ поддержки HandyMan</h2>
+      <p style="color:#9ca3af;font-size:14px;">Привет, {to_name}! Мы ответили на ваш запрос ({subj_label}):</p>
+      <div style="background:#1e1b4b;border:1px solid #4c1d95;border-radius:12px;padding:20px;margin:16px 0;">
+        <p style="color:#e5e7eb;font-size:14px;white-space:pre-wrap;">{reply}</p>
+      </div>
+      <p style="color:#6b7280;font-size:12px;">Если у вас остались вопросы — напишите нам снова на сайте.</p>
+    </div>"""
+    msg.attach(MIMEText(f'Ответ поддержки:\n\n{reply}', 'plain'))
+    msg.attach(MIMEText(html, 'html'))
+    ctx = ssl.create_default_context()
+    with smtplib.SMTP_SSL(host, port, context=ctx) as server:
+        server.login(user, pw)
+        server.sendmail(user, to_email, msg.as_string())

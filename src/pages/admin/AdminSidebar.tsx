@@ -10,7 +10,8 @@ export type Tab =
   | "chats"
   | "payments"
   | "reviews"
-  | "categories";
+  | "categories"
+  | "tickets";
 
 const tabs: { id: Tab; label: string; icon: string }[] = [
   { id: "dashboard", label: "Обзор", icon: "LayoutDashboard" },
@@ -23,6 +24,7 @@ const tabs: { id: Tab; label: string; icon: string }[] = [
   { id: "payments", label: "Платежи", icon: "CreditCard" },
   { id: "reviews", label: "Отзывы", icon: "Star" },
   { id: "categories", label: "Категории", icon: "Tag" },
+  { id: "tickets", label: "Поддержка", icon: "LifeBuoy" },
 ];
 
 interface AdminSidebarProps {

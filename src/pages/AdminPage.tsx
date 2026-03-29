@@ -41,6 +41,7 @@ export default function AdminPage() {
   const [activeChatId, setActiveChatId] = useState<number | null>(null);
   const [responses, setResponses] = useState<Record<string, unknown>[]>([]);
   const [payments, setPayments] = useState<Record<string, unknown>[]>([]);
+  const [tickets, setTickets] = useState<Record<string, unknown>[]>([]);
   const [newCategory, setNewCategory] = useState("");
 
   const [balanceModal, setBalanceModal] = useState<Record<string, unknown> | null>(null);
@@ -132,6 +133,9 @@ export default function AdminPage() {
       } else if (t === "payments") {
         const d = await api("admin_payments", "GET", undefined, tk);
         setPayments(d.payments || []);
+      } else if (t === "tickets") {
+        const d = await api("admin_tickets", "GET", undefined, tk);
+        setTickets(d.tickets || []);
       }
     } finally {
       setLoading(false);
@@ -250,6 +254,17 @@ export default function AdminPage() {
     loadTab("responses", token);
   };
 
+  const replyTicket = async (id: number, reply: string) => {
+    await api("admin_reply_ticket", "POST", { ticket_id: id, reply }, token);
+    loadTab("tickets", token);
+  };
+
+  const deleteTicket = async (id: number) => {
+    if (!confirm("Удалить обращение?")) return;
+    await api("admin_delete_ticket", "POST", { ticket_id: id }, token);
+    loadTab("tickets", token);
+  };
+
   if (!isLoggedIn) {
     return (
       <AdminLogin loginForm={loginForm} setLoginForm={setLoginForm}
@@ -279,6 +294,7 @@ export default function AdminPage() {
           onEditService={openEditService} onDeleteService={deleteService} onToggleService={toggleService}
           onDeleteChat={deleteChat} onViewChat={viewChat}
           onDeleteResponse={deleteResponse}
+          tickets={tickets} onReplyTicket={replyTicket} onDeleteTicket={deleteTicket}
         />
       </div>
 

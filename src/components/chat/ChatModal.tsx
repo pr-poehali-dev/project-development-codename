@@ -182,6 +182,15 @@ export default function ChatModal({
           </div>
         )}
 
+        {/* Плашка безопасности */}
+        <div className="mx-4 mt-3 bg-amber-500/8 border border-amber-500/20 rounded-xl px-3 py-2.5 flex-shrink-0 flex items-start gap-2">
+          <Icon name="ShieldAlert" size={13} className="text-amber-400 mt-0.5 flex-shrink-0" />
+          <p className="text-amber-300/80 text-xs leading-relaxed">
+            Не переходите по ссылкам, не сообщайте пароли и коды из SMS.{" "}
+            <a href="/rules" className="underline hover:text-amber-200 transition-colors" target="_blank" rel="noopener noreferrer">Правила платформы</a>
+          </p>
+        </div>
+
         {/* Сообщения */}
         <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3 min-h-0">
           {/* Статус договорённости — прокручивается вместе с чатом */}

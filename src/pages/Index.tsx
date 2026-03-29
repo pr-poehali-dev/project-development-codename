@@ -325,6 +325,7 @@ const Index = () => {
               </div>
               <p className="text-gray-400 text-sm font-medium mb-3 mt-5">Документы</p>
               <div className="space-y-2">
+                <a href="/rules" className="block text-gray-600 hover:text-gray-400 text-sm transition-colors">Правила платформы</a>
                 <a href="/offer" className="block text-gray-600 hover:text-gray-400 text-sm transition-colors">Публичная оферта</a>
                 <a href="/offer#7" className="block text-gray-600 hover:text-gray-400 text-sm transition-colors">Политика конфиденциальности</a>
               </div>

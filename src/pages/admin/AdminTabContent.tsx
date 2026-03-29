@@ -47,6 +47,9 @@ interface AdminTabContentProps {
   onDeleteChat: (id: number) => void;
   onViewChat: (id: number) => void;
   onDeleteResponse: (id: number) => void;
+  tickets: Record<string, unknown>[];
+  onReplyTicket: (id: number, reply: string) => void;
+  onDeleteTicket: (id: number) => void;
 }
 
 export default function AdminTabContent({
@@ -56,6 +59,7 @@ export default function AdminTabContent({
   onOpenEdit, onOpenBalance, onBlockMaster, onBlockCustomer, onDeleteMaster, onDeleteCustomer,
   onUpdateOrderStatus, onDeleteOrder, onDeleteReview, onAddCategory, onDeleteCategory,
   onEditService, onDeleteService, onToggleService, onDeleteChat, onViewChat, onDeleteResponse,
+  tickets, onReplyTicket, onDeleteTicket,
 }: AdminTabContentProps) {
 
   const q = searchQuery.toLowerCase();
@@ -482,5 +486,115 @@ export default function AdminTabContent({
     );
   }
 
+  // ── ТИКЕТЫ ПОДДЕРЖКИ ──
+  if (tab === "tickets") {
+    if (loading) return <Loader />;
+    const SUBJECT_LABELS: Record<string, string> = {
+      question: "Вопрос", complaint: "Жалоба", bug: "Техн. сбой", fraud: "Мошенничество", other: "Другое",
+    };
+    const list = tickets.filter(t =>
+      !q || String(t.name).toLowerCase().includes(q) || String(t.email).toLowerCase().includes(q) || String(t.message).toLowerCase().includes(q)
+    );
+    const newCount = tickets.filter(t => t.status === "new").length;
+    return (
+      <Section title="Обращения в поддержку" count={list.length}>
+        {newCount > 0 && (
+          <div className="mb-4 bg-amber-50 border border-amber-200 rounded-xl px-4 py-2.5 flex items-center gap-2">
+            <Icon name="Bell" size={15} className="text-amber-500" />
+            <span className="text-amber-700 text-sm font-medium">{newCount} новых обращений без ответа</span>
+          </div>
+        )}
+        <Input placeholder="Поиск по имени, email, тексту..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} className="mb-4 max-w-sm" />
+        {list.length === 0 ? <Empty text="Обращений нет" /> : (
+          <div className="space-y-3">
+            {list.map((t) => (
+              <TicketCard key={String(t.id)} ticket={t} subjectLabels={SUBJECT_LABELS}
+                onReply={onReplyTicket} onDelete={onDeleteTicket} fmtDate={fmtDate} />
+            ))}
+          </div>
+        )}
+      </Section>
+    );
+  }
+
   return null;
+}
+
+function TicketCard({ ticket, subjectLabels, onReply, onDelete, fmtDate }: {
+  ticket: Record<string, unknown>;
+  subjectLabels: Record<string, string>;
+  onReply: (id: number, reply: string) => void;
+  onDelete: (id: number) => void;
+  fmtDate: (iso: string) => string;
+}) {
+  const [replyOpen, setReplyOpen] = useState(false);
+  const [replyText, setReplyText] = useState("");
+  const [sending, setSending] = useState(false);
+
+  const handleReply = async () => {
+    if (!replyText.trim()) return;
+    setSending(true);
+    await onReply(Number(ticket.id), replyText.trim());
+    setReplyText("");
+    setReplyOpen(false);
+    setSending(false);
+  };
+
+  const isNew = ticket.status === "new";
+  return (
+    <div className={`bg-white rounded-xl border p-4 ${isNew ? "border-amber-300 bg-amber-50/30" : "border-gray-200"}`}>
+      <div className="flex items-start justify-between gap-3 mb-2">
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 flex-wrap mb-1">
+            <span className="font-semibold text-sm text-gray-800">{String(ticket.name || "Аноним")}</span>
+            {ticket.email && <span className="text-xs text-gray-400">{String(ticket.email)}</span>}
+            <span className="text-[10px] px-2 py-0.5 rounded-full bg-purple-100 text-purple-700 font-medium">
+              {subjectLabels[String(ticket.subject)] || String(ticket.subject)}
+            </span>
+            <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${isNew ? "bg-amber-100 text-amber-700" : "bg-green-100 text-green-700"}`}>
+              {isNew ? "Новое" : "Отвечено"}
+            </span>
+            <span className="text-xs text-gray-400 ml-auto">{fmtDate(String(ticket.created_at))}</span>
+          </div>
+          <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap">{String(ticket.message)}</p>
+          {ticket.admin_reply && (
+            <div className="mt-3 bg-green-50 border border-green-200 rounded-lg px-3 py-2">
+              <p className="text-xs text-green-600 font-medium mb-1 flex items-center gap-1">
+                <Icon name="Reply" size={11} /> Ответ администратора:
+              </p>
+              <p className="text-xs text-gray-700 whitespace-pre-wrap">{String(ticket.admin_reply)}</p>
+            </div>
+          )}
+        </div>
+        <div className="flex gap-1.5 flex-shrink-0">
+          <Button size="sm" variant="outline" className="text-xs h-7 px-2 text-blue-600 hover:bg-blue-50"
+            onClick={() => setReplyOpen(v => !v)}>
+            <Icon name="Reply" size={12} className="mr-1" />Ответить
+          </Button>
+          <Button size="sm" variant="outline" className="text-xs h-7 px-2 text-red-500 hover:bg-red-50"
+            onClick={() => onDelete(Number(ticket.id))}>
+            <Icon name="Trash2" size={12} />
+          </Button>
+        </div>
+      </div>
+      {replyOpen && (
+        <div className="mt-3 border-t pt-3 space-y-2">
+          <textarea
+            rows={3}
+            value={replyText}
+            onChange={e => setReplyText(e.target.value)}
+            placeholder="Текст ответа пользователю..."
+            className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-purple-400 resize-none"
+          />
+          <div className="flex gap-2">
+            <Button size="sm" className="bg-purple-600 hover:bg-purple-700 text-white text-xs"
+              disabled={sending || !replyText.trim()} onClick={handleReply}>
+              {sending ? "Отправка..." : "Отправить ответ на почту"}
+            </Button>
+            <Button size="sm" variant="outline" className="text-xs" onClick={() => setReplyOpen(false)}>Отмена</Button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
 }
