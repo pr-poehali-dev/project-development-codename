@@ -768,6 +768,27 @@ def handler(event: dict, context) -> dict:
             conn.commit(); cur.close(); conn.close()
             return {'statusCode': 200, 'headers': HEADERS, 'body': json.dumps({'success': True})}
 
+        # ── УДАЛИТЬ ЧАТ (заказчик) ──
+        if action == 'delete_inquiry':
+            inquiry_id = body.get('inquiry_id')
+            customer_email = (body.get('customer_email') or '').strip().lower()
+            customer_phone = (body.get('customer_phone') or '').strip()
+            if not inquiry_id or (not customer_email and not customer_phone):
+                return {'statusCode': 400, 'headers': HEADERS, 'body': json.dumps({'error': 'Не все поля'})}
+            conn = get_conn()
+            cur = conn.cursor()
+            cur.execute(
+                f"SELECT id FROM {SCHEMA}.master_inquiries WHERE id=%s AND (LOWER(COALESCE(contact_email,''))=%s OR COALESCE(contact_phone,'')=%s)",
+                (int(inquiry_id), customer_email, customer_phone)
+            )
+            if not cur.fetchone():
+                cur.close(); conn.close()
+                return {'statusCode': 403, 'headers': HEADERS, 'body': json.dumps({'error': 'Нет доступа'})}
+            cur.execute(f"DELETE FROM {SCHEMA}.chat_messages WHERE inquiry_id=%s", (int(inquiry_id),))
+            cur.execute(f"DELETE FROM {SCHEMA}.master_inquiries WHERE id=%s", (int(inquiry_id),))
+            conn.commit(); cur.close(); conn.close()
+            return {'statusCode': 200, 'headers': HEADERS, 'body': json.dumps({'success': True})}
+
         # ── МОИ ОБРАЩЕНИЯ К МАСТЕРАМ (для заказчика) ──
         if action == 'get_customer_inquiries':
             customer_email = (body.get('customer_email') or '').strip().lower()

@@ -561,6 +561,26 @@ def handler(event: dict, context) -> dict:
             conn.commit(); cur.close(); conn.close()
             return {'statusCode': 200, 'headers': HEADERS, 'body': json.dumps({'success': True})}
 
+        # ── УДАЛИТЬ ЧАТ (мастер) ──
+        if body_raw.get('action') == 'delete_inquiry':
+            inquiry_id = body_raw.get('inquiry_id')
+            master_id = body_raw.get('master_id')
+            if not inquiry_id or not master_id:
+                return {'statusCode': 400, 'headers': HEADERS, 'body': json.dumps({'error': 'Не все поля'})}
+            conn = get_conn()
+            cur = conn.cursor()
+            cur.execute(
+                f"SELECT id FROM {SCHEMA}.master_inquiries WHERE id=%s AND master_id=%s",
+                (int(inquiry_id), int(master_id))
+            )
+            if not cur.fetchone():
+                cur.close(); conn.close()
+                return {'statusCode': 403, 'headers': HEADERS, 'body': json.dumps({'error': 'Нет доступа'})}
+            cur.execute(f"DELETE FROM {SCHEMA}.chat_messages WHERE inquiry_id=%s", (int(inquiry_id),))
+            cur.execute(f"DELETE FROM {SCHEMA}.master_inquiries WHERE id=%s AND master_id=%s", (int(inquiry_id), int(master_id)))
+            conn.commit(); cur.close(); conn.close()
+            return {'statusCode': 200, 'headers': HEADERS, 'body': json.dumps({'success': True})}
+
         # ── ОТПРАВИТЬ СООБЩЕНИЕ В ЧАТ (мастер) ──
         if body_raw.get('action') == 'send_message':
             inquiry_id = body_raw.get('inquiry_id')

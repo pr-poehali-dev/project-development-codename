@@ -51,6 +51,7 @@ export default function CustomerInquiries({ customerName, customerEmail, custome
   const [inquiries, setInquiries] = useState<Inquiry[]>([]);
   const [loading, setLoading] = useState(true);
   const [chatInquiry, setChatInquiry] = useState<Inquiry | null>(null);
+  const [deletingId, setDeletingId] = useState<number | null>(null);
   // unread[inquiryId] = число непрочитанных сообщений от мастера
   const [unread, setUnread] = useState<Record<number, number>>({});
 
@@ -65,6 +66,21 @@ export default function CustomerInquiries({ customerName, customerEmail, custome
       const data = await res.json();
       setInquiries(data.inquiries || []);
     } finally { if (showLoader) setLoading(false); }
+  };
+
+  const handleDelete = async (inquiryId: number, masterName: string) => {
+    if (!confirm(`Удалить переписку с ${masterName}? Это действие нельзя отменить.`)) return;
+    setDeletingId(inquiryId);
+    try {
+      await fetch(MY_ORDERS_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "delete_inquiry", inquiry_id: inquiryId, customer_email: customerEmail, customer_phone: customerPhone }),
+      });
+      await loadInquiries(false);
+    } finally {
+      setDeletingId(null);
+    }
   };
 
   const checkUnread = useCallback(async (inquiryList: Inquiry[]) => {
@@ -188,6 +204,14 @@ export default function CustomerInquiries({ customerName, customerEmail, custome
                           </span>
                         )}
                         <span className="text-gray-600 text-xs">{formatDate(inq.created_at)}</span>
+                        <button
+                          onClick={() => handleDelete(inq.id, inq.master_name)}
+                          disabled={deletingId === inq.id}
+                          className="text-gray-600 hover:text-red-400 transition-colors p-1 rounded-lg hover:bg-red-500/10"
+                          title="Удалить переписку"
+                        >
+                          <Icon name={deletingId === inq.id ? "Loader" : "Trash2"} size={13} className={deletingId === inq.id ? "animate-spin" : ""} />
+                        </button>
                       </div>
                     </div>
 

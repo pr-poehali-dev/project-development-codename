@@ -3,6 +3,8 @@ import { Button } from "@/components/ui/button";
 import Icon from "@/components/ui/icon";
 import ChatModal from "@/components/chat/ChatModal";
 
+const MASTER_URL = "https://functions.poehali.dev/de274bd5-3f08-42d8-9aac-b373bb34b900";
+
 interface Inquiry {
   id: number;
   service_id: number | null;
@@ -30,6 +32,22 @@ function formatDate(iso: string) {
 
 export default function MasterTabInquiries({ inquiries, masterName, masterId, onRefresh }: MasterTabInquiriesProps) {
   const [chatInquiry, setChatInquiry] = useState<Inquiry | null>(null);
+  const [deletingId, setDeletingId] = useState<number | null>(null);
+
+  const handleDelete = async (inquiryId: number, contactName: string) => {
+    if (!confirm(`Удалить переписку с ${contactName}? Это действие нельзя отменить.`)) return;
+    setDeletingId(inquiryId);
+    try {
+      await fetch(MASTER_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "delete_inquiry", inquiry_id: inquiryId, master_id: masterId }),
+      });
+      onRefresh?.();
+    } finally {
+      setDeletingId(null);
+    }
+  };
 
   if (inquiries.length === 0) {
     return (
@@ -69,6 +87,14 @@ export default function MasterTabInquiries({ inquiries, masterName, masterId, on
                 {!inq.is_read && inq.deal_status === "pending" && (
                   <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-400 border border-amber-500/30">Новое</span>
                 )}
+                <button
+                  onClick={() => handleDelete(inq.id, inq.contact_name)}
+                  disabled={deletingId === inq.id}
+                  className="text-gray-600 hover:text-red-400 transition-colors p-1 rounded-lg hover:bg-red-500/10"
+                  title="Удалить переписку"
+                >
+                  <Icon name={deletingId === inq.id ? "Loader" : "Trash2"} size={14} className={deletingId === inq.id ? "animate-spin" : ""} />
+                </button>
               </div>
             </div>
 
