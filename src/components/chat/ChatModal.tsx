@@ -59,6 +59,7 @@ export default function ChatModal({
   const [dealLoading, setDealLoading] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const initialLoadDone = useRef(false);
 
   const API_URL = myRole === "customer" ? MY_ORDERS_URL : MASTER_URL;
 
@@ -90,6 +91,10 @@ export default function ChatModal({
   }, [inquiryId]);
 
   useEffect(() => {
+    if (!initialLoadDone.current) {
+      initialLoadDone.current = true;
+      return;
+    }
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
