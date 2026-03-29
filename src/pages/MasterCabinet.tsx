@@ -128,7 +128,7 @@ export default function MasterCabinet() {
         )}
 
         {tab === "inquiries" && (
-          <MasterTabInquiries inquiries={profile.inquiries} masterName={profile.master!.name} />
+          <MasterTabInquiries inquiries={profile.inquiries} masterName={profile.master!.name} masterId={profile.master!.id} onRefresh={() => profile.loadProfile(profile.phone)} />
         )}
 
         {(tab === "responses" || tab === "history" || tab === "profile") && (

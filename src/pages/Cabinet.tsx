@@ -74,6 +74,7 @@ export default function Cabinet() {
         setCustomer(parsed.customer);
         setOrders(parsed.orders || []);
         localStorage.setItem("customer_phone", parsed.customer.phone);
+        localStorage.setItem("customer_profile", JSON.stringify({ name: parsed.customer.name, phone: parsed.customer.phone, email: parsed.customer.email }));
         if (editFieldSetters) {
           editFieldSetters.setEditName(parsed.customer.name || "");
           editFieldSetters.setEditPhone(parsed.customer.phone || "");

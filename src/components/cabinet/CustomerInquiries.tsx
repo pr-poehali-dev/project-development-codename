@@ -10,10 +10,12 @@ interface Inquiry {
   master_id: number;
   service_id: number | null;
   contact_name: string;
-  contact_phone: string | null;
-  contact_email: string | null;
   message: string;
   is_read: boolean;
+  deal_status: "pending" | "deal" | "no_deal";
+  master_deal_confirmed: boolean;
+  customer_deal_confirmed: boolean;
+  master_contacts: { email: string } | null;
   created_at: string;
   master_name: string;
   master_city: string;
@@ -198,6 +200,24 @@ export default function CustomerInquiries({ customerName, customerEmail, custome
 
                     <p className="text-gray-400 text-sm leading-relaxed line-clamp-2 mb-3">«{inq.message}»</p>
 
+                    {inq.deal_status === "deal" && inq.master_contacts && (
+                      <div className="mb-3 bg-emerald-600/10 border border-emerald-500/20 rounded-lg px-3 py-2">
+                        <p className="text-emerald-400 text-xs font-semibold mb-1 flex items-center gap-1">
+                          <Icon name="CheckCircle" size={12} /> Договорились
+                        </p>
+                        {inq.master_contacts.email && (
+                          <p className="text-gray-300 text-xs">✉️ {inq.master_contacts.email}</p>
+                        )}
+                      </div>
+                    )}
+                    {inq.deal_status === "no_deal" && (
+                      <div className="mb-3 bg-red-600/8 border border-red-500/15 rounded-lg px-3 py-2">
+                        <p className="text-red-400 text-xs flex items-center gap-1">
+                          <Icon name="XCircle" size={12} /> Не договорились
+                        </p>
+                      </div>
+                    )}
+
                     <Button
                       size="sm"
                       onClick={() => openChat(inq)}
@@ -219,10 +239,13 @@ export default function CustomerInquiries({ customerName, customerEmail, custome
           inquiryId={chatInquiry.id}
           myRole="customer"
           myName={customerName}
+          customerEmail={customerEmail}
+          customerPhone={customerPhone}
           partnerName={chatInquiry.master_name}
           partnerCategory={chatInquiry.master_category}
           serviceTitle={chatInquiry.service_title || undefined}
           onClose={() => setChatInquiry(null)}
+          onDealDone={() => loadInquiries(false)}
         />
       )}
     </div>

@@ -60,7 +60,16 @@ export default function MasterPage() {
   const [notFound, setNotFound] = useState(false);
 
   const [contactOpen, setContactOpen] = useState(false);
-  const [contactForm, setContactForm] = useState({ name: "", phone: "", email: "", message: "" });
+  const [contactForm, setContactForm] = useState(() => {
+    const saved = localStorage.getItem("customer_profile");
+    if (saved) {
+      try {
+        const p = JSON.parse(saved);
+        return { name: p.name || "", phone: p.phone || "", email: p.email || "", message: "" };
+      } catch { /* ignore */ }
+    }
+    return { name: "", phone: "", email: "", message: "" };
+  });
   const [contactLoading, setContactLoading] = useState(false);
   const [contactSent, setContactSent] = useState(false);
   const [contactError, setContactError] = useState("");
@@ -241,7 +250,7 @@ export default function MasterPage() {
               <div className="flex items-center justify-between mb-5">
                 <div>
                   <h3 className="text-white font-semibold">Написать {master?.name?.split(" ")[0]}</h3>
-                  <p className="text-gray-500 text-xs mt-0.5">Мастер получит email и уведомление в кабинете</p>
+                  <p className="text-gray-500 text-xs mt-0.5">Контакты откроются только после взаимного подтверждения</p>
                 </div>
                 <button onClick={() => setContactOpen(false)} className="text-gray-500 hover:text-gray-300 transition-colors">
                   <Icon name="X" size={18} />
@@ -258,6 +267,10 @@ export default function MasterPage() {
                 </div>
               ) : (
                 <form onSubmit={handleContactSubmit} className="flex flex-col gap-3">
+                  <div className="flex items-start gap-2 bg-amber-500/10 border border-amber-500/20 rounded-lg px-3 py-2.5">
+                    <Icon name="Lock" size={13} className="text-amber-400 mt-0.5 flex-shrink-0" />
+                    <p className="text-amber-300 text-xs leading-relaxed">Ваши контакты скрыты. Они появятся у мастера только когда вы оба нажмёте «Договорились» в чате.</p>
+                  </div>
                   <div>
                     <label className="text-xs text-gray-400 mb-1.5 block">Ваше имя *</label>
                     <input required value={contactForm.name} onChange={e => setContactForm(f => ({ ...f, name: e.target.value }))} placeholder="Иван Иванов" className={inputCls} />

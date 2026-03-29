@@ -1,5 +1,6 @@
 import json
 import os
+import re
 import random
 import secrets
 import hashlib
@@ -115,6 +116,74 @@ def send_chat_notification_email(to_email: str, to_name: str, from_name: str, te
     </div>
     """
     msg.attach(MIMEText(f'Сообщение от мастера {from_name}:\n\n{text}\n\nОткрыть кабинет: {cabinet_url}', 'plain'))
+    msg.attach(MIMEText(html, 'html'))
+    ctx = ssl.create_default_context()
+    with smtplib.SMTP_SSL(host, port, context=ctx) as server:
+        server.login(user, pw)
+        server.sendmail(user, to_email, msg.as_string())
+
+
+CONTACT_BLOCK_RE = r'(\+?[78][\s\-]?\(?\d{3}\)?[\s\-]?\d{3}[\s\-]?\d{2}[\s\-]?\d{2}|[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z]{2,})'
+
+
+def has_contacts(text: str) -> bool:
+    return bool(re.search(CONTACT_BLOCK_RE, text))
+
+
+def send_deal_contacts_email(to_email: str, to_name: str, master_name: str, master_email: str):
+    host = os.environ['SMTP_HOST']
+    port = int(os.environ['SMTP_PORT'])
+    user = os.environ['SMTP_USER']
+    pw = os.environ['SMTP_PASS']
+    msg = MIMEMultipart('alternative')
+    msg['Subject'] = f'Договорённость подтверждена — HandyMan'
+    msg['From'] = f'HandyMan <{user}>'
+    msg['To'] = to_email
+    html = f"""
+    <div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:32px;background:#0a0d16;border-radius:16px;">
+      <h2 style="color:#fff;margin-bottom:4px;">HandyMan</h2>
+      <p style="color:#9ca3af;font-size:14px;margin-bottom:20px;">Привет, {to_name}! Вы и мастер {master_name} подтвердили договорённость.</p>
+      <div style="background:#1e1b4b;border:1px solid #4c1d95;border-radius:12px;padding:20px;margin-bottom:20px;">
+        <p style="color:#a78bfa;font-weight:600;font-size:15px;margin:0 0 8px 0;">Контакт мастера:</p>
+        <p style="color:#e5e7eb;font-size:14px;margin:0;">Email: <a href="mailto:{master_email}" style="color:#a78bfa;">{master_email}</a></p>
+      </div>
+      <p style="color:#6b7280;font-size:12px;">Вы можете связаться с мастером напрямую.</p>
+    </div>
+    """
+    msg.attach(MIMEText(f'Договорённость подтверждена!\n\nМастер {master_name}\nEmail: {master_email}', 'plain'))
+    msg.attach(MIMEText(html, 'html'))
+    ctx = ssl.create_default_context()
+    with smtplib.SMTP_SSL(host, port, context=ctx) as server:
+        server.login(user, pw)
+        server.sendmail(user, to_email, msg.as_string())
+
+
+def send_deal_master_email(to_email: str, to_name: str, customer_name: str, customer_phone: str, customer_email: str):
+    host = os.environ['SMTP_HOST']
+    port = int(os.environ['SMTP_PORT'])
+    user = os.environ['SMTP_USER']
+    pw = os.environ['SMTP_PASS']
+    msg = MIMEMultipart('alternative')
+    msg['Subject'] = f'Договорённость подтверждена — HandyMan'
+    msg['From'] = f'HandyMan <{user}>'
+    msg['To'] = to_email
+    contact_lines = ""
+    if customer_phone:
+        contact_lines += f'<p style="margin:4px 0;color:#d1d5db;">📞 {customer_phone}</p>'
+    if customer_email:
+        contact_lines += f'<p style="margin:4px 0;color:#d1d5db;">✉️ {customer_email}</p>'
+    html = f"""
+    <div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:32px;background:#0a0d16;border-radius:16px;">
+      <h2 style="color:#fff;margin-bottom:4px;">HandyMan</h2>
+      <p style="color:#9ca3af;font-size:14px;margin-bottom:20px;">Привет, {to_name}! Вы и заказчик подтвердили договорённость.</p>
+      <div style="background:#1e1b4b;border:1px solid #4c1d95;border-radius:12px;padding:20px;margin-bottom:20px;">
+        <p style="color:#a78bfa;font-weight:600;font-size:15px;margin:0 0 8px 0;">Контакты заказчика {customer_name}:</p>
+        {contact_lines}
+      </div>
+      <p style="color:#6b7280;font-size:12px;">С баланса списано 5 токенов.</p>
+    </div>
+    """
+    msg.attach(MIMEText(f'Договорённость подтверждена!\n\nЗаказчик {customer_name}\nТелефон: {customer_phone}\nEmail: {customer_email}', 'plain'))
     msg.attach(MIMEText(html, 'html'))
     ctx = ssl.create_default_context()
     with smtplib.SMTP_SSL(host, port, context=ctx) as server:
@@ -371,7 +440,7 @@ def handler(event: dict, context) -> dict:
                 cur.close(); conn.close()
                 return {'statusCode': 404, 'headers': HEADERS, 'body': json.dumps({'error': 'Мастер не найден'})}
             cur.execute(
-                f"INSERT INTO {SCHEMA}.master_inquiries (master_id, service_id, contact_name, contact_phone, contact_email, message) VALUES (%s, %s, %s, %s, %s, %s) RETURNING id",
+                f"INSERT INTO {SCHEMA}.master_inquiries (master_id, service_id, contact_name, contact_phone, contact_email, message, expires_at) VALUES (%s, %s, %s, %s, %s, %s, NOW() + INTERVAL '3 days') RETURNING id",
                 (int(master_id), int(service_id) if service_id else None, contact_name, contact_phone or None, contact_email or None, message)
             )
             inquiry_id = cur.fetchone()['id']
@@ -379,10 +448,82 @@ def handler(event: dict, context) -> dict:
             cur.close(); conn.close()
             if master_row['email']:
                 try:
-                    send_inquiry_email(master_row['email'], master_row['name'], contact_name, contact_phone, contact_email, message)
+                    send_inquiry_email(master_row['email'], master_row['name'], contact_name, '', '', message)
                 except Exception:
                     pass
             return {'statusCode': 200, 'headers': HEADERS, 'body': json.dumps({'success': True, 'id': inquiry_id})}
+
+        # ── ПОДТВЕРДИТЬ ДОГОВОРЁННОСТЬ (мастер) ──
+        if body_raw.get('action') == 'confirm_deal':
+            inquiry_id = body_raw.get('inquiry_id')
+            master_id = body_raw.get('master_id')
+            if not inquiry_id or not master_id:
+                return {'statusCode': 400, 'headers': HEADERS, 'body': json.dumps({'error': 'Не все поля'})}
+            conn = get_conn()
+            cur = conn.cursor()
+            cur.execute(
+                f"SELECT i.id, i.deal_status, i.master_deal_confirmed, i.customer_deal_confirmed, i.contact_name, i.contact_phone, i.contact_email, m.balance, m.name as master_name, m.email as master_email "
+                f"FROM {SCHEMA}.master_inquiries i JOIN {SCHEMA}.masters m ON m.id = i.master_id "
+                f"WHERE i.id=%s AND i.master_id=%s",
+                (int(inquiry_id), int(master_id))
+            )
+            inq = cur.fetchone()
+            if not inq:
+                cur.close(); conn.close()
+                return {'statusCode': 404, 'headers': HEADERS, 'body': json.dumps({'error': 'Обращение не найдено'})}
+            if inq['deal_status'] == 'deal':
+                cur.close(); conn.close()
+                return {'statusCode': 200, 'headers': HEADERS, 'body': json.dumps({'success': True, 'already_done': True})}
+            cur.execute(
+                f"UPDATE {SCHEMA}.master_inquiries SET master_deal_confirmed=TRUE WHERE id=%s",
+                (int(inquiry_id),)
+            )
+            both_confirmed = inq['customer_deal_confirmed']
+            if both_confirmed:
+                if inq['balance'] < 5:
+                    conn.rollback(); cur.close(); conn.close()
+                    return {'statusCode': 400, 'headers': HEADERS, 'body': json.dumps({'error': 'Недостаточно токенов (нужно 5)'})}
+                cur.execute(
+                    f"UPDATE {SCHEMA}.master_inquiries SET deal_status='deal', deal_completed_at=NOW() WHERE id=%s",
+                    (int(inquiry_id),)
+                )
+                cur.execute(
+                    f"UPDATE {SCHEMA}.masters SET balance=balance-5 WHERE id=%s",
+                    (int(master_id),)
+                )
+                cur.execute(
+                    f"INSERT INTO {SCHEMA}.master_transactions (master_id, type, amount, description) VALUES (%s,'spend',5,'Подтверждение договорённости с заказчиком (обращение #{inquiry_id})')",
+                    (int(master_id),)
+                )
+                conn.commit(); cur.close(); conn.close()
+                if inq['contact_email']:
+                    try:
+                        send_deal_contacts_email(
+                            to_email=inq['contact_email'], to_name=inq['contact_name'],
+                            master_name=inq['master_name'], master_email=inq['master_email']
+                        )
+                    except Exception:
+                        pass
+                return {'statusCode': 200, 'headers': HEADERS, 'body': json.dumps({
+                    'success': True, 'deal_done': True,
+                    'contacts': {'phone': inq['contact_phone'], 'email': inq['contact_email'], 'name': inq['contact_name']}
+                })}
+            conn.commit(); cur.close(); conn.close()
+            return {'statusCode': 200, 'headers': HEADERS, 'body': json.dumps({'success': True, 'deal_done': False, 'waiting_customer': True})}
+
+        # ── ОТКЛОНИТЬ ДОГОВОРЁННОСТЬ (мастер или заказчик) ──
+        if body_raw.get('action') == 'reject_deal':
+            inquiry_id = body_raw.get('inquiry_id')
+            if not inquiry_id:
+                return {'statusCode': 400, 'headers': HEADERS, 'body': json.dumps({'error': 'inquiry_id обязателен'})}
+            conn = get_conn()
+            cur = conn.cursor()
+            cur.execute(
+                f"UPDATE {SCHEMA}.master_inquiries SET deal_status='no_deal', master_deal_confirmed=FALSE, customer_deal_confirmed=FALSE WHERE id=%s",
+                (int(inquiry_id),)
+            )
+            conn.commit(); cur.close(); conn.close()
+            return {'statusCode': 200, 'headers': HEADERS, 'body': json.dumps({'success': True})}
 
         # ── ОТПРАВИТЬ СООБЩЕНИЕ В ЧАТ (мастер) ──
         if body_raw.get('action') == 'send_message':
@@ -391,6 +532,8 @@ def handler(event: dict, context) -> dict:
             text = (body_raw.get('text') or '').strip()
             if not all([inquiry_id, sender_name, text]):
                 return {'statusCode': 400, 'headers': HEADERS, 'body': json.dumps({'error': 'Не все поля заполнены'})}
+            if has_contacts(text):
+                return {'statusCode': 400, 'headers': HEADERS, 'body': json.dumps({'error': 'Нельзя отправлять телефон или email в чате. Используйте кнопку «Договорились» для обмена контактами.'})}
             conn = get_conn()
             cur = conn.cursor()
             cur.execute(
@@ -399,7 +542,6 @@ def handler(event: dict, context) -> dict:
             )
             row = cur.fetchone()
             conn.commit()
-            # Отправляем email заказчику
             cur.execute(
                 f"SELECT contact_name, contact_email FROM {SCHEMA}.master_inquiries WHERE id = %s",
                 (int(inquiry_id),)
@@ -886,9 +1028,8 @@ def handler(event: dict, context) -> dict:
         cur = conn.cursor()
         cur.execute(f"SELECT COUNT(*) as cnt FROM {SCHEMA}.master_inquiries WHERE master_id=%s AND is_read=FALSE", (master_id,))
         row = cur.fetchone()
-        # Также получаем новые обращения (последние 50)
         cur.execute(
-            f"SELECT id, service_id, contact_name, contact_phone, contact_email, message, is_read, created_at "
+            f"SELECT id, service_id, contact_name, contact_phone, contact_email, message, is_read, created_at, deal_status, master_deal_confirmed, customer_deal_confirmed "
             f"FROM {SCHEMA}.master_inquiries WHERE master_id=%s ORDER BY created_at DESC LIMIT 50",
             (master_id,)
         )
@@ -898,9 +1039,14 @@ def handler(event: dict, context) -> dict:
             'unread_inquiries': int(row['cnt']),
             'inquiries': [{
                 'id': i['id'], 'service_id': i['service_id'],
-                'contact_name': i['contact_name'], 'contact_phone': i['contact_phone'],
-                'contact_email': i['contact_email'], 'message': i['message'],
+                'contact_name': i['contact_name'],
+                'contact_phone': i['contact_phone'] if i['deal_status'] == 'deal' else None,
+                'contact_email': i['contact_email'] if i['deal_status'] == 'deal' else None,
+                'message': i['message'],
                 'is_read': i['is_read'],
+                'deal_status': i['deal_status'],
+                'master_deal_confirmed': i['master_deal_confirmed'],
+                'customer_deal_confirmed': i['customer_deal_confirmed'],
                 'created_at': i['created_at'].isoformat() if i['created_at'] else None,
             } for i in inquiries]
         })}
@@ -915,9 +1061,22 @@ def handler(event: dict, context) -> dict:
             (inquiry_id,)
         )
         messages = cur.fetchall()
+        cur.execute(
+            f"SELECT deal_status, master_deal_confirmed, customer_deal_confirmed, contact_name, contact_phone, contact_email FROM {SCHEMA}.master_inquiries WHERE id=%s",
+            (inquiry_id,)
+        )
+        inq = cur.fetchone()
         cur.close(); conn.close()
+        deal_status = inq['deal_status'] if inq else 'pending'
+        contacts = None
+        if inq and deal_status == 'deal':
+            contacts = {'name': inq['contact_name'], 'phone': inq['contact_phone'], 'email': inq['contact_email']}
         return {'statusCode': 200, 'headers': HEADERS, 'body': json.dumps({
-            'messages': [{'id': m['id'], 'inquiry_id': m['inquiry_id'], 'sender_role': m['sender_role'], 'sender_name': m['sender_name'], 'text': m['text'], 'created_at': m['created_at'].isoformat()} for m in messages]
+            'messages': [{'id': m['id'], 'inquiry_id': m['inquiry_id'], 'sender_role': m['sender_role'], 'sender_name': m['sender_name'], 'text': m['text'], 'created_at': m['created_at'].isoformat()} for m in messages],
+            'deal_status': deal_status,
+            'master_deal_confirmed': inq['master_deal_confirmed'] if inq else False,
+            'customer_deal_confirmed': inq['customer_deal_confirmed'] if inq else False,
+            'contacts': contacts,
         })}
 
     # GET публичного профиля мастера по id
@@ -1017,13 +1176,23 @@ def handler(event: dict, context) -> dict:
         )
         my_services = cur.fetchall()
         cur.execute(
-            f"SELECT id, service_id, contact_name, contact_phone, contact_email, message, is_read, created_at "
+            f"SELECT id, service_id, contact_name, contact_phone, contact_email, message, is_read, created_at, deal_status, master_deal_confirmed, customer_deal_confirmed "
             f"FROM {SCHEMA}.master_inquiries WHERE master_id = %s ORDER BY created_at DESC LIMIT 50",
             (master['id'],)
         )
         inquiries = cur.fetchall()
         cur.execute(f"SELECT COUNT(*) as cnt FROM {SCHEMA}.master_inquiries WHERE master_id=%s AND is_read=FALSE", (master['id'],))
         unread_inquiries = cur.fetchone()['cnt']
+        # Удаляем устаревшие переписки (старше 3 дней)
+        cur.execute(
+            f"DELETE FROM {SCHEMA}.chat_messages WHERE inquiry_id IN (SELECT id FROM {SCHEMA}.master_inquiries WHERE master_id=%s AND expires_at < NOW())",
+            (master['id'],)
+        )
+        cur.execute(
+            f"DELETE FROM {SCHEMA}.master_inquiries WHERE master_id=%s AND expires_at < NOW()",
+            (master['id'],)
+        )
+        conn.commit()
         cur.close(); conn.close()
 
         return {
@@ -1038,10 +1207,13 @@ def handler(event: dict, context) -> dict:
                     'id': i['id'],
                     'service_id': i['service_id'],
                     'contact_name': i['contact_name'],
-                    'contact_phone': i['contact_phone'],
-                    'contact_email': i['contact_email'],
+                    'contact_phone': i['contact_phone'] if i['deal_status'] == 'deal' else None,
+                    'contact_email': i['contact_email'] if i['deal_status'] == 'deal' else None,
                     'message': i['message'],
                     'is_read': i['is_read'],
+                    'deal_status': i['deal_status'],
+                    'master_deal_confirmed': i['master_deal_confirmed'],
+                    'customer_deal_confirmed': i['customer_deal_confirmed'],
                     'created_at': i['created_at'].isoformat() if i['created_at'] else None,
                 } for i in inquiries],
                 'transactions': [{
