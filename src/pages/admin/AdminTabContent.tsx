@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -24,6 +24,45 @@ function fmt(iso: string) {
 }
 function fmtDate(iso: string) {
   return new Date(iso).toLocaleDateString("ru-RU", { day: "2-digit", month: "2-digit", year: "numeric" });
+}
+
+// ── CSV export ──
+function toCSV(rows: Record<string, unknown>[], cols: { key: string; label: string }[]): string {
+  const header = cols.map(c => `"${c.label}"`).join(";");
+  const body = rows.map(row =>
+    cols.map(c => {
+      const v = row[c.key];
+      if (v === null || v === undefined) return "";
+      return `"${String(v).replace(/"/g, '""')}"`;
+    }).join(";")
+  ).join("\n");
+  return "\uFEFF" + header + "\n" + body; // BOM для Excel
+}
+
+function downloadCSV(content: string, filename: string) {
+  const blob = new Blob([content], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url; a.download = filename; a.click();
+  URL.revokeObjectURL(url);
+}
+
+// ── Date filter hook ──
+function useDateFilter<T extends Record<string, unknown>>(
+  items: T[],
+  dateKey: string,
+  dateFrom: string,
+  dateTo: string
+): T[] {
+  return useMemo(() => {
+    if (!dateFrom && !dateTo) return items;
+    const from = dateFrom ? new Date(dateFrom).getTime() : 0;
+    const to = dateTo ? new Date(dateTo + "T23:59:59").getTime() : Infinity;
+    return items.filter(item => {
+      const d = new Date(String(item[dateKey] || "")).getTime();
+      return d >= from && d <= to;
+    });
+  }, [items, dateKey, dateFrom, dateTo]);
 }
 
 interface AdminTabContentProps {
@@ -83,6 +122,54 @@ function Empty({ text }: { text: string }) {
   return <div className="text-center py-16 text-gray-400">{text}</div>;
 }
 
+function FilterBar({
+  searchQuery, setSearchQuery, searchPlaceholder,
+  dateFrom, setDateFrom, dateTo, setDateTo,
+  onExport, exportLabel,
+  filteredCount, totalCount,
+}: {
+  searchQuery: string; setSearchQuery: (v: string) => void; searchPlaceholder: string;
+  dateFrom: string; setDateFrom: (v: string) => void;
+  dateTo: string; setDateTo: (v: string) => void;
+  onExport: () => void; exportLabel: string;
+  filteredCount: number; totalCount: number;
+}) {
+  const hasFilter = searchQuery || dateFrom || dateTo;
+  return (
+    <div className="flex flex-wrap items-center gap-2 mb-4">
+      <Input
+        placeholder={searchPlaceholder}
+        value={searchQuery}
+        onChange={e => setSearchQuery(e.target.value)}
+        className="w-52"
+      />
+      <div className="flex items-center gap-1.5">
+        <label className="text-xs text-gray-500 whitespace-nowrap">с</label>
+        <input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)}
+          className="border rounded-md px-2 py-1.5 text-sm text-gray-700 focus:outline-none focus:border-purple-400" />
+        <label className="text-xs text-gray-500">по</label>
+        <input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)}
+          className="border rounded-md px-2 py-1.5 text-sm text-gray-700 focus:outline-none focus:border-purple-400" />
+      </div>
+      {hasFilter && (
+        <button onClick={() => { setSearchQuery(""); setDateFrom(""); setDateTo(""); }}
+          className="text-xs text-gray-400 hover:text-gray-600 flex items-center gap-1">
+          <Icon name="X" size={13} /> Сбросить
+        </button>
+      )}
+      <div className="ml-auto flex items-center gap-3">
+        {hasFilter && filteredCount !== totalCount && (
+          <span className="text-xs text-gray-400">Показано: {filteredCount} из {totalCount}</span>
+        )}
+        <Button size="sm" variant="outline" onClick={onExport}
+          className="text-xs h-8 px-3 gap-1.5 text-green-700 border-green-300 hover:bg-green-50">
+          <Icon name="Download" size={14} /> {exportLabel}
+        </Button>
+      </div>
+    </div>
+  );
+}
+
 export default function AdminTabContent({
   tab, loading, dashboard, masters, customers, orders, reviews, categories,
   services, chats, chatMessages, activeChatId, responses, payments,
@@ -93,6 +180,18 @@ export default function AdminTabContent({
 }: AdminTabContentProps) {
 
   const q = searchQuery.toLowerCase();
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
+
+  // Date-filtered arrays
+  const mastersDf = useDateFilter(masters, "created_at", dateFrom, dateTo);
+  const customersDf = useDateFilter(customers, "created_at", dateFrom, dateTo);
+  const ordersDf = useDateFilter(orders, "created_at", dateFrom, dateTo);
+  const reviewsDf = useDateFilter(reviews, "created_at", dateFrom, dateTo);
+  const servicesDf = useDateFilter(services, "created_at", dateFrom, dateTo);
+  const chatsDf = useDateFilter(chats, "created_at", dateFrom, dateTo);
+  const responsesDf = useDateFilter(responses, "created_at", dateFrom, dateTo);
+  const paymentsDf = useDateFilter(payments, "created_at", dateFrom, dateTo);
 
   // ── DASHBOARD ──
   if (tab === "dashboard") {
@@ -133,12 +232,25 @@ export default function AdminTabContent({
   // ── МАСТЕРА ──
   if (tab === "masters") {
     if (loading) return <Loader />;
-    const list = masters.filter(m =>
+    const list = mastersDf.filter(m =>
       !q || String(m.name).toLowerCase().includes(q) || String(m.phone).includes(q) || String(m.email).toLowerCase().includes(q)
     );
+    const exportCols = [
+      { key: "id", label: "ID" }, { key: "name", label: "Имя" }, { key: "phone", label: "Телефон" },
+      { key: "email", label: "Email" }, { key: "city", label: "Город" }, { key: "category", label: "Категория" },
+      { key: "balance", label: "Токены" }, { key: "reviews_count", label: "Отзывов" },
+      { key: "avg_rating", label: "Рейтинг" }, { key: "is_blocked", label: "Заблокирован" },
+      { key: "created_at", label: "Дата регистрации" },
+    ];
     return (
-      <Section title="Мастера" count={masters.length}>
-        <Input placeholder="Поиск по имени, телефону, email..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} className="mb-4 max-w-sm" />
+      <Section title="Мастера" count={list.length}>
+        <FilterBar
+          searchQuery={searchQuery} setSearchQuery={setSearchQuery} searchPlaceholder="Имя, телефон, email..."
+          dateFrom={dateFrom} setDateFrom={setDateFrom} dateTo={dateTo} setDateTo={setDateTo}
+          onExport={() => downloadCSV(toCSV(list, exportCols), `masters_${new Date().toISOString().slice(0,10)}.csv`)}
+          exportLabel="Экспорт CSV"
+          filteredCount={list.length} totalCount={masters.length}
+        />
         {list.length === 0 ? <Empty text="Нет мастеров" /> : (
           <div className="space-y-2">
             {list.map((m) => (
@@ -166,20 +278,14 @@ export default function AdminTabContent({
                   </div>
                 </div>
                 <div className="flex gap-1.5 flex-shrink-0 flex-wrap justify-end">
-                  <Button size="sm" variant="outline" className="text-xs h-7 px-2" onClick={() => onOpenEdit("master", m)}>
-                    <Icon name="Pencil" size={12} />
-                  </Button>
-                  <Button size="sm" variant="outline" className="text-xs h-7 px-2" onClick={() => onOpenBalance(m)}>
-                    <Icon name="Coins" size={12} />
-                  </Button>
+                  <Button size="sm" variant="outline" className="text-xs h-7 px-2" onClick={() => onOpenEdit("master", m)}><Icon name="Pencil" size={12} /></Button>
+                  <Button size="sm" variant="outline" className="text-xs h-7 px-2" onClick={() => onOpenBalance(m)}><Icon name="Coins" size={12} /></Button>
                   <Button size="sm" variant="outline" className={`text-xs h-7 px-2 ${m.is_blocked ? "text-green-600" : "text-amber-600"}`}
                     onClick={() => onBlockMaster(Number(m.id), !m.is_blocked)}>
                     <Icon name={m.is_blocked ? "Unlock" : "Lock"} size={12} />
                   </Button>
                   <Button size="sm" variant="outline" className="text-xs h-7 px-2 text-red-500 hover:bg-red-50"
-                    onClick={() => onDeleteMaster(Number(m.id))}>
-                    <Icon name="Trash2" size={12} />
-                  </Button>
+                    onClick={() => onDeleteMaster(Number(m.id))}><Icon name="Trash2" size={12} /></Button>
                 </div>
               </div>
             ))}
@@ -192,12 +298,22 @@ export default function AdminTabContent({
   // ── ЗАКАЗЧИКИ ──
   if (tab === "customers") {
     if (loading) return <Loader />;
-    const list = customers.filter(c =>
+    const list = customersDf.filter(c =>
       !q || String(c.name).toLowerCase().includes(q) || String(c.phone).includes(q) || String(c.email).toLowerCase().includes(q)
     );
+    const exportCols = [
+      { key: "id", label: "ID" }, { key: "name", label: "Имя" }, { key: "phone", label: "Телефон" },
+      { key: "email", label: "Email" }, { key: "is_blocked", label: "Заблокирован" }, { key: "created_at", label: "Дата" },
+    ];
     return (
-      <Section title="Заказчики" count={customers.length}>
-        <Input placeholder="Поиск..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} className="mb-4 max-w-sm" />
+      <Section title="Заказчики" count={list.length}>
+        <FilterBar
+          searchQuery={searchQuery} setSearchQuery={setSearchQuery} searchPlaceholder="Имя, телефон, email..."
+          dateFrom={dateFrom} setDateFrom={setDateFrom} dateTo={dateTo} setDateTo={setDateTo}
+          onExport={() => downloadCSV(toCSV(list, exportCols), `customers_${new Date().toISOString().slice(0,10)}.csv`)}
+          exportLabel="Экспорт CSV"
+          filteredCount={list.length} totalCount={customers.length}
+        />
         {list.length === 0 ? <Empty text="Нет заказчиков" /> : (
           <div className="space-y-2">
             {list.map((c) => (
@@ -217,17 +333,13 @@ export default function AdminTabContent({
                   </div>
                 </div>
                 <div className="flex gap-1.5 flex-shrink-0">
-                  <Button size="sm" variant="outline" className="text-xs h-7 px-2" onClick={() => onOpenEdit("customer", c)}>
-                    <Icon name="Pencil" size={12} />
-                  </Button>
+                  <Button size="sm" variant="outline" className="text-xs h-7 px-2" onClick={() => onOpenEdit("customer", c)}><Icon name="Pencil" size={12} /></Button>
                   <Button size="sm" variant="outline" className={`text-xs h-7 px-2 ${c.is_blocked ? "text-green-600" : "text-amber-600"}`}
                     onClick={() => onBlockCustomer(Number(c.id), !c.is_blocked)}>
                     <Icon name={c.is_blocked ? "Unlock" : "Lock"} size={12} />
                   </Button>
                   <Button size="sm" variant="outline" className="text-xs h-7 px-2 text-red-500 hover:bg-red-50"
-                    onClick={() => onDeleteCustomer(Number(c.id))}>
-                    <Icon name="Trash2" size={12} />
-                  </Button>
+                    onClick={() => onDeleteCustomer(Number(c.id))}><Icon name="Trash2" size={12} /></Button>
                 </div>
               </div>
             ))}
@@ -240,12 +352,24 @@ export default function AdminTabContent({
   // ── ЗАЯВКИ ──
   if (tab === "orders") {
     if (loading) return <Loader />;
-    const list = orders.filter(o =>
+    const list = ordersDf.filter(o =>
       !q || String(o.title).toLowerCase().includes(q) || String(o.contact_name).toLowerCase().includes(q) || String(o.city).toLowerCase().includes(q)
     );
+    const exportCols = [
+      { key: "id", label: "ID" }, { key: "title", label: "Название" }, { key: "description", label: "Описание" },
+      { key: "category", label: "Категория" }, { key: "city", label: "Город" }, { key: "budget", label: "Бюджет" },
+      { key: "contact_name", label: "Заказчик" }, { key: "contact_phone", label: "Телефон" },
+      { key: "status", label: "Статус" }, { key: "created_at", label: "Дата" },
+    ];
     return (
-      <Section title="Заявки заказчиков" count={orders.length}>
-        <Input placeholder="Поиск по названию, городу, имени..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} className="mb-4 max-w-sm" />
+      <Section title="Заявки заказчиков" count={list.length}>
+        <FilterBar
+          searchQuery={searchQuery} setSearchQuery={setSearchQuery} searchPlaceholder="Название, город, имя..."
+          dateFrom={dateFrom} setDateFrom={setDateFrom} dateTo={dateTo} setDateTo={setDateTo}
+          onExport={() => downloadCSV(toCSV(list, exportCols), `orders_${new Date().toISOString().slice(0,10)}.csv`)}
+          exportLabel="Экспорт CSV"
+          filteredCount={list.length} totalCount={orders.length}
+        />
         {list.length === 0 ? <Empty text="Заявок нет" /> : (
           <div className="space-y-2">
             {list.map((o) => (
@@ -260,19 +384,15 @@ export default function AdminTabContent({
                     </div>
                     <p className="text-xs text-gray-500 line-clamp-2 mb-1">{String(o.description)}</p>
                     <div className="flex gap-3 flex-wrap text-xs text-gray-400">
-                      <span>{String(o.category)}</span>
-                      <span>{String(o.city)}</span>
+                      <span>{String(o.category)}</span><span>{String(o.city)}</span>
                       {o.budget && <span className="text-green-600 font-medium">до {Number(o.budget).toLocaleString("ru")} ₽</span>}
                       <span>{String(o.contact_name)} · {String(o.contact_phone)}</span>
                       <span>{fmtDate(String(o.created_at))}</span>
                     </div>
                   </div>
                   <div className="flex gap-1.5 flex-shrink-0 flex-col items-end">
-                    <select
-                      value={String(o.status)}
-                      onChange={e => onUpdateOrderStatus(Number(o.id), e.target.value)}
-                      className="text-xs border rounded px-2 py-1 text-gray-600 bg-white"
-                    >
+                    <select value={String(o.status)} onChange={e => onUpdateOrderStatus(Number(o.id), e.target.value)}
+                      className="text-xs border rounded px-2 py-1 text-gray-600 bg-white">
                       {Object.entries(STATUS_LABELS).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
                     </select>
                     <Button size="sm" variant="outline" className="text-xs h-7 px-2 text-red-500 hover:bg-red-50"
@@ -292,12 +412,24 @@ export default function AdminTabContent({
   // ── ОТКЛИКИ ──
   if (tab === "responses") {
     if (loading) return <Loader />;
-    const list = responses.filter(r =>
+    const list = responsesDf.filter(r =>
       !q || String(r.master_name).toLowerCase().includes(q) || String(r.order_title).toLowerCase().includes(q)
     );
+    const exportCols = [
+      { key: "id", label: "ID" }, { key: "master_name", label: "Мастер" }, { key: "master_phone", label: "Телефон" },
+      { key: "master_category", label: "Категория" }, { key: "order_title", label: "Заявка" },
+      { key: "order_city", label: "Город" }, { key: "order_status", label: "Статус заявки" },
+      { key: "message", label: "Сообщение" }, { key: "created_at", label: "Дата" },
+    ];
     return (
-      <Section title="Отклики мастеров на заявки" count={responses.length}>
-        <Input placeholder="Поиск по мастеру или заявке..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} className="mb-4 max-w-sm" />
+      <Section title="Отклики мастеров на заявки" count={list.length}>
+        <FilterBar
+          searchQuery={searchQuery} setSearchQuery={setSearchQuery} searchPlaceholder="Мастер или заявка..."
+          dateFrom={dateFrom} setDateFrom={setDateFrom} dateTo={dateTo} setDateTo={setDateTo}
+          onExport={() => downloadCSV(toCSV(list, exportCols), `responses_${new Date().toISOString().slice(0,10)}.csv`)}
+          exportLabel="Экспорт CSV"
+          filteredCount={list.length} totalCount={responses.length}
+        />
         {list.length === 0 ? <Empty text="Откликов нет" /> : (
           <div className="space-y-2">
             {list.map((r) => (
@@ -312,14 +444,11 @@ export default function AdminTabContent({
                     <p className="text-xs text-gray-500 mb-1">Заявка: <b>{String(r.order_title)}</b> · {String(r.order_city)}</p>
                     {r.message && <p className="text-xs text-gray-400 line-clamp-2">«{String(r.message)}»</p>}
                     <div className="flex gap-3 mt-1 text-xs text-gray-400">
-                      <span>{String(r.master_phone)}</span>
-                      <span>{fmtDate(String(r.created_at))}</span>
+                      <span>{String(r.master_phone)}</span><span>{fmtDate(String(r.created_at))}</span>
                     </div>
                   </div>
                   <Button size="sm" variant="outline" className="text-xs h-7 px-2 text-red-500 hover:bg-red-50 flex-shrink-0"
-                    onClick={() => onDeleteResponse(Number(r.id))}>
-                    <Icon name="Trash2" size={12} />
-                  </Button>
+                    onClick={() => onDeleteResponse(Number(r.id))}><Icon name="Trash2" size={12} /></Button>
                 </div>
               </div>
             ))}
@@ -329,15 +458,27 @@ export default function AdminTabContent({
     );
   }
 
-  // ── ОБЪЯВЛЕНИЯ (УСЛУГИ МАСТЕРОВ) ──
+  // ── ОБЪЯВЛЕНИЯ ──
   if (tab === "services") {
     if (loading) return <Loader />;
-    const list = services.filter(s =>
+    const list = servicesDf.filter(s =>
       !q || String(s.title).toLowerCase().includes(q) || String(s.master_name).toLowerCase().includes(q) || String(s.city).toLowerCase().includes(q)
     );
+    const exportCols = [
+      { key: "id", label: "ID" }, { key: "title", label: "Название" }, { key: "master_name", label: "Мастер" },
+      { key: "master_phone", label: "Телефон" }, { key: "category", label: "Категория" },
+      { key: "city", label: "Город" }, { key: "price", label: "Цена" },
+      { key: "is_active", label: "Активно" }, { key: "created_at", label: "Дата" },
+    ];
     return (
-      <Section title="Объявления мастеров" count={services.length}>
-        <Input placeholder="Поиск по названию, мастеру, городу..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} className="mb-4 max-w-sm" />
+      <Section title="Объявления мастеров" count={list.length}>
+        <FilterBar
+          searchQuery={searchQuery} setSearchQuery={setSearchQuery} searchPlaceholder="Название, мастер, город..."
+          dateFrom={dateFrom} setDateFrom={setDateFrom} dateTo={dateTo} setDateTo={setDateTo}
+          onExport={() => downloadCSV(toCSV(list, exportCols), `services_${new Date().toISOString().slice(0,10)}.csv`)}
+          exportLabel="Экспорт CSV"
+          filteredCount={list.length} totalCount={services.length}
+        />
         {list.length === 0 ? <Empty text="Объявлений нет" /> : (
           <div className="space-y-2">
             {list.map((s) => (
@@ -352,8 +493,7 @@ export default function AdminTabContent({
                     <p className="text-xs text-gray-500 mb-1">Мастер: <b>{String(s.master_name)}</b> · {String(s.master_phone)}</p>
                     {s.description && <p className="text-xs text-gray-400 line-clamp-1">«{String(s.description)}»</p>}
                     <div className="flex gap-3 mt-1 flex-wrap text-xs text-gray-400">
-                      <span>{String(s.category)}</span>
-                      <span>{String(s.city)}</span>
+                      <span>{String(s.category)}</span><span>{String(s.city)}</span>
                       {s.price && <span className="text-green-600">от {Number(s.price).toLocaleString("ru")} ₽</span>}
                       <span>{fmtDate(String(s.created_at))}</span>
                     </div>
@@ -364,9 +504,7 @@ export default function AdminTabContent({
                       <Icon name={s.is_active ? "EyeOff" : "Eye"} size={12} />
                     </Button>
                     <Button size="sm" variant="outline" className="text-xs h-7 px-2 text-red-500 hover:bg-red-50"
-                      onClick={() => onDeleteService(Number(s.id))}>
-                      <Icon name="Trash2" size={12} />
-                    </Button>
+                      onClick={() => onDeleteService(Number(s.id))}><Icon name="Trash2" size={12} /></Button>
                   </div>
                 </div>
               </div>
@@ -380,20 +518,31 @@ export default function AdminTabContent({
   // ── ПЕРЕПИСКИ ──
   if (tab === "chats") {
     if (loading) return <Loader />;
-    const list = chats.filter(c =>
+    const list = chatsDf.filter(c =>
       !q || String(c.master_name).toLowerCase().includes(q) || String(c.contact_name).toLowerCase().includes(q)
     );
+    const exportCols = [
+      { key: "id", label: "ID" }, { key: "contact_name", label: "Заказчик" },
+      { key: "contact_phone", label: "Телефон" }, { key: "contact_email", label: "Email" },
+      { key: "master_name", label: "Мастер" }, { key: "master_phone", label: "Тел. мастера" },
+      { key: "deal_status", label: "Статус" }, { key: "messages_count", label: "Сообщений" },
+      { key: "message", label: "Первое сообщение" }, { key: "created_at", label: "Дата" },
+    ];
     return (
-      <Section title="Переписки (мастер — заказчик)" count={chats.length}>
-        <Input placeholder="Поиск по мастеру или заказчику..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} className="mb-4 max-w-sm" />
+      <Section title="Переписки (мастер — заказчик)" count={list.length}>
+        <FilterBar
+          searchQuery={searchQuery} setSearchQuery={setSearchQuery} searchPlaceholder="Мастер или заказчик..."
+          dateFrom={dateFrom} setDateFrom={setDateFrom} dateTo={dateTo} setDateTo={setDateTo}
+          onExport={() => downloadCSV(toCSV(list, exportCols), `chats_${new Date().toISOString().slice(0,10)}.csv`)}
+          exportLabel="Экспорт CSV"
+          filteredCount={list.length} totalCount={chats.length}
+        />
         <div className="flex gap-4">
-          {/* Список переписок */}
           <div className="flex-1 min-w-0 space-y-2">
             {list.length === 0 ? <Empty text="Переписок нет" /> : list.map((c) => (
               <div key={String(c.id)}
                 className={`bg-white rounded-xl border p-4 cursor-pointer transition-all ${activeChatId === Number(c.id) ? "border-purple-400 bg-purple-50/30" : "hover:border-gray-300"}`}
-                onClick={() => onViewChat(Number(c.id))}
-              >
+                onClick={() => onViewChat(Number(c.id))}>
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap mb-1">
@@ -418,7 +567,6 @@ export default function AdminTabContent({
               </div>
             ))}
           </div>
-          {/* Просмотр сообщений */}
           {activeChatId && (
             <div className="w-80 flex-shrink-0 bg-white border rounded-xl p-4 flex flex-col max-h-[600px]">
               <p className="font-semibold text-sm text-gray-700 mb-3 flex items-center gap-2">
@@ -448,18 +596,41 @@ export default function AdminTabContent({
   // ── ПЛАТЕЖИ ──
   if (tab === "payments") {
     if (loading) return <Loader />;
-    const list = payments.filter(p =>
+    const list = paymentsDf.filter(p =>
       !q || String(p.master_name).toLowerCase().includes(q) || String(p.master_phone).includes(q)
     );
-    const total = payments.filter(p => p.status === "succeeded").reduce((s, p) => s + Number(p.amount), 0);
+    const total = list.filter(p => p.status === "succeeded").reduce((s, p) => s + Number(p.amount), 0);
+    const exportCols = [
+      { key: "id", label: "ID" }, { key: "master_name", label: "Мастер" }, { key: "master_phone", label: "Телефон" },
+      { key: "package_name", label: "Пакет" }, { key: "tokens_count", label: "Токены" },
+      { key: "amount", label: "Сумма (₽)" }, { key: "status", label: "Статус" }, { key: "created_at", label: "Дата" },
+    ];
     return (
-      <Section title="Платежи" count={payments.length}>
-        <div className="mb-4 flex items-center gap-4">
-          <Input placeholder="Поиск по мастеру..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} className="max-w-sm" />
-          <div className="bg-green-50 border border-green-200 rounded-lg px-4 py-2">
-            <span className="text-xs text-green-600">Выручка: </span>
+      <Section title="Платежи" count={list.length}>
+        <div className="flex flex-wrap items-center gap-2 mb-4">
+          <Input placeholder="Мастер..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} className="w-52" />
+          <div className="flex items-center gap-1.5">
+            <label className="text-xs text-gray-500 whitespace-nowrap">с</label>
+            <input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)}
+              className="border rounded-md px-2 py-1.5 text-sm text-gray-700 focus:outline-none focus:border-purple-400" />
+            <label className="text-xs text-gray-500">по</label>
+            <input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)}
+              className="border rounded-md px-2 py-1.5 text-sm text-gray-700 focus:outline-none focus:border-purple-400" />
+          </div>
+          {(searchQuery || dateFrom || dateTo) && (
+            <button onClick={() => { setSearchQuery(""); setDateFrom(""); setDateTo(""); }}
+              className="text-xs text-gray-400 hover:text-gray-600 flex items-center gap-1">
+              <Icon name="X" size={13} /> Сбросить
+            </button>
+          )}
+          <div className="bg-green-50 border border-green-200 rounded-lg px-4 py-1.5">
+            <span className="text-xs text-green-600">Выручка (фильтр): </span>
             <span className="font-bold text-green-700">{total.toLocaleString("ru")} ₽</span>
           </div>
+          <Button size="sm" variant="outline" onClick={() => downloadCSV(toCSV(list, exportCols), `payments_${new Date().toISOString().slice(0,10)}.csv`)}
+            className="text-xs h-8 px-3 gap-1.5 text-green-700 border-green-300 hover:bg-green-50 ml-auto">
+            <Icon name="Download" size={14} /> Экспорт CSV
+          </Button>
         </div>
         {list.length === 0 ? <Empty text="Платежей нет" /> : (
           <div className="space-y-2">
@@ -494,12 +665,20 @@ export default function AdminTabContent({
   // ── ОТЗЫВЫ ──
   if (tab === "reviews") {
     if (loading) return <Loader />;
-    const list = reviews.filter(r =>
-      !q || String(r.master_name).toLowerCase().includes(q)
-    );
+    const list = reviewsDf.filter(r => !q || String(r.master_name).toLowerCase().includes(q));
+    const exportCols = [
+      { key: "id", label: "ID" }, { key: "master_name", label: "Мастер" },
+      { key: "rating", label: "Оценка" }, { key: "text", label: "Текст" }, { key: "created_at", label: "Дата" },
+    ];
     return (
-      <Section title="Отзывы" count={reviews.length}>
-        <Input placeholder="Поиск по мастеру..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} className="mb-4 max-w-sm" />
+      <Section title="Отзывы" count={list.length}>
+        <FilterBar
+          searchQuery={searchQuery} setSearchQuery={setSearchQuery} searchPlaceholder="Мастер..."
+          dateFrom={dateFrom} setDateFrom={setDateFrom} dateTo={dateTo} setDateTo={setDateTo}
+          onExport={() => downloadCSV(toCSV(list, exportCols), `reviews_${new Date().toISOString().slice(0,10)}.csv`)}
+          exportLabel="Экспорт CSV"
+          filteredCount={list.length} totalCount={reviews.length}
+        />
         {list.length === 0 ? <Empty text="Отзывов нет" /> : (
           <div className="space-y-2">
             {list.map((r) => (
@@ -513,9 +692,7 @@ export default function AdminTabContent({
                   {r.text && <p className="text-xs text-gray-500">«{String(r.text)}»</p>}
                 </div>
                 <Button size="sm" variant="outline" className="text-xs h-7 px-2 text-red-500 hover:bg-red-50 flex-shrink-0"
-                  onClick={() => onDeleteReview(Number(r.id))}>
-                  <Icon name="Trash2" size={12} />
-                </Button>
+                  onClick={() => onDeleteReview(Number(r.id))}><Icon name="Trash2" size={12} /></Button>
               </div>
             ))}
           </div>
@@ -533,6 +710,10 @@ export default function AdminTabContent({
           <Input placeholder="Новая категория..." value={newCategory} onChange={e => setNewCategory(e.target.value)}
             onKeyDown={e => e.key === "Enter" && onAddCategory()} />
           <Button className="bg-purple-600 hover:bg-purple-700 text-white" onClick={onAddCategory}>Добавить</Button>
+          <Button size="sm" variant="outline" onClick={() => downloadCSV(toCSV(categories, [{ key: "id", label: "ID" }, { key: "name", label: "Название" }]), "categories.csv")}
+            className="text-xs gap-1.5 text-green-700 border-green-300 hover:bg-green-50">
+            <Icon name="Download" size={14} />
+          </Button>
         </div>
         {categories.length === 0 ? <Empty text="Категорий нет" /> : (
           <div className="flex flex-wrap gap-2">
