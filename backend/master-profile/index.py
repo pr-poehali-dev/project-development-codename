@@ -130,6 +130,32 @@ def has_contacts(text: str) -> bool:
     return bool(re.search(CONTACT_BLOCK_RE, text))
 
 
+def send_deal_waiting_customer_email(to_email: str, to_name: str, master_name: str, cabinet_url: str):
+    host = os.environ['SMTP_HOST']
+    port = int(os.environ['SMTP_PORT'])
+    user = os.environ['SMTP_USER']
+    pw = os.environ['SMTP_PASS']
+    msg = MIMEMultipart('alternative')
+    msg['Subject'] = f'Мастер {master_name} нажал «Договорились» — HandyMan'
+    msg['From'] = f'HandyMan <{user}>'
+    msg['To'] = to_email
+    html = f"""<div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:32px;background:#0a0d16;border-radius:16px;">
+      <h2 style="color:#fff;">HandyMan</h2>
+      <p style="color:#9ca3af;font-size:14px;">Привет, {to_name}!</p>
+      <div style="background:#1e1b4b;border:1px solid #4c1d95;border-radius:12px;padding:20px;margin:16px 0;">
+        <p style="color:#a78bfa;font-weight:600;margin:0 0 8px;">Мастер {master_name} подтвердил договорённость.</p>
+        <p style="color:#d1d5db;font-size:14px;margin:0;">Войдите в кабинет и нажмите «Договорились» в чате, чтобы обменяться контактами.</p>
+      </div>
+      <a href="{cabinet_url}" style="display:inline-block;background:#7c3aed;color:#fff;padding:12px 24px;border-radius:10px;text-decoration:none;font-size:14px;font-weight:600;">Открыть кабинет</a>
+    </div>"""
+    msg.attach(MIMEText(f'Мастер {master_name} подтвердил договорённость. Войдите в кабинет: {cabinet_url}', 'plain'))
+    msg.attach(MIMEText(html, 'html'))
+    ctx = ssl.create_default_context()
+    with smtplib.SMTP_SSL(host, port, context=ctx) as server:
+        server.login(user, pw)
+        server.sendmail(user, to_email, msg.as_string())
+
+
 def send_deal_contacts_email(to_email: str, to_name: str, master_name: str, master_email: str):
     host = os.environ['SMTP_HOST']
     port = int(os.environ['SMTP_PORT'])
@@ -509,6 +535,16 @@ def handler(event: dict, context) -> dict:
                     'contacts': {'phone': inq['contact_phone'], 'email': inq['contact_email'], 'name': inq['contact_name']}
                 })}
             conn.commit(); cur.close(); conn.close()
+            if inq['contact_email']:
+                try:
+                    send_deal_waiting_customer_email(
+                        to_email=inq['contact_email'],
+                        to_name=inq['contact_name'],
+                        master_name=inq['master_name'],
+                        cabinet_url='https://handyman.poehali.dev/cabinet'
+                    )
+                except Exception:
+                    pass
             return {'statusCode': 200, 'headers': HEADERS, 'body': json.dumps({'success': True, 'deal_done': False, 'waiting_customer': True})}
 
         # ── ОТКЛОНИТЬ ДОГОВОРЁННОСТЬ (мастер или заказчик) ──
