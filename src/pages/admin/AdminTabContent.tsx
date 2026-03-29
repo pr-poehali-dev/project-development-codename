@@ -41,6 +41,7 @@ interface AdminTabContentProps {
   onDeleteReview: (id: number) => void;
   onAddCategory: () => void;
   onDeleteCategory: (id: number) => void;
+  onEditService: (s: Record<string, unknown>) => void;
   onDeleteService: (id: number) => void;
   onToggleService: (id: number, active: boolean) => void;
   onDeleteChat: (id: number) => void;
@@ -54,7 +55,7 @@ export default function AdminTabContent({
   newCategory, setNewCategory, searchQuery, setSearchQuery,
   onOpenEdit, onOpenBalance, onBlockMaster, onBlockCustomer, onDeleteMaster, onDeleteCustomer,
   onUpdateOrderStatus, onDeleteOrder, onDeleteReview, onAddCategory, onDeleteCategory,
-  onDeleteService, onToggleService, onDeleteChat, onViewChat, onDeleteResponse,
+  onEditService, onDeleteService, onToggleService, onDeleteChat, onViewChat, onDeleteResponse,
 }: AdminTabContentProps) {
 
   const q = searchQuery.toLowerCase();
@@ -247,6 +248,8 @@ export default function AdminTabContent({
                     </div>
                   </div>
                   <div className="flex gap-1.5 flex-shrink-0">
+                    <Button size="sm" variant="outline" className="text-xs h-7 px-2"
+                      onClick={() => onEditService(s)}><Icon name="Pencil" size={12} /></Button>
                     <Button size="sm" variant="outline" className={`text-xs h-7 px-2 ${s.is_active ? "text-amber-600" : "text-green-600"}`}
                       onClick={() => onToggleService(Number(s.id), !s.is_active)}>
                       <Icon name={s.is_active ? "EyeOff" : "Eye"} size={12} />

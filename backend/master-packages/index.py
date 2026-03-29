@@ -226,7 +226,7 @@ def handler(event: dict, context) -> dict:
         conn = get_conn()
         cur = conn.cursor()
         cur.execute(f"""
-            SELECT rv.id, rv.master_id, rv.rating, rv.text, rv.created_at,
+            SELECT rv.id, rv.master_id, rv.rating, rv.comment as text, rv.created_at,
                    m.name as master_name
             FROM {SCHEMA}.reviews rv
             LEFT JOIN {SCHEMA}.masters m ON m.id = rv.master_id
@@ -521,6 +521,26 @@ def handler(event: dict, context) -> dict:
             'deals_done': deals_done, 'responses_count': responses_count,
             'revenue': revenue,
         })
+
+    # --- POST: редактировать объявление мастера ---
+    if method == 'POST' and action == 'admin_update_service':
+        service_id = body.get('service_id')
+        title = (body.get('title') or '').strip()
+        description = (body.get('description') or '').strip()
+        category = (body.get('category') or '').strip()
+        city = (body.get('city') or '').strip()
+        price = body.get('price')
+        if not service_id or not title:
+            return err('ID и название обязательны')
+        conn = get_conn()
+        cur = conn.cursor()
+        cur.execute(
+            f"UPDATE {SCHEMA}.master_services SET title=%s, description=%s, category=%s, city=%s, price=%s WHERE id=%s",
+            (title, description or None, category or None, city or None, int(price) if price else None, int(service_id))
+        )
+        conn.commit()
+        conn.close()
+        return ok({'success': True})
 
     # --- POST: удалить объявление мастера ---
     if method == 'POST' and action == 'admin_delete_service':

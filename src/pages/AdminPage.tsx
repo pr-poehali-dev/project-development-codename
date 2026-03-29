@@ -50,6 +50,9 @@ export default function AdminPage() {
   const [editModal, setEditModal] = useState<{ type: "master" | "customer"; data: Record<string, unknown> } | null>(null);
   const [editForm, setEditForm] = useState<Record<string, string>>({});
 
+  const [serviceEditModal, setServiceEditModal] = useState<Record<string, unknown> | null>(null);
+  const [serviceEditForm, setServiceEditForm] = useState<Record<string, string>>({});
+
   const openEdit = (type: "master" | "customer", data: Record<string, unknown>) => {
     setEditModal({ type, data });
     if (type === "master") {
@@ -69,6 +72,28 @@ export default function AdminPage() {
       loadTab("customers", token);
     }
     setEditModal(null);
+  };
+
+  const openEditService = (s: Record<string, unknown>) => {
+    setServiceEditModal(s);
+    setServiceEditForm({
+      title: String(s.title || ""),
+      description: String(s.description || ""),
+      category: String(s.category || ""),
+      city: String(s.city || ""),
+      price: s.price ? String(s.price) : "",
+    });
+  };
+
+  const saveServiceEdit = async () => {
+    if (!serviceEditModal) return;
+    await api("admin_update_service", "POST", {
+      service_id: serviceEditModal.id,
+      ...serviceEditForm,
+      price: serviceEditForm.price ? Number(serviceEditForm.price) : null,
+    }, token);
+    setServiceEditModal(null);
+    loadTab("services", token);
   };
 
   const loadTab = useCallback(async (t: Tab, tk: string) => {
@@ -251,7 +276,7 @@ export default function AdminPage() {
           onDeleteMaster={deleteMaster} onDeleteCustomer={deleteCustomer}
           onUpdateOrderStatus={updateOrderStatus} onDeleteOrder={deleteOrder}
           onDeleteReview={deleteReview} onAddCategory={addCategory} onDeleteCategory={deleteCategory}
-          onDeleteService={deleteService} onToggleService={toggleService}
+          onEditService={openEditService} onDeleteService={deleteService} onToggleService={toggleService}
           onDeleteChat={deleteChat} onViewChat={viewChat}
           onDeleteResponse={deleteResponse}
         />
@@ -264,6 +289,9 @@ export default function AdminPage() {
         setBalanceAmount={setBalanceAmount} balanceComment={balanceComment}
         setBalanceComment={setBalanceComment} onAdjustBalance={adjustBalance}
         onCloseBalance={() => setBalanceModal(null)}
+        serviceEditModal={serviceEditModal} serviceEditForm={serviceEditForm}
+        setServiceEditForm={setServiceEditForm}
+        onSaveServiceEdit={saveServiceEdit} onCloseServiceEdit={() => setServiceEditModal(null)}
       />
     </div>
   );
