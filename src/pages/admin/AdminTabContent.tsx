@@ -1,69 +1,15 @@
-import { useState, useMemo } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import Icon from "@/components/ui/icon";
 import type { Tab } from "./AdminSidebar";
-
-const STATUS_LABELS: Record<string, string> = {
-  new: "Новая", in_progress: "В работе", done: "Завершена", cancelled: "Отменена",
-};
-const STATUS_COLORS: Record<string, string> = {
-  new: "bg-blue-100 text-blue-700", in_progress: "bg-yellow-100 text-yellow-700",
-  done: "bg-green-100 text-green-700", cancelled: "bg-red-100 text-red-700",
-};
-const DEAL_LABELS: Record<string, string> = {
-  pending: "В процессе", deal: "Договорились", no_deal: "Не договорились",
-};
-const DEAL_COLORS: Record<string, string> = {
-  pending: "bg-gray-100 text-gray-600", deal: "bg-green-100 text-green-700", no_deal: "bg-red-100 text-red-700",
-};
-
-function fmt(iso: string) {
-  return new Date(iso).toLocaleDateString("ru-RU", { day: "2-digit", month: "2-digit", year: "2-digit", hour: "2-digit", minute: "2-digit" });
-}
-function fmtDate(iso: string) {
-  return new Date(iso).toLocaleDateString("ru-RU", { day: "2-digit", month: "2-digit", year: "numeric" });
-}
-
-// ── CSV export ──
-function toCSV(rows: Record<string, unknown>[], cols: { key: string; label: string }[]): string {
-  const header = cols.map(c => `"${c.label}"`).join(";");
-  const body = rows.map(row =>
-    cols.map(c => {
-      const v = row[c.key];
-      if (v === null || v === undefined) return "";
-      return `"${String(v).replace(/"/g, '""')}"`;
-    }).join(";")
-  ).join("\n");
-  return "\uFEFF" + header + "\n" + body; // BOM для Excel
-}
-
-function downloadCSV(content: string, filename: string) {
-  const blob = new Blob([content], { type: "text/csv;charset=utf-8;" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url; a.download = filename; a.click();
-  URL.revokeObjectURL(url);
-}
-
-// ── Date filter hook ──
-function useDateFilter<T extends Record<string, unknown>>(
-  items: T[],
-  dateKey: string,
-  dateFrom: string,
-  dateTo: string
-): T[] {
-  return useMemo(() => {
-    if (!dateFrom && !dateTo) return items;
-    const from = dateFrom ? new Date(dateFrom).getTime() : 0;
-    const to = dateTo ? new Date(dateTo + "T23:59:59").getTime() : Infinity;
-    return items.filter(item => {
-      const d = new Date(String(item[dateKey] || "")).getTime();
-      return d >= from && d <= to;
-    });
-  }, [items, dateKey, dateFrom, dateTo]);
-}
+import { Section, Loader, Empty, FilterBar } from "./AdminShared";
+import { DashboardTab, MastersTab, CustomersTab } from "./AdminTabUsers";
+import {
+  STATUS_LABELS, STATUS_COLORS, DEAL_LABELS, DEAL_COLORS,
+  fmt, fmtDate, toCSV, downloadCSV, useDateFilter,
+} from "./adminUtils";
 
 interface AdminTabContentProps {
   tab: Tab;
@@ -102,74 +48,6 @@ interface AdminTabContentProps {
   onDeleteResponse: (id: number) => void;
 }
 
-function Section({ title, count, children }: { title: string; count?: number; children: React.ReactNode }) {
-  return (
-    <div className="flex-1 overflow-auto p-6">
-      <div className="flex items-center gap-3 mb-5">
-        <h2 className="text-xl font-bold text-gray-800">{title}</h2>
-        {count !== undefined && <span className="text-sm text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">{count}</span>}
-      </div>
-      {children}
-    </div>
-  );
-}
-
-function Loader() {
-  return <div className="flex items-center justify-center py-20"><div className="w-8 h-8 border-2 border-purple-500 border-t-transparent rounded-full animate-spin" /></div>;
-}
-
-function Empty({ text }: { text: string }) {
-  return <div className="text-center py-16 text-gray-400">{text}</div>;
-}
-
-function FilterBar({
-  searchQuery, setSearchQuery, searchPlaceholder,
-  dateFrom, setDateFrom, dateTo, setDateTo,
-  onExport, exportLabel,
-  filteredCount, totalCount,
-}: {
-  searchQuery: string; setSearchQuery: (v: string) => void; searchPlaceholder: string;
-  dateFrom: string; setDateFrom: (v: string) => void;
-  dateTo: string; setDateTo: (v: string) => void;
-  onExport: () => void; exportLabel: string;
-  filteredCount: number; totalCount: number;
-}) {
-  const hasFilter = searchQuery || dateFrom || dateTo;
-  return (
-    <div className="flex flex-wrap items-center gap-2 mb-4">
-      <Input
-        placeholder={searchPlaceholder}
-        value={searchQuery}
-        onChange={e => setSearchQuery(e.target.value)}
-        className="w-52"
-      />
-      <div className="flex items-center gap-1.5">
-        <label className="text-xs text-gray-500 whitespace-nowrap">с</label>
-        <input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)}
-          className="border rounded-md px-2 py-1.5 text-sm text-gray-700 focus:outline-none focus:border-purple-400" />
-        <label className="text-xs text-gray-500">по</label>
-        <input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)}
-          className="border rounded-md px-2 py-1.5 text-sm text-gray-700 focus:outline-none focus:border-purple-400" />
-      </div>
-      {hasFilter && (
-        <button onClick={() => { setSearchQuery(""); setDateFrom(""); setDateTo(""); }}
-          className="text-xs text-gray-400 hover:text-gray-600 flex items-center gap-1">
-          <Icon name="X" size={13} /> Сбросить
-        </button>
-      )}
-      <div className="ml-auto flex items-center gap-3">
-        {hasFilter && filteredCount !== totalCount && (
-          <span className="text-xs text-gray-400">Показано: {filteredCount} из {totalCount}</span>
-        )}
-        <Button size="sm" variant="outline" onClick={onExport}
-          className="text-xs h-8 px-3 gap-1.5 text-green-700 border-green-300 hover:bg-green-50">
-          <Icon name="Download" size={14} /> {exportLabel}
-        </Button>
-      </div>
-    </div>
-  );
-}
-
 export default function AdminTabContent({
   tab, loading, dashboard, masters, customers, orders, reviews, categories,
   services, chats, chatMessages, activeChatId, responses, payments,
@@ -183,7 +61,6 @@ export default function AdminTabContent({
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
 
-  // Date-filtered arrays
   const mastersDf = useDateFilter(masters, "created_at", dateFrom, dateTo);
   const customersDf = useDateFilter(customers, "created_at", dateFrom, dateTo);
   const ordersDf = useDateFilter(orders, "created_at", dateFrom, dateTo);
@@ -193,159 +70,30 @@ export default function AdminTabContent({
   const responsesDf = useDateFilter(responses, "created_at", dateFrom, dateTo);
   const paymentsDf = useDateFilter(payments, "created_at", dateFrom, dateTo);
 
-  // ── DASHBOARD ──
   if (tab === "dashboard") {
-    if (loading || !dashboard) return <Loader />;
-    const cards = [
-      { label: "Мастеров", value: dashboard.masters_count, icon: "Wrench", color: "text-purple-600 bg-purple-50" },
-      { label: "Заблокировано", value: dashboard.masters_blocked, icon: "Ban", color: "text-red-500 bg-red-50" },
-      { label: "Заказчиков", value: dashboard.customers_count, icon: "Users", color: "text-blue-600 bg-blue-50" },
-      { label: "Заявок всего", value: dashboard.orders_count, icon: "FileText", color: "text-indigo-600 bg-indigo-50" },
-      { label: "Новых заявок", value: dashboard.orders_new, icon: "Bell", color: "text-amber-600 bg-amber-50" },
-      { label: "Откликов", value: dashboard.responses_count, icon: "MessageCircle", color: "text-teal-600 bg-teal-50" },
-      { label: "Объявлений", value: dashboard.active_services, icon: "Briefcase", color: "text-emerald-600 bg-emerald-50" },
-      { label: "Переписок", value: dashboard.chats_count, icon: "MessagesSquare", color: "text-sky-600 bg-sky-50" },
-      { label: "Договорились", value: dashboard.deals_done, icon: "Handshake", color: "text-green-700 bg-green-50" },
-      { label: "Отзывов", value: dashboard.reviews_count, icon: "Star", color: "text-yellow-600 bg-yellow-50" },
-      { label: "Токенов в системе", value: dashboard.total_balance, icon: "Coins", color: "text-violet-600 bg-violet-50" },
-      { label: "Выручка (₽)", value: dashboard.revenue ?? 0, icon: "TrendingUp", color: "text-green-600 bg-green-50" },
-    ];
-    return (
-      <Section title="Обзор">
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-          {cards.map((c) => (
-            <div key={c.label} className="bg-white rounded-xl border p-4 flex items-center gap-3">
-              <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${c.color}`}>
-                <Icon name={c.icon} size={18} />
-              </div>
-              <div>
-                <p className="text-2xl font-bold text-gray-800">{c.value ?? 0}</p>
-                <p className="text-xs text-gray-500">{c.label}</p>
-              </div>
-            </div>
-          ))}
-        </div>
-      </Section>
-    );
+    return <DashboardTab loading={loading} dashboard={dashboard} />;
   }
 
-  // ── МАСТЕРА ──
   if (tab === "masters") {
-    if (loading) return <Loader />;
-    const list = mastersDf.filter(m =>
-      !q || String(m.name).toLowerCase().includes(q) || String(m.phone).includes(q) || String(m.email).toLowerCase().includes(q)
-    );
-    const exportCols = [
-      { key: "id", label: "ID" }, { key: "name", label: "Имя" }, { key: "phone", label: "Телефон" },
-      { key: "email", label: "Email" }, { key: "city", label: "Город" }, { key: "category", label: "Категория" },
-      { key: "balance", label: "Токены" }, { key: "reviews_count", label: "Отзывов" },
-      { key: "avg_rating", label: "Рейтинг" }, { key: "is_blocked", label: "Заблокирован" },
-      { key: "created_at", label: "Дата регистрации" },
-    ];
     return (
-      <Section title="Мастера" count={list.length}>
-        <FilterBar
-          searchQuery={searchQuery} setSearchQuery={setSearchQuery} searchPlaceholder="Имя, телефон, email..."
-          dateFrom={dateFrom} setDateFrom={setDateFrom} dateTo={dateTo} setDateTo={setDateTo}
-          onExport={() => downloadCSV(toCSV(list, exportCols), `masters_${new Date().toISOString().slice(0,10)}.csv`)}
-          exportLabel="Экспорт CSV"
-          filteredCount={list.length} totalCount={masters.length}
-        />
-        {list.length === 0 ? <Empty text="Нет мастеров" /> : (
-          <div className="space-y-2">
-            {list.map((m) => (
-              <div key={String(m.id)} className={`bg-white rounded-xl border p-4 flex items-center gap-4 ${m.is_blocked ? "opacity-60 border-red-200" : ""}`}>
-                <div className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center font-bold text-purple-700 text-sm flex-shrink-0">
-                  {String(m.name || "?")[0].toUpperCase()}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className="font-semibold text-gray-800 text-sm">{String(m.name)}</span>
-                    {m.is_blocked && <Badge className="bg-red-100 text-red-600 text-[10px]">Заблокирован</Badge>}
-                    {m.email_verified && <Badge className="bg-green-100 text-green-600 text-[10px]">Email ✓</Badge>}
-                  </div>
-                  <div className="flex gap-3 mt-0.5 flex-wrap">
-                    <span className="text-xs text-gray-500">{String(m.phone)}</span>
-                    {m.email && <span className="text-xs text-gray-400">{String(m.email)}</span>}
-                    {m.city && <span className="text-xs text-gray-400">{String(m.city)}</span>}
-                    {m.category && <span className="text-xs text-purple-600">{String(m.category)}</span>}
-                  </div>
-                  <div className="flex gap-3 mt-0.5">
-                    <span className="text-xs text-gray-400">Токены: <b className="text-gray-700">{String(m.balance ?? 0)}</b></span>
-                    <span className="text-xs text-gray-400">Отзывов: <b className="text-gray-700">{String(m.reviews_count ?? 0)}</b></span>
-                    <span className="text-xs text-gray-400">★ {Number(m.avg_rating ?? 0).toFixed(1)}</span>
-                    <span className="text-xs text-gray-400">с {fmtDate(String(m.created_at))}</span>
-                  </div>
-                </div>
-                <div className="flex gap-1.5 flex-shrink-0 flex-wrap justify-end">
-                  <Button size="sm" variant="outline" className="text-xs h-7 px-2" onClick={() => onOpenEdit("master", m)}><Icon name="Pencil" size={12} /></Button>
-                  <Button size="sm" variant="outline" className="text-xs h-7 px-2" onClick={() => onOpenBalance(m)}><Icon name="Coins" size={12} /></Button>
-                  <Button size="sm" variant="outline" className={`text-xs h-7 px-2 ${m.is_blocked ? "text-green-600" : "text-amber-600"}`}
-                    onClick={() => onBlockMaster(Number(m.id), !m.is_blocked)}>
-                    <Icon name={m.is_blocked ? "Unlock" : "Lock"} size={12} />
-                  </Button>
-                  <Button size="sm" variant="outline" className="text-xs h-7 px-2 text-red-500 hover:bg-red-50"
-                    onClick={() => onDeleteMaster(Number(m.id))}><Icon name="Trash2" size={12} /></Button>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </Section>
+      <MastersTab
+        loading={loading} masters={masters} mastersDf={mastersDf}
+        searchQuery={searchQuery} setSearchQuery={setSearchQuery}
+        dateFrom={dateFrom} setDateFrom={setDateFrom} dateTo={dateTo} setDateTo={setDateTo}
+        onOpenEdit={onOpenEdit} onOpenBalance={onOpenBalance}
+        onBlockMaster={onBlockMaster} onDeleteMaster={onDeleteMaster}
+      />
     );
   }
 
-  // ── ЗАКАЗЧИКИ ──
   if (tab === "customers") {
-    if (loading) return <Loader />;
-    const list = customersDf.filter(c =>
-      !q || String(c.name).toLowerCase().includes(q) || String(c.phone).includes(q) || String(c.email).toLowerCase().includes(q)
-    );
-    const exportCols = [
-      { key: "id", label: "ID" }, { key: "name", label: "Имя" }, { key: "phone", label: "Телефон" },
-      { key: "email", label: "Email" }, { key: "is_blocked", label: "Заблокирован" }, { key: "created_at", label: "Дата" },
-    ];
     return (
-      <Section title="Заказчики" count={list.length}>
-        <FilterBar
-          searchQuery={searchQuery} setSearchQuery={setSearchQuery} searchPlaceholder="Имя, телефон, email..."
-          dateFrom={dateFrom} setDateFrom={setDateFrom} dateTo={dateTo} setDateTo={setDateTo}
-          onExport={() => downloadCSV(toCSV(list, exportCols), `customers_${new Date().toISOString().slice(0,10)}.csv`)}
-          exportLabel="Экспорт CSV"
-          filteredCount={list.length} totalCount={customers.length}
-        />
-        {list.length === 0 ? <Empty text="Нет заказчиков" /> : (
-          <div className="space-y-2">
-            {list.map((c) => (
-              <div key={String(c.id)} className={`bg-white rounded-xl border p-4 flex items-center gap-4 ${c.is_blocked ? "opacity-60 border-red-200" : ""}`}>
-                <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center font-bold text-blue-700 text-sm flex-shrink-0">
-                  {String(c.name || "?")[0].toUpperCase()}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <span className="font-semibold text-gray-800 text-sm">{String(c.name)}</span>
-                    {c.is_blocked && <Badge className="bg-red-100 text-red-600 text-[10px]">Заблокирован</Badge>}
-                  </div>
-                  <div className="flex gap-3 mt-0.5 flex-wrap">
-                    <span className="text-xs text-gray-500">{String(c.phone)}</span>
-                    {c.email && <span className="text-xs text-gray-400">{String(c.email)}</span>}
-                    <span className="text-xs text-gray-400">с {fmtDate(String(c.created_at))}</span>
-                  </div>
-                </div>
-                <div className="flex gap-1.5 flex-shrink-0">
-                  <Button size="sm" variant="outline" className="text-xs h-7 px-2" onClick={() => onOpenEdit("customer", c)}><Icon name="Pencil" size={12} /></Button>
-                  <Button size="sm" variant="outline" className={`text-xs h-7 px-2 ${c.is_blocked ? "text-green-600" : "text-amber-600"}`}
-                    onClick={() => onBlockCustomer(Number(c.id), !c.is_blocked)}>
-                    <Icon name={c.is_blocked ? "Unlock" : "Lock"} size={12} />
-                  </Button>
-                  <Button size="sm" variant="outline" className="text-xs h-7 px-2 text-red-500 hover:bg-red-50"
-                    onClick={() => onDeleteCustomer(Number(c.id))}><Icon name="Trash2" size={12} /></Button>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </Section>
+      <CustomersTab
+        loading={loading} customers={customers} customersDf={customersDf}
+        searchQuery={searchQuery} setSearchQuery={setSearchQuery}
+        dateFrom={dateFrom} setDateFrom={setDateFrom} dateTo={dateTo} setDateTo={setDateTo}
+        onOpenEdit={onOpenEdit} onBlockCustomer={onBlockCustomer} onDeleteCustomer={onDeleteCustomer}
+      />
     );
   }
 
