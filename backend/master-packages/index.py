@@ -399,4 +399,197 @@ def handler(event: dict, context) -> dict:
         conn.close()
         return ok({'success': True})
 
+    # --- GET: объявления мастеров (master_services) ---
+    if method == 'GET' and action == 'admin_services':
+        conn = get_conn()
+        cur = conn.cursor()
+        cur.execute(f"""
+            SELECT s.id, s.master_id, s.title, s.description, s.category, s.city,
+                   s.price, s.is_active, s.paid_until, s.boost_count, s.created_at,
+                   m.name as master_name, m.phone as master_phone
+            FROM {SCHEMA}.master_services s
+            JOIN {SCHEMA}.masters m ON m.id = s.master_id
+            ORDER BY s.created_at DESC LIMIT 300
+        """)
+        services = cur.fetchall()
+        conn.close()
+        return ok({'services': services})
+
+    # --- GET: переписки (master_inquiries + кол-во сообщений) ---
+    if method == 'GET' and action == 'admin_chats':
+        conn = get_conn()
+        cur = conn.cursor()
+        cur.execute(f"""
+            SELECT i.id, i.master_id, i.contact_name, i.contact_phone, i.contact_email,
+                   i.message, i.deal_status, i.created_at, i.expires_at,
+                   m.name as master_name, m.phone as master_phone,
+                   COUNT(c.id) as messages_count
+            FROM {SCHEMA}.master_inquiries i
+            JOIN {SCHEMA}.masters m ON m.id = i.master_id
+            LEFT JOIN {SCHEMA}.chat_messages c ON c.inquiry_id = i.id
+            GROUP BY i.id, m.name, m.phone
+            ORDER BY i.created_at DESC LIMIT 300
+        """)
+        chats = cur.fetchall()
+        conn.close()
+        return ok({'chats': chats})
+
+    # --- GET: сообщения конкретного чата ---
+    if method == 'GET' and action == 'admin_chat_messages':
+        inquiry_id = params.get('inquiry_id')
+        if not inquiry_id:
+            return err('Укажите inquiry_id')
+        conn = get_conn()
+        cur = conn.cursor()
+        cur.execute(f"""
+            SELECT id, sender_role, sender_name, text, created_at
+            FROM {SCHEMA}.chat_messages WHERE inquiry_id=%s ORDER BY created_at ASC
+        """, (int(inquiry_id),))
+        messages = cur.fetchall()
+        conn.close()
+        return ok({'messages': messages})
+
+    # --- GET: отклики мастеров на заявки ---
+    if method == 'GET' and action == 'admin_responses':
+        conn = get_conn()
+        cur = conn.cursor()
+        cur.execute(f"""
+            SELECT r.id, r.order_id, r.master_id, r.master_name, r.master_phone,
+                   r.master_category, r.message, r.created_at,
+                   o.title as order_title, o.status as order_status, o.city as order_city,
+                   o.accepted_response_id
+            FROM {SCHEMA}.responses r
+            JOIN {SCHEMA}.orders o ON o.id = r.order_id
+            ORDER BY r.created_at DESC LIMIT 300
+        """)
+        responses = cur.fetchall()
+        conn.close()
+        return ok({'responses': responses})
+
+    # --- GET: платежи ---
+    if method == 'GET' and action == 'admin_payments':
+        conn = get_conn()
+        cur = conn.cursor()
+        cur.execute(f"""
+            SELECT p.id, p.master_id, p.amount, p.status, p.tokens_count, p.created_at,
+                   m.name as master_name, m.phone as master_phone,
+                   pk.name as package_name
+            FROM {SCHEMA}.payments p
+            JOIN {SCHEMA}.masters m ON m.id = p.master_id
+            LEFT JOIN {SCHEMA}.response_packages pk ON pk.id = p.package_id
+            ORDER BY p.created_at DESC LIMIT 300
+        """)
+        payments = cur.fetchall()
+        conn.close()
+        return ok({'payments': payments})
+
+    # --- GET: расширенный дашборд ---
+    if method == 'GET' and action == 'admin_dashboard':
+        conn = get_conn()
+        cur = conn.cursor()
+        cur.execute(f"SELECT COUNT(*) as cnt FROM {SCHEMA}.masters")
+        masters_count = cur.fetchone()['cnt']
+        cur.execute(f"SELECT COUNT(*) as cnt FROM {SCHEMA}.masters WHERE is_blocked=TRUE")
+        masters_blocked = cur.fetchone()['cnt']
+        cur.execute(f"SELECT COUNT(*) as cnt FROM {SCHEMA}.customers")
+        customers_count = cur.fetchone()['cnt']
+        cur.execute(f"SELECT COUNT(*) as cnt FROM {SCHEMA}.orders")
+        orders_count = cur.fetchone()['cnt']
+        cur.execute(f"SELECT COUNT(*) as cnt FROM {SCHEMA}.orders WHERE status='new'")
+        orders_new = cur.fetchone()['cnt']
+        cur.execute(f"SELECT COUNT(*) as cnt FROM {SCHEMA}.reviews")
+        reviews_count = cur.fetchone()['cnt']
+        cur.execute(f"SELECT COALESCE(SUM(balance),0) as total FROM {SCHEMA}.masters")
+        total_balance = cur.fetchone()['total']
+        cur.execute(f"SELECT COUNT(*) as cnt FROM {SCHEMA}.master_services WHERE is_active=TRUE")
+        active_services = cur.fetchone()['cnt']
+        cur.execute(f"SELECT COUNT(*) as cnt FROM {SCHEMA}.master_inquiries")
+        chats_count = cur.fetchone()['cnt']
+        cur.execute(f"SELECT COUNT(*) as cnt FROM {SCHEMA}.master_inquiries WHERE deal_status='deal'")
+        deals_done = cur.fetchone()['cnt']
+        cur.execute(f"SELECT COUNT(*) as cnt FROM {SCHEMA}.responses")
+        responses_count = cur.fetchone()['cnt']
+        cur.execute(f"SELECT COALESCE(SUM(amount),0) as total FROM {SCHEMA}.payments WHERE status='succeeded'")
+        revenue = cur.fetchone()['total']
+        conn.close()
+        return ok({
+            'masters_count': masters_count, 'masters_blocked': masters_blocked,
+            'customers_count': customers_count,
+            'orders_count': orders_count, 'orders_new': orders_new,
+            'reviews_count': reviews_count, 'total_balance': total_balance,
+            'active_services': active_services, 'chats_count': chats_count,
+            'deals_done': deals_done, 'responses_count': responses_count,
+            'revenue': revenue,
+        })
+
+    # --- POST: удалить объявление мастера ---
+    if method == 'POST' and action == 'admin_delete_service':
+        service_id = body.get('service_id')
+        conn = get_conn()
+        cur = conn.cursor()
+        cur.execute(f"DELETE FROM {SCHEMA}.master_services WHERE id=%s", (service_id,))
+        conn.commit()
+        conn.close()
+        return ok({'success': True})
+
+    # --- POST: удалить переписку ---
+    if method == 'POST' and action == 'admin_delete_chat':
+        inquiry_id = body.get('inquiry_id')
+        conn = get_conn()
+        cur = conn.cursor()
+        cur.execute(f"DELETE FROM {SCHEMA}.chat_messages WHERE inquiry_id=%s", (int(inquiry_id),))
+        cur.execute(f"DELETE FROM {SCHEMA}.master_inquiries WHERE id=%s", (int(inquiry_id),))
+        conn.commit()
+        conn.close()
+        return ok({'success': True})
+
+    # --- POST: удалить отклик ---
+    if method == 'POST' and action == 'admin_delete_response':
+        response_id = body.get('response_id')
+        conn = get_conn()
+        cur = conn.cursor()
+        cur.execute(f"DELETE FROM {SCHEMA}.responses WHERE id=%s", (response_id,))
+        conn.commit()
+        conn.close()
+        return ok({'success': True})
+
+    # --- POST: удалить мастера ---
+    if method == 'POST' and action == 'admin_delete_master':
+        master_id = body.get('master_id')
+        conn = get_conn()
+        cur = conn.cursor()
+        cur.execute(f"DELETE FROM {SCHEMA}.chat_messages WHERE inquiry_id IN (SELECT id FROM {SCHEMA}.master_inquiries WHERE master_id=%s)", (master_id,))
+        cur.execute(f"DELETE FROM {SCHEMA}.master_inquiries WHERE master_id=%s", (master_id,))
+        cur.execute(f"DELETE FROM {SCHEMA}.master_services WHERE master_id=%s", (master_id,))
+        cur.execute(f"DELETE FROM {SCHEMA}.master_transactions WHERE master_id=%s", (master_id,))
+        cur.execute(f"DELETE FROM {SCHEMA}.responses WHERE master_id=%s", (master_id,))
+        cur.execute(f"DELETE FROM {SCHEMA}.reviews WHERE master_id=%s", (master_id,))
+        cur.execute(f"DELETE FROM {SCHEMA}.payments WHERE master_id=%s", (master_id,))
+        cur.execute(f"DELETE FROM {SCHEMA}.masters WHERE id=%s", (master_id,))
+        conn.commit()
+        conn.close()
+        return ok({'success': True})
+
+    # --- POST: удалить заказчика ---
+    if method == 'POST' and action == 'admin_delete_customer':
+        customer_id = body.get('customer_id')
+        conn = get_conn()
+        cur = conn.cursor()
+        cur.execute(f"DELETE FROM {SCHEMA}.orders WHERE customer_id=%s", (customer_id,))
+        cur.execute(f"DELETE FROM {SCHEMA}.customers WHERE id=%s", (customer_id,))
+        conn.commit()
+        conn.close()
+        return ok({'success': True})
+
+    # --- POST: изменить статус объявления ---
+    if method == 'POST' and action == 'admin_toggle_service':
+        service_id = body.get('service_id')
+        is_active = body.get('is_active', True)
+        conn = get_conn()
+        cur = conn.cursor()
+        cur.execute(f"UPDATE {SCHEMA}.master_services SET is_active=%s WHERE id=%s", (is_active, service_id))
+        conn.commit()
+        conn.close()
+        return ok({'success': True})
+
     return err('Метод или action не поддерживается', 405)

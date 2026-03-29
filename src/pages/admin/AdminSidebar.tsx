@@ -1,12 +1,26 @@
 import Icon from "@/components/ui/icon";
 
-type Tab = "dashboard" | "masters" | "customers" | "orders" | "reviews" | "categories";
+export type Tab =
+  | "dashboard"
+  | "masters"
+  | "customers"
+  | "orders"
+  | "responses"
+  | "services"
+  | "chats"
+  | "payments"
+  | "reviews"
+  | "categories";
 
 const tabs: { id: Tab; label: string; icon: string }[] = [
   { id: "dashboard", label: "Обзор", icon: "LayoutDashboard" },
   { id: "masters", label: "Мастера", icon: "Wrench" },
   { id: "customers", label: "Заказчики", icon: "Users" },
   { id: "orders", label: "Заявки", icon: "FileText" },
+  { id: "responses", label: "Отклики", icon: "MessageCircle" },
+  { id: "services", label: "Объявления", icon: "Briefcase" },
+  { id: "chats", label: "Переписки", icon: "MessagesSquare" },
+  { id: "payments", label: "Платежи", icon: "CreditCard" },
   { id: "reviews", label: "Отзывы", icon: "Star" },
   { id: "categories", label: "Категории", icon: "Tag" },
 ];
@@ -19,7 +33,7 @@ interface AdminSidebarProps {
 
 export default function AdminSidebar({ tab, setTab, onLogout }: AdminSidebarProps) {
   return (
-    <aside className="w-56 bg-white border-r flex flex-col py-6 px-3 gap-1 min-h-screen">
+    <aside className="w-56 bg-white border-r flex flex-col py-6 px-3 gap-1 min-h-screen flex-shrink-0">
       <div className="flex items-center gap-2 px-3 mb-6">
         <Icon name="Shield" size={22} className="text-purple-600" />
         <span className="font-bold text-gray-800">Админ</span>

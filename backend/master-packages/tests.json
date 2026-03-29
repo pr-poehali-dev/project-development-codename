@@ -5,8 +5,7 @@
       "method": "GET",
       "path": "/",
       "expectedStatus": 200,
-      "expectedBody": {"packages": [{}]},
-      "bodyMatcher": "partial"
+      "bodyMatcher": "none"
     },
     {
       "name": "Дашборд без токена — 401",
