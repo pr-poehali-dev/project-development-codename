@@ -49,6 +49,16 @@ export default function MasterLoginFormRegister({
           <input type="tel" required value={regPhone} onChange={e => setRegPhone(e.target.value)}
             placeholder="+7 (999) 000-00-00" className={inputCls} />
         </div>
+        <div>
+          <label className="text-sm text-gray-400 mb-1.5 block">Пароль</label>
+          <input type="password" required value={regPassword} onChange={e => setRegPassword(e.target.value)}
+            placeholder="Минимум 6 символов" className={inputCls} />
+        </div>
+        <div>
+          <label className="text-sm text-gray-400 mb-1.5 block">Повторите пароль</label>
+          <input type="password" required value={regPasswordConfirm} onChange={e => setRegPasswordConfirm(e.target.value)}
+            placeholder="Повторите пароль" className={inputCls} />
+        </div>
         {error && <p className="text-amber-400 text-sm">{error}</p>}
         <Button type="submit" disabled={loading} className="bg-gradient-to-r from-violet-600 to-indigo-600 text-white w-full">
           {loading ? "Отправка..." : "Продолжить"}

@@ -60,6 +60,8 @@ export default function MasterLoginForm({ onLogin }: MasterLoginFormProps) {
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (regPassword !== regPasswordConfirm) { setError("Пароли не совпадают"); return; }
+    if (regPassword.length < 6) { setError("Пароль минимум 6 символов"); return; }
     setError(""); setLoading(true);
     try {
       const d = await post({ action: "register", email: regEmail, phone: regPhone, name: regName });
@@ -77,7 +79,11 @@ export default function MasterLoginForm({ onLogin }: MasterLoginFormProps) {
     try {
       const d = await post({ action: "verify_code_reg", email: regEmail, code: regCode });
       if (d.error) { setError(d.error); return; }
-      if (d.success) setRegStep("password");
+      if (d.success) {
+        const d2 = await post({ action: "set_password", email: regEmail, password: regPassword });
+        if (d2.error) { setError(d2.error); return; }
+        if (d2.success) onLogin(d2.user.phone);
+      }
     } finally { setLoading(false); }
   };
 
