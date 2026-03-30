@@ -158,6 +158,11 @@ const Index = () => {
     }
   };
 
+  const openOrderModal = () => {
+    if (!isCustomer && !isMaster) { setLoginModalOpen(true); return; }
+    setOrderModalOpen(true);
+  };
+
   const handleOrderSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setOrderLoading(true);
@@ -211,7 +216,7 @@ const Index = () => {
                 Стать мастером
                 <Icon name="ArrowRight" size={14} className="ml-1.5" />
               </Button>
-              <Button onClick={() => setOrderModalOpen(true)} size="sm" variant="ghost" className="border border-violet-500/40 text-violet-300 hover:bg-violet-600/15 text-xs px-4 rounded-lg">
+              <Button onClick={openOrderModal} size="sm" variant="ghost" className="border border-violet-500/40 text-violet-300 hover:bg-violet-600/15 text-xs px-4 rounded-lg">
                 Найти мастера
               </Button>
             </div>
@@ -229,8 +234,10 @@ const Index = () => {
         availableCities={availableCities}
         servicesLoading={servicesLoading}
         setOrderForm={setOrderForm}
-        setOrderModalOpen={setOrderModalOpen}
+        setOrderModalOpen={openOrderModal}
         isMaster={isMaster}
+        isCustomer={isCustomer}
+        setLoginModalOpen={setLoginModalOpen}
         heroSearchQuery={heroSearchQuery}
       />
 
@@ -282,7 +289,7 @@ const Index = () => {
                 Стать мастером
                 <Icon name="ArrowRight" size={18} className="ml-2" />
               </Button>
-              <Button onClick={() => setOrderModalOpen(true)} variant="ghost" className="border border-violet-500 text-violet-300 hover:text-violet-200 hover:bg-violet-600/15 px-8 py-3 text-base rounded-xl">
+              <Button onClick={openOrderModal} variant="ghost" className="border border-violet-500 text-violet-300 hover:text-violet-200 hover:bg-violet-600/15 px-8 py-3 text-base rounded-xl">
                 Найти мастера
               </Button>
             </div>

@@ -62,6 +62,8 @@ interface HomeCategoriesServicesProps {
   setOrderForm: (fn: (f: { title: string; description: string; category: string; city: string; budget: string; contact_name: string; contact_phone: string; contact_email: string }) => { title: string; description: string; category: string; city: string; budget: string; contact_name: string; contact_phone: string; contact_email: string }) => void;
   setOrderModalOpen: (v: boolean) => void;
   isMaster?: boolean;
+  isCustomer?: boolean;
+  setLoginModalOpen?: (v: boolean) => void;
   heroSearchQuery?: string;
 }
 
@@ -78,6 +80,8 @@ const HomeCategoriesServices = ({
   setOrderForm,
   setOrderModalOpen,
   isMaster = false,
+  isCustomer = false,
+  setLoginModalOpen,
   heroSearchQuery = "",
 }: HomeCategoriesServicesProps) => {
   const [searchQuery, setSearchQuery] = React.useState("");
@@ -331,6 +335,7 @@ const HomeCategoriesServices = ({
                       size="sm"
                       className="w-full bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white text-xs rounded-lg h-7"
                       onClick={() => {
+                        if (!isCustomer) { setLoginModalOpen?.(true); return; }
                         setContactMaster({ id: service.master_id, name: service.master_name, serviceId: service.id });
                         setContactForm({ name: "", phone: "", email: "", message: "" });
                         setContactSent(false);
