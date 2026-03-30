@@ -53,7 +53,10 @@ export default function Cabinet() {
   const [customer, setCustomer] = useState<Customer | null>(null);
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(false);
-  const [cabinetTab, setCabinetTab] = useState<"orders" | "inquiries">("orders");
+  const [cabinetTab, setCabinetTab] = useState<"orders" | "inquiries">(() => {
+    const t = new URLSearchParams(window.location.search).get("tab");
+    return t === "chats" || t === "inquiries" ? "inquiries" : "orders";
+  });
   const [inquiryCount, setInquiryCount] = useState(0);
   const [unreadMessages, setUnreadMessages] = useState(0);
 

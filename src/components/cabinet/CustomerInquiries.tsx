@@ -114,7 +114,12 @@ export default function CustomerInquiries({ customerName, customerEmail, custome
   }, [inquiries, checkUnread]);
 
   const openChat = (inq: Inquiry) => {
-    // Помечаем все сообщения как прочитанные
+    // Помечаем сообщения прочитанными в БД и localStorage
+    fetch(MY_ORDERS_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "mark_messages_read", inquiry_id: inq.id, customer_phone: customerPhone }),
+    }).catch(() => {});
     fetch(`${MY_ORDERS_URL}?inquiry_id=${inq.id}`)
       .then(r => r.json())
       .then(data => {

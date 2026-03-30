@@ -34,6 +34,15 @@ export default function MasterTabInquiries({ inquiries, masterName, masterId, on
   const [chatInquiry, setChatInquiry] = useState<Inquiry | null>(null);
   const [deletingId, setDeletingId] = useState<number | null>(null);
 
+  const openChat = (inq: Inquiry) => {
+    fetch(MASTER_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "mark_messages_read", inquiry_id: inq.id }),
+    }).catch(() => {});
+    setChatInquiry(inq);
+  };
+
   const handleDelete = async (inquiryId: number, contactName: string) => {
     if (!confirm(`Удалить переписку с ${contactName}? Это действие нельзя отменить.`)) return;
     setDeletingId(inquiryId);
@@ -124,7 +133,7 @@ export default function MasterTabInquiries({ inquiries, masterName, masterId, on
               )}
               <Button
                 size="sm"
-                onClick={() => setChatInquiry(inq)}
+                onClick={() => openChat(inq)}
                 className="bg-violet-600/20 hover:bg-violet-600/30 text-violet-300 border border-violet-500/30 text-xs h-7 px-3 gap-1.5"
               >
                 <Icon name="MessageSquare" size={12} />
