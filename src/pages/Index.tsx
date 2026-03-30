@@ -199,23 +199,25 @@ const Index = () => {
       />
 
       {/* CTA — стать мастером */}
-      <div className="bg-gradient-to-r from-violet-600/15 to-indigo-600/10 border-b border-violet-500/15 px-4 py-3">
-        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3">
-          <p className="text-sm text-gray-300">
-            <span className="text-white font-semibold">Готов предложить свои услуги?</span>
-            {" "}Зарегистрируйся как мастер и получай заказы от клиентов уже сегодня
-          </p>
-          <div className="flex gap-2 flex-shrink-0">
-            <Button onClick={() => setMasterModalOpen(true)} size="sm" className="bg-violet-600 hover:bg-violet-500 text-white text-xs px-4 rounded-lg">
-              Стать мастером
-              <Icon name="ArrowRight" size={14} className="ml-1.5" />
-            </Button>
-            <Button onClick={() => setOrderModalOpen(true)} size="sm" variant="ghost" className="border border-violet-500/40 text-violet-300 hover:bg-violet-600/15 text-xs px-4 rounded-lg">
-              Найти мастера
-            </Button>
+      {!isMaster && (
+        <div className="bg-gradient-to-r from-violet-600/15 to-indigo-600/10 border-b border-violet-500/15 px-4 py-3">
+          <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3">
+            <p className="text-sm text-gray-300">
+              <span className="text-white font-semibold">Готов предложить свои услуги?</span>
+              {" "}Зарегистрируйся как мастер и получай заказы от клиентов уже сегодня
+            </p>
+            <div className="flex gap-2 flex-shrink-0">
+              <Button onClick={() => setMasterModalOpen(true)} size="sm" className="bg-violet-600 hover:bg-violet-500 text-white text-xs px-4 rounded-lg">
+                Стать мастером
+                <Icon name="ArrowRight" size={14} className="ml-1.5" />
+              </Button>
+              <Button onClick={() => setOrderModalOpen(true)} size="sm" variant="ghost" className="border border-violet-500/40 text-violet-300 hover:bg-violet-600/15 text-xs px-4 rounded-lg">
+                Найти мастера
+              </Button>
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
       <HomeHeroStats onSearch={setHeroSearchQuery} />
 
@@ -266,25 +268,27 @@ const Index = () => {
       </section>
 
       {/* CTA */}
-      <section className="py-16 px-4 text-center">
-        <div className="max-w-2xl mx-auto">
-          <h2 className="text-3xl sm:text-4xl font-extrabold mb-4">
-            Готов предложить свои услуги?
-          </h2>
-          <p className="text-gray-400 mb-8">
-            Размещай объявления, откликайся на заявки и находи клиентов в своём городе
-          </p>
-          <div className="flex flex-col sm:flex-row gap-3 justify-center">
-            <Button onClick={() => setMasterModalOpen(true)} className="bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white px-8 py-3 text-base rounded-xl">
-              Стать мастером
-              <Icon name="ArrowRight" size={18} className="ml-2" />
-            </Button>
-            <Button onClick={() => setOrderModalOpen(true)} variant="ghost" className="border border-violet-500 text-violet-300 hover:text-violet-200 hover:bg-violet-600/15 px-8 py-3 text-base rounded-xl">
-              Найти мастера
-            </Button>
+      {!isMaster && (
+        <section className="py-16 px-4 text-center">
+          <div className="max-w-2xl mx-auto">
+            <h2 className="text-3xl sm:text-4xl font-extrabold mb-4">
+              Готов предложить свои услуги?
+            </h2>
+            <p className="text-gray-400 mb-8">
+              Размещай объявления, откликайся на заявки и находи клиентов в своём городе
+            </p>
+            <div className="flex flex-col sm:flex-row gap-3 justify-center">
+              <Button onClick={() => setMasterModalOpen(true)} className="bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white px-8 py-3 text-base rounded-xl">
+                Стать мастером
+                <Icon name="ArrowRight" size={18} className="ml-2" />
+              </Button>
+              <Button onClick={() => setOrderModalOpen(true)} variant="ghost" className="border border-violet-500 text-violet-300 hover:text-violet-200 hover:bg-violet-600/15 px-8 py-3 text-base rounded-xl">
+                Найти мастера
+              </Button>
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
+      )}
 
       {/* Футер */}
       <footer className="border-t border-white/8 py-10 px-4">
