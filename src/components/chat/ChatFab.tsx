@@ -87,8 +87,9 @@ export default function ChatFab() {
     }
   };
 
-  const chatPages = ["/cabinet", "/master"];
-  const isOnChatPage = chatPages.some((p) => location.pathname.startsWith(p));
+  const isOnChatPage =
+    (location.pathname.startsWith("/cabinet") && (location.search.includes("tab=chats") || location.search.includes("tab=inquiries") || !location.search.includes("tab="))) ||
+    (location.pathname.startsWith("/master") && location.search.includes("tab=inquiries"));
 
   if (!visible || isOnChatPage) return null;
 
