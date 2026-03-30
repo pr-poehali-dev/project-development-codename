@@ -624,15 +624,29 @@ def handler(event: dict, context) -> dict:
             )
             inq = cur.fetchone()
             cur.close(); conn.close()
-            if inq and inq['master_email'] and sender_role == 'customer':
+            if inq and sender_role == 'customer':
+                if inq['master_email']:
+                    try:
+                        send_chat_email(
+                            to_email=inq['master_email'],
+                            to_name=inq['master_name'],
+                            from_name=sender_name,
+                            text=text,
+                            cabinet_url='https://handyman.poehali.dev/master?tab=inquiries'
+                        )
+                    except Exception:
+                        pass
+                # Push мастеру
                 try:
-                    send_chat_email(
-                        to_email=inq['master_email'],
-                        to_name=inq['master_name'],
-                        from_name=sender_name,
-                        text=text,
-                        cabinet_url='https://handyman.poehali.dev/master?tab=inquiries'
-                    )
+                    import urllib.request as _urllib
+                    cur2 = get_conn().cursor()
+                    cur2.execute(f"SELECT phone FROM {SCHEMA}.masters WHERE id=(SELECT master_id FROM {SCHEMA}.master_inquiries WHERE id=%s)", (int(inquiry_id),))
+                    mp = cur2.fetchone()
+                    cur2.close()
+                    if mp:
+                        _push_data = json.dumps({'action': 'send', 'phone': mp['phone'], 'title': f'Новое сообщение от {sender_name}', 'body': text[:80], 'url': '/master?tab=inquiries'}).encode()
+                        _req = _urllib.Request('https://functions.poehali.dev/272080b1-1a80-40bd-8201-0951cb380c57', data=_push_data, headers={'Content-Type': 'application/json'}, method='POST')
+                        _urllib.urlopen(_req, timeout=3)
                 except Exception:
                     pass
             return {'statusCode': 200, 'headers': HEADERS, 'body': json.dumps({

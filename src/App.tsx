@@ -17,32 +17,40 @@ import Rules from "./pages/Rules";
 import NotFound from "./pages/NotFound";
 import SupportWidget from "./components/support/SupportWidget";
 import ChatFab from "./components/chat/ChatFab";
+import { usePushNotifications } from "./hooks/usePushNotifications";
 
 const queryClient = new QueryClient();
+
+function AppInner() {
+  usePushNotifications();
+  return (
+    <BrowserRouter>
+      <Routes>
+        <Route path="/" element={<Index />} />
+        <Route path="/orders" element={<Orders />} />
+        <Route path="/cabinet" element={<Cabinet />} />
+        <Route path="/master" element={<MasterCabinet />} />
+        <Route path="/offer" element={<Offer />} />
+        <Route path="/master-page" element={<MasterPage />} />
+        <Route path="/admin" element={<AdminPage />} />
+        <Route path="/category/:name" element={<CategoryPage />} />
+        <Route path="/masters" element={<Masters />} />
+        <Route path="/rules" element={<Rules />} />
+        {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+        <Route path="*" element={<NotFound />} />
+      </Routes>
+      <SupportWidget />
+      <ChatFab />
+    </BrowserRouter>
+  );
+}
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
       <Toaster />
       <Sonner />
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Index />} />
-          <Route path="/orders" element={<Orders />} />
-          <Route path="/cabinet" element={<Cabinet />} />
-          <Route path="/master" element={<MasterCabinet />} />
-          <Route path="/offer" element={<Offer />} />
-          <Route path="/master-page" element={<MasterPage />} />
-          <Route path="/admin" element={<AdminPage />} />
-          <Route path="/category/:name" element={<CategoryPage />} />
-          <Route path="/masters" element={<Masters />} />
-          <Route path="/rules" element={<Rules />} />
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-        <SupportWidget />
-        <ChatFab />
-      </BrowserRouter>
+      <AppInner />
     </TooltipProvider>
   </QueryClientProvider>
 );

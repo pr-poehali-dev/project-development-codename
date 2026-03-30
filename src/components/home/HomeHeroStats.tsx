@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import Icon from "@/components/ui/icon";
+import CitySelect from "@/components/ui/city-select";
 
 const stats = [
   { label: "Исполнителей", value: "1 200+", icon: "Users" },
@@ -11,15 +12,15 @@ const stats = [
 ];
 
 interface HomeHeroStatsProps {
-  onSearch?: (query: string) => void;
+  onSearch?: (query: string, city: string) => void;
 }
 
 const HomeHeroStats = ({ onSearch }: HomeHeroStatsProps) => {
   const [heroSearch, setHeroSearch] = useState("");
+  const [heroCity, setHeroCity] = useState("");
 
   const handleSearch = () => {
-    if (!heroSearch.trim()) return;
-    if (onSearch) onSearch(heroSearch.trim());
+    if (onSearch) onSearch(heroSearch.trim(), heroCity);
     const el = document.getElementById("services-section");
     if (el) el.scrollIntoView({ behavior: "smooth" });
   };
@@ -46,15 +47,25 @@ const HomeHeroStats = ({ onSearch }: HomeHeroStatsProps) => {
             Откликайтесь на заявки бесплатно — платите токенами только когда заказчик выбрал вас исполнителем.
           </p>
 
-          <div className="flex flex-col sm:flex-row gap-3 justify-center max-w-lg mx-auto">
+          <div className="flex flex-col sm:flex-row gap-3 justify-center max-w-2xl mx-auto">
             <div className="flex-1 relative">
-              <Icon name="Search" size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500" />
+              <Icon name="Search" size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500 z-10" />
               <input
                 value={heroSearch}
                 onChange={e => setHeroSearch(e.target.value)}
                 onKeyDown={e => e.key === "Enter" && handleSearch()}
                 className="w-full bg-white/5 border border-white/10 rounded-xl pl-10 pr-4 py-3 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-violet-500 transition-colors"
                 placeholder="Например: сантехник, ремонт авто, маникюр..."
+              />
+            </div>
+            <div className="w-full sm:w-44">
+              <CitySelect
+                value={heroCity}
+                onChange={setHeroCity}
+                placeholder="Любой город"
+                allCitiesLabel="Любой город"
+                variant="glass"
+                className="w-full"
               />
             </div>
             <Button

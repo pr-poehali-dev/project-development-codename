@@ -224,7 +224,7 @@ const Index = () => {
         </div>
       )}
 
-      <HomeHeroStats onSearch={setHeroSearchQuery} />
+      <HomeHeroStats onSearch={(query, city) => { setHeroSearchQuery(query); if (city) setSelectedCityFilter(city); }} />
 
       <HomeCategoriesServices
         activeCategory={activeCategory}
