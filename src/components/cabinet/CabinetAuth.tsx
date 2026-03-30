@@ -192,6 +192,16 @@ export default function CabinetAuth({
                 <label className="text-sm text-gray-400 mb-1.5 block">Город *</label>
                 <CitySelect value={loginCity} onChange={setLoginCity} variant="glass" className="w-full" required />
               </div>
+              <div>
+                <label className="text-sm text-gray-400 mb-1.5 block">Пароль</label>
+                <input type="password" required value={regPassword} onChange={e => setRegPassword(e.target.value)}
+                  placeholder="Минимум 6 символов" className={inputCls} />
+              </div>
+              <div>
+                <label className="text-sm text-gray-400 mb-1.5 block">Повторите пароль</label>
+                <input type="password" required value={regPasswordConfirm} onChange={e => setRegPasswordConfirm(e.target.value)}
+                  placeholder="Повторите пароль" className={inputCls} />
+              </div>
               {loginError && <p className="text-amber-400 text-sm">{loginError}</p>}
               <Button type="submit" disabled={loginLoading} className="bg-gradient-to-r from-violet-600 to-indigo-600 text-white w-full">
                 {loginLoading ? "Регистрация..." : "Зарегистрироваться"}

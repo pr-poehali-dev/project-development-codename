@@ -61,6 +61,8 @@ export function useCabinetAuth({ loadProfile, setCustomer, setOrders }: UseCabin
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (regPassword !== regPasswordConfirm) { setLoginError("Пароли не совпадают"); return; }
+    if (regPassword.length < 6) { setLoginError("Пароль минимум 6 символов"); return; }
     setLoginLoading(true);
     setLoginError("");
     try {
@@ -95,7 +97,20 @@ export function useCabinetAuth({ loadProfile, setCustomer, setOrders }: UseCabin
       const data = await res.json();
       const parsed = typeof data === "string" ? JSON.parse(data) : data;
       if (parsed.error) { setLoginError(parsed.error); return; }
-      if (parsed.success) setRegStep("password");
+      if (parsed.success) {
+        const res2 = await fetch(AUTH_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "set_password", email: loginEmail, password: regPassword }),
+        });
+        const data2 = await res2.json();
+        const parsed2 = typeof data2 === "string" ? JSON.parse(data2) : data2;
+        if (parsed2.error) { setLoginError(parsed2.error); return; }
+        if (parsed2.success) {
+          localStorage.setItem("customer_phone", parsed2.user.phone);
+          await loadProfile(parsed2.user.phone);
+        }
+      }
     } finally {
       setLoginLoading(false);
     }
