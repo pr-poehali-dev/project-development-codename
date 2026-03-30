@@ -49,8 +49,8 @@ def handler(event: dict, context) -> dict:
         cur.execute(
             f"INSERT INTO {SCHEMA}.push_subscriptions (user_phone, user_role, endpoint, p256dh, auth) "
             f"VALUES (%s, %s, %s, %s, %s) "
-            f"ON CONFLICT (endpoint) DO UPDATE SET user_phone=%s, user_role=%s, p256dh=%s, auth=%s",
-            (phone, role, endpoint, p256dh, auth, phone, role, p256dh, auth)
+            f"ON CONFLICT (endpoint, user_phone) DO UPDATE SET user_role=%s, p256dh=%s, auth=%s",
+            (phone, role, endpoint, p256dh, auth, role, p256dh, auth)
         )
         conn.commit()
         cur.close(); conn.close()

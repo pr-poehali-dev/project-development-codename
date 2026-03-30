@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect } from "react";
 
 const PUSH_URL = "https://functions.poehali.dev/272080b1-1a80-40bd-8201-0951cb380c57";
 // Публичный VAPID-ключ — будет подставлен после добавления секрета
@@ -11,7 +11,7 @@ function urlBase64ToUint8Array(base64String: string): Uint8Array {
   return Uint8Array.from([...rawData].map((c) => c.charCodeAt(0)));
 }
 
-async function subscribeUser(phone: string, role: "customer" | "master") {
+async function subscribeAll(phones: { phone: string; role: "customer" | "master" }[]) {
   if (!("serviceWorker" in navigator) || !("PushManager" in window)) return;
   if (!VAPID_PUBLIC_KEY) return;
 
@@ -23,34 +23,39 @@ async function subscribeUser(phone: string, role: "customer" | "master") {
       applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
     });
 
-    await fetch(PUSH_URL, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ action: "subscribe", phone, role, subscription: sub.toJSON() }),
-    });
+    await Promise.all(phones.map(({ phone, role }) =>
+      fetch(PUSH_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "subscribe", phone, role, subscription: sub.toJSON() }),
+      })
+    ));
   } catch (_e) {
     // ignore — push может не поддерживаться
   }
 }
 
 export function usePushNotifications() {
-  const asked = useRef(false);
-
   useEffect(() => {
-    if (asked.current) return;
     if (!("Notification" in window) || !("serviceWorker" in navigator)) return;
 
     const customerPhone = localStorage.getItem("customer_phone");
     const masterPhone = localStorage.getItem("master_phone");
     if (!customerPhone && !masterPhone) return;
 
-    asked.current = true;
+    // Уже подписались в этой сессии с теми же телефонами
+    const cacheKey = `push_asked_${masterPhone || ""}_${customerPhone || ""}`;
+    if (sessionStorage.getItem(cacheKey)) return;
+    sessionStorage.setItem(cacheKey, "1");
 
-    const phone = masterPhone || customerPhone || "";
-    const role: "customer" | "master" = masterPhone ? "master" : "customer";
+    const phones: { phone: string; role: "customer" | "master" }[] = [];
+    if (masterPhone) phones.push({ phone: masterPhone, role: "master" });
+    if (customerPhone) phones.push({ phone: customerPhone, role: "customer" });
+
+    const doSubscribe = () => subscribeAll(phones);
 
     if (Notification.permission === "granted") {
-      subscribeUser(phone, role);
+      doSubscribe();
       return;
     }
 
@@ -60,7 +65,7 @@ export function usePushNotifications() {
     setTimeout(async () => {
       const permission = await Notification.requestPermission();
       if (permission === "granted") {
-        subscribeUser(phone, role);
+        doSubscribe();
       }
     }, 3000);
   }, []);

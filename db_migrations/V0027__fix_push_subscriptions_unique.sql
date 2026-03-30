@@ -1,0 +1,2 @@
+ALTER TABLE t_p86314354_project_development_.push_subscriptions DROP CONSTRAINT IF EXISTS push_subscriptions_endpoint_key;
+ALTER TABLE t_p86314354_project_development_.push_subscriptions ADD CONSTRAINT push_subscriptions_endpoint_phone_unique UNIQUE (endpoint, user_phone);
