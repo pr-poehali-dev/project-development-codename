@@ -60,6 +60,7 @@ const Orders = () => {
   const [masterBalance, setMasterBalance] = useState<number | null>(null);
   const [masterId, setMasterId] = useState<number | null>(null);
   const [masterData, setMasterData] = useState<{ name: string; phone: string; category: string } | null>(null);
+  const [authPromptOpen, setAuthPromptOpen] = useState(false);
 
   useEffect(() => {
     const savedPhone = localStorage.getItem("master_phone");
@@ -247,6 +248,7 @@ const Orders = () => {
                   order={order}
                   formatDate={formatDate}
                   onClick={(o) => {
+                    if (masterId === null) { setAuthPromptOpen(true); return; }
                     setSelectedOrder(o);
                     setResponseSent(false);
                     setResponseError("");
@@ -292,6 +294,39 @@ const Orders = () => {
         onSubmit={handleRespond}
         formatDate={formatDate}
       />
+
+      {/* Модальное окно — требование авторизации мастера */}
+      {authPromptOpen && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center px-4" onClick={() => setAuthPromptOpen(false)}>
+          <div className="bg-[#0f1117] border border-white/10 rounded-2xl p-6 w-full max-w-sm" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h3 className="text-white font-semibold">Войдите чтобы откликнуться</h3>
+                <p className="text-gray-500 text-xs mt-0.5">Отклики доступны только для зарегистрированных мастеров</p>
+              </div>
+              <button onClick={() => setAuthPromptOpen(false)} className="text-gray-500 hover:text-gray-300 transition-colors ml-3 flex-shrink-0">
+                <Icon name="X" size={18} />
+              </button>
+            </div>
+            <a href="/master" className="block">
+              <div className="flex items-center gap-3 p-4 rounded-xl border border-white/10 bg-white/4 hover:bg-violet-600/10 hover:border-violet-500/40 transition-all cursor-pointer">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-600 to-indigo-600 flex items-center justify-center flex-shrink-0">
+                  <Icon name="Wrench" size={18} className="text-white" />
+                </div>
+                <div>
+                  <p className="font-semibold text-white text-sm">Войти как мастер</p>
+                  <p className="text-gray-400 text-xs mt-0.5">Откликаюсь на заявки и зарабатываю</p>
+                </div>
+                <Icon name="ChevronRight" size={16} className="text-gray-500 ml-auto" />
+              </div>
+            </a>
+            <p className="text-center text-xs text-gray-600 mt-4">
+              Заказчик?{" "}
+              <a href="/cabinet" className="text-violet-400 hover:text-violet-300 transition-colors">Войти в кабинет заказчика →</a>
+            </p>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
