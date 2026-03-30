@@ -13,6 +13,14 @@
       "path": "/?phone=%2B79001234567",
       "expectedStatus": 200,
       "bodyMatcher": "none"
+    },
+    {
+      "name": "GET непрочитанные сообщения мастера",
+      "method": "GET",
+      "path": "/?action=unread&master_id=1",
+      "expectedStatus": 200,
+      "bodyMatcher": "partial",
+      "expectedBody": {"unread": 0}
     }
   ]
 }

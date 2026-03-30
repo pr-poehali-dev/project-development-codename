@@ -16,6 +16,7 @@ import Masters from "./pages/Masters";
 import Rules from "./pages/Rules";
 import NotFound from "./pages/NotFound";
 import SupportWidget from "./components/support/SupportWidget";
+import ChatFab from "./components/chat/ChatFab";
 
 const queryClient = new QueryClient();
 
@@ -40,6 +41,7 @@ const App = () => (
           <Route path="*" element={<NotFound />} />
         </Routes>
         <SupportWidget />
+        <ChatFab />
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>

@@ -620,6 +620,21 @@ def handler(event: dict, context) -> dict:
                 'message': {'id': row['id'], 'inquiry_id': int(inquiry_id), 'sender_role': 'master', 'sender_name': sender_name, 'text': text, 'created_at': row['created_at'].isoformat()}
             })}
 
+        # ── ПОМЕТИТЬ СООБЩЕНИЯ КАК ПРОЧИТАННЫЕ (мастер) ──
+        if body_raw.get('action') == 'mark_messages_read':
+            inquiry_id = body_raw.get('inquiry_id')
+            if not inquiry_id:
+                return {'statusCode': 400, 'headers': HEADERS, 'body': json.dumps({'error': 'inquiry_id обязателен'})}
+            conn = get_conn()
+            cur = conn.cursor()
+            cur.execute(
+                f"UPDATE {SCHEMA}.chat_messages SET is_read=TRUE WHERE inquiry_id=%s AND sender_role='customer' AND is_read=FALSE",
+                (int(inquiry_id),)
+            )
+            conn.commit()
+            cur.close(); conn.close()
+            return {'statusCode': 200, 'headers': HEADERS, 'body': json.dumps({'success': True})}
+
         # ── ПОМЕТИТЬ ОБРАЩЕНИЯ КАК ПРОЧИТАННЫЕ ──
         if body_raw.get('action') == 'read_inquiries':
             master_id = body_raw.get('master_id')
@@ -1082,7 +1097,12 @@ def handler(event: dict, context) -> dict:
         master_id = int(params['master_id'])
         conn = get_conn()
         cur = conn.cursor()
-        cur.execute(f"SELECT COUNT(*) as cnt FROM {SCHEMA}.master_inquiries WHERE master_id=%s AND is_read=FALSE", (master_id,))
+        cur.execute(
+            f"SELECT COUNT(cm.id) as cnt FROM {SCHEMA}.chat_messages cm "
+            f"JOIN {SCHEMA}.master_inquiries i ON i.id = cm.inquiry_id "
+            f"WHERE i.master_id=%s AND cm.sender_role='customer' AND cm.is_read=FALSE",
+            (master_id,)
+        )
         row = cur.fetchone()
         cur.execute(
             f"SELECT id, service_id, contact_name, contact_phone, contact_email, message, is_read, created_at, deal_status, master_deal_confirmed, customer_deal_confirmed "
@@ -1092,6 +1112,7 @@ def handler(event: dict, context) -> dict:
         inquiries = cur.fetchall()
         cur.close(); conn.close()
         return {'statusCode': 200, 'headers': HEADERS, 'body': json.dumps({
+            'unread': int(row['cnt']),
             'unread_inquiries': int(row['cnt']),
             'inquiries': [{
                 'id': i['id'], 'service_id': i['service_id'],

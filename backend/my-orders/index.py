@@ -640,6 +640,22 @@ def handler(event: dict, context) -> dict:
                 'message': {'id': row['id'], 'inquiry_id': int(inquiry_id), 'sender_role': sender_role, 'sender_name': sender_name, 'text': text, 'created_at': row['created_at'].isoformat()}
             })}
 
+        # ── ПОМЕТИТЬ СООБЩЕНИЯ КАК ПРОЧИТАННЫЕ (заказчик) ──
+        if action == 'mark_messages_read':
+            inquiry_id = body.get('inquiry_id')
+            customer_phone = (body.get('customer_phone') or '').strip()
+            if not inquiry_id:
+                return {'statusCode': 400, 'headers': HEADERS, 'body': json.dumps({'error': 'inquiry_id обязателен'})}
+            conn = get_conn()
+            cur = conn.cursor()
+            cur.execute(
+                f"UPDATE {SCHEMA}.chat_messages SET is_read=TRUE WHERE inquiry_id=%s AND sender_role='master' AND is_read=FALSE",
+                (int(inquiry_id),)
+            )
+            conn.commit()
+            cur.close(); conn.close()
+            return {'statusCode': 200, 'headers': HEADERS, 'body': json.dumps({'success': True})}
+
         # ── ПОЛУЧИТЬ СООБЩЕНИЯ ЧАТА ──
         if action == 'get_messages':
             inquiry_id = body.get('inquiry_id')
@@ -883,6 +899,21 @@ def handler(event: dict, context) -> dict:
 
     if method == 'GET':
         params = event.get('queryStringParameters') or {}
+
+        # GET: количество непрочитанных сообщений для заказчика
+        if params.get('action') == 'unread' and params.get('customer_phone'):
+            customer_phone = params['customer_phone'].strip()
+            conn = get_conn()
+            cur = conn.cursor()
+            cur.execute(
+                f"SELECT COUNT(cm.id) as cnt FROM {SCHEMA}.chat_messages cm "
+                f"JOIN {SCHEMA}.master_inquiries i ON i.id = cm.inquiry_id "
+                f"WHERE COALESCE(i.contact_phone,'') = %s AND cm.sender_role = 'master' AND cm.is_read = FALSE",
+                (customer_phone,)
+            )
+            row = cur.fetchone()
+            cur.close(); conn.close()
+            return {'statusCode': 200, 'headers': HEADERS, 'body': json.dumps({'unread': int(row['cnt']) if row else 0})}
 
         # GET messages для polling
         if params.get('inquiry_id'):
