@@ -2,7 +2,7 @@ import Icon from "@/components/ui/icon";
 import { useState, useEffect } from "react";
 
 const PUSH_URL = "https://functions.poehali.dev/272080b1-1a80-40bd-8201-0951cb380c57";
-const VAPID_PUBLIC_KEY = import.meta.env.VITE_VAPID_PUBLIC_KEY || "BPz8xhV0or3GadWLWGMkB6YWyBQMHDHONvlCO-IeZVmLohpvKy_hXyebNffB3T8wVEnSfnZ2d32rKzKv_D79WfU";
+const VAPID_PUBLIC_KEY = import.meta.env.VITE_VAPID_PUBLIC_KEY || "BDQE9nAhaSX0r705HRVS8T58trGIt7qUwr5Qx8z2vkkq-hyzagFGs8Grzfd0NNYinj_BjNcMMcanZuFEVjWpLe4";
 
 function urlBase64ToUint8Array(base64String: string): Uint8Array {
   const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
