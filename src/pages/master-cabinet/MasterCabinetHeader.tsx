@@ -2,7 +2,7 @@ import Icon from "@/components/ui/icon";
 import { useState, useEffect } from "react";
 
 const PUSH_URL = "https://functions.poehali.dev/272080b1-1a80-40bd-8201-0951cb380c57";
-const VAPID_PUBLIC_KEY = import.meta.env.VITE_VAPID_PUBLIC_KEY || "";
+const VAPID_PUBLIC_KEY = import.meta.env.VITE_VAPID_PUBLIC_KEY || "BG_Ln-RdvWrg20JsfURtHHgC2BclRonRGl260CyCL3VzbY9yHhJkiBZn7RYUmy62E7FaxAW9vd63kJu3oB8iQPs";
 
 function urlBase64ToUint8Array(base64String: string): Uint8Array {
   const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
@@ -36,13 +36,15 @@ function PushButton({ phone }: { phone: string }) {
 
   if (perm === "granted") return (
     <span className="text-emerald-400 text-xs flex items-center gap-1">
-      <Icon name="Bell" size={13} /> Уведомления включены
+      <Icon name="Bell" size={13} />
+      <span className="hidden sm:inline">Уведомления включены</span>
     </span>
   );
 
   return (
     <button onClick={handleEnable} className="text-violet-400 hover:text-violet-300 text-sm flex items-center gap-1.5 transition-colors">
-      <Icon name="Bell" size={15} /> Включить уведомления
+      <Icon name="Bell" size={15} />
+      <span className="hidden sm:inline">Включить уведомления</span>
     </button>
   );
 }
