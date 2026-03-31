@@ -1,6 +1,53 @@
 import { Button } from "@/components/ui/button";
 import Icon from "@/components/ui/icon";
 import CitySelect from "@/components/ui/city-select";
+import { useState, useEffect } from "react";
+
+const PUSH_URL = "https://functions.poehali.dev/272080b1-1a80-40bd-8201-0951cb380c57";
+const VAPID_PUBLIC_KEY = import.meta.env.VITE_VAPID_PUBLIC_KEY || "";
+
+function urlBase64ToUint8Array(base64String: string): Uint8Array {
+  const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
+  const base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");
+  return Uint8Array.from([...atob(base64)].map(c => c.charCodeAt(0)));
+}
+
+function PushButton({ phone }: { phone: string }) {
+  const [perm, setPerm] = useState<NotificationPermission | null>(null);
+
+  useEffect(() => {
+    if ("Notification" in window) setPerm(Notification.permission);
+  }, []);
+
+  if (!("Notification" in window) || !("serviceWorker" in navigator) || !VAPID_PUBLIC_KEY) return null;
+  if (perm === "denied") return null;
+
+  const handleEnable = async () => {
+    const permission = perm === "granted" ? "granted" : await Notification.requestPermission();
+    setPerm(permission);
+    if (permission !== "granted") return;
+    try {
+      const reg = await navigator.serviceWorker.ready;
+      const existing = await reg.pushManager.getSubscription();
+      if (existing) await existing.unsubscribe();
+      const sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY) });
+      await fetch(PUSH_URL, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "subscribe", phone, role: "customer", subscription: sub.toJSON() }) });
+      setPerm("granted");
+    } catch (e) { console.error(e); }
+  };
+
+  if (perm === "granted") return (
+    <span className="text-emerald-400 text-xs flex items-center gap-1 hidden sm:flex">
+      <Icon name="Bell" size={13} /> Уведомления включены
+    </span>
+  );
+
+  return (
+    <button onClick={handleEnable} className="text-violet-400 hover:text-violet-300 text-sm flex items-center gap-1.5 transition-colors hidden sm:flex">
+      <Icon name="Bell" size={15} /> Включить уведомления
+    </button>
+  );
+}
 
 interface Customer {
   id: number;
@@ -98,6 +145,7 @@ export default function CabinetNav({
                 Кабинет мастера
               </a>
             )}
+            <PushButton phone={customer?.phone} />
             {setShowEditProfile && (
               <button onClick={() => setShowEditProfile(v => !v)}
                 className="text-gray-500 hover:text-gray-300 text-sm flex items-center gap-1.5 transition-colors hidden sm:flex">
