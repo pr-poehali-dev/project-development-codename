@@ -1,8 +1,10 @@
 import json
 import os
+import base64
 import psycopg2
 from psycopg2.extras import RealDictCursor
 from pywebpush import webpush, WebPushException
+from cryptography.hazmat.primitives.serialization import load_pem_private_key
 
 SCHEMA = os.environ.get("MAIN_DB_SCHEMA", "public")
 
@@ -16,6 +18,16 @@ HEADERS = {
 
 def get_conn():
     return psycopg2.connect(os.environ['DATABASE_URL'], cursor_factory=RealDictCursor)
+
+
+def normalize_pem(raw: str) -> str:
+    """Нормализует PEM строку — исправляет переносы строк"""
+    pem = raw.replace('\\n', '\n').strip()
+    if '-----' not in pem:
+        pem = base64.urlsafe_b64decode(pem + '==').decode('utf-8')
+    # Проверяем что ключ валидный
+    load_pem_private_key(pem.encode('utf-8'), password=None)
+    return pem
 
 
 def handler(event: dict, context) -> dict:
@@ -78,12 +90,18 @@ def handler(event: dict, context) -> dict:
         if not phone:
             return {'statusCode': 400, 'headers': HEADERS, 'body': json.dumps({'error': 'phone обязателен'})}
 
-        vapid_private = os.environ.get('VAPID_PRIVATE_KEY', '')
+        vapid_private_raw = os.environ.get('VAPID_PRIVATE_KEY', '')
         vapid_public = os.environ.get('VAPID_PUBLIC_KEY', '')
         vapid_email = os.environ.get('SMTP_USER', 'noreply@handyman.ru')
 
-        if not vapid_private or not vapid_public:
+        if not vapid_private_raw or not vapid_public:
             return {'statusCode': 500, 'headers': HEADERS, 'body': json.dumps({'error': 'VAPID ключи не настроены'})}
+
+        try:
+            vapid_private = normalize_pem(vapid_private_raw)
+        except Exception as e:
+            print(f"[PUSH] key error: {e}, starts={vapid_private_raw[:50]!r}")
+            return {'statusCode': 500, 'headers': HEADERS, 'body': json.dumps({'error': f'Ошибка ключа: {e}'})}
 
         conn = get_conn()
         cur = conn.cursor()
@@ -91,7 +109,7 @@ def handler(event: dict, context) -> dict:
         subs = cur.fetchall()
         cur.close(); conn.close()
 
-        print(f"[PUSH] phone={phone!r} subs={len(subs)} schema={SCHEMA}")
+        print(f"[PUSH] phone={phone!r} subs={len(subs)}")
 
         payload = json.dumps({'title': title, 'body': body, 'url': url})
         sent = 0
