@@ -2,6 +2,7 @@ import json
 import os
 import base64
 import psycopg2
+# v3
 from psycopg2.extras import RealDictCursor
 from pywebpush import webpush, WebPushException
 
@@ -19,15 +20,18 @@ def get_conn():
     return psycopg2.connect(os.environ['DATABASE_URL'], cursor_factory=RealDictCursor)
 
 
-def get_pem(raw: str) -> str:
-    """Декодирует приватный ключ из base64 в PEM строку"""
+def write_pem_file(raw: str) -> str:
+    """Декодирует ключ из base64 и записывает в /tmp/vapid.pem, возвращает путь"""
     raw = raw.strip()
     if '-----' not in raw:
         pem = base64.b64decode(raw).decode('utf-8')
     else:
         pem = raw.replace('\\n', '\n')
-    print(f"[PUSH] pem len={len(pem)} ok={pem.startswith('-----BEGIN')}")
-    return pem
+    print(f"[PUSH] pem len={len(pem)} starts={pem[:30]!r}")
+    path = '/tmp/vapid.pem'
+    with open(path, 'w') as f:
+        f.write(pem)
+    return path
 
 
 def handler(event: dict, context) -> dict:
@@ -97,7 +101,7 @@ def handler(event: dict, context) -> dict:
         if not vapid_private_raw or not vapid_public:
             return {'statusCode': 500, 'headers': HEADERS, 'body': json.dumps({'error': 'VAPID ключи не настроены'})}
 
-        vapid_private = get_pem(vapid_private_raw)
+        vapid_private = write_pem_file(vapid_private_raw)
 
         conn = get_conn()
         cur = conn.cursor()
@@ -114,14 +118,18 @@ def handler(event: dict, context) -> dict:
 
         for sub in subs:
             try:
+                from urllib.parse import urlparse
+                endpoint_url = sub['endpoint']
+                parsed = urlparse(endpoint_url)
+                aud = f"{parsed.scheme}://{parsed.netloc}"
                 webpush(
                     subscription_info={
-                        'endpoint': sub['endpoint'],
+                        'endpoint': endpoint_url,
                         'keys': {'p256dh': sub['p256dh'], 'auth': sub['auth']}
                     },
                     data=payload,
                     vapid_private_key=vapid_private,
-                    vapid_claims={'sub': f'mailto:{vapid_email}'}
+                    vapid_claims={'sub': f'mailto:{vapid_email}', 'aud': aud}
                 )
                 sent += 1
                 print(f"[PUSH] sent OK to {sub['endpoint'][:50]}")

@@ -1,0 +1,1 @@
+UPDATE t_p86314354_project_development_.push_subscriptions SET endpoint = 'expired_' || id::text WHERE created_at < '2026-03-31 17:19:00';
