@@ -4,7 +4,6 @@ import base64
 import psycopg2
 from psycopg2.extras import RealDictCursor
 from pywebpush import webpush, WebPushException
-from cryptography.hazmat.primitives.serialization import load_pem_private_key
 
 SCHEMA = os.environ.get("MAIN_DB_SCHEMA", "public")
 
@@ -20,17 +19,14 @@ def get_conn():
     return psycopg2.connect(os.environ['DATABASE_URL'], cursor_factory=RealDictCursor)
 
 
-def normalize_pem(raw: str) -> str:
-    """Декодирует приватный ключ из base64 в PEM"""
+def get_pem(raw: str) -> str:
+    """Декодирует приватный ключ из base64 в PEM строку"""
     raw = raw.strip()
-    # Если это base64 — декодируем
     if '-----' not in raw:
-        padding = '=' * (4 - len(raw) % 4) if len(raw) % 4 else ''
-        pem = base64.b64decode(raw + padding).decode('utf-8')
+        pem = base64.b64decode(raw).decode('utf-8')
     else:
         pem = raw.replace('\\n', '\n')
-    print(f"[PUSH] pem starts={pem[:40]!r} len={len(pem)}")
-    load_pem_private_key(pem.encode('utf-8'), password=None)
+    print(f"[PUSH] pem len={len(pem)} ok={pem.startswith('-----BEGIN')}")
     return pem
 
 
@@ -101,11 +97,7 @@ def handler(event: dict, context) -> dict:
         if not vapid_private_raw or not vapid_public:
             return {'statusCode': 500, 'headers': HEADERS, 'body': json.dumps({'error': 'VAPID ключи не настроены'})}
 
-        try:
-            vapid_private = normalize_pem(vapid_private_raw)
-        except Exception as e:
-            print(f"[PUSH] key error: {e}, starts={vapid_private_raw[:50]!r}")
-            return {'statusCode': 500, 'headers': HEADERS, 'body': json.dumps({'error': f'Ошибка ключа: {e}'})}
+        vapid_private = get_pem(vapid_private_raw)
 
         conn = get_conn()
         cur = conn.cursor()
