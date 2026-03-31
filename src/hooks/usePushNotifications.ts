@@ -3,7 +3,7 @@ import { useEffect } from "react";
 const PUSH_URL = "https://functions.poehali.dev/272080b1-1a80-40bd-8201-0951cb380c57";
 const VAPID_PUBLIC_KEY = import.meta.env.VITE_VAPID_PUBLIC_KEY || "";
 // При смене ключа меняй эту версию — сбросит старые подписки
-const VAPID_VERSION = "v2";
+const VAPID_VERSION = "v3";
 
 function urlBase64ToUint8Array(base64String: string): Uint8Array {
   const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
