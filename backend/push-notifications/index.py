@@ -21,11 +21,15 @@ def get_conn():
 
 
 def normalize_pem(raw: str) -> str:
-    """Нормализует PEM строку — исправляет переносы строк"""
-    pem = raw.replace('\\n', '\n').strip()
-    if '-----' not in pem:
-        pem = base64.urlsafe_b64decode(pem + '==').decode('utf-8')
-    # Проверяем что ключ валидный
+    """Декодирует приватный ключ из base64 в PEM"""
+    raw = raw.strip()
+    # Если это base64 — декодируем
+    if '-----' not in raw:
+        padding = '=' * (4 - len(raw) % 4) if len(raw) % 4 else ''
+        pem = base64.b64decode(raw + padding).decode('utf-8')
+    else:
+        pem = raw.replace('\\n', '\n')
+    print(f"[PUSH] pem starts={pem[:40]!r} len={len(pem)}")
     load_pem_private_key(pem.encode('utf-8'), password=None)
     return pem
 
