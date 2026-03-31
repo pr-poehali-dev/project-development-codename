@@ -1,0 +1,1 @@
+{"tests": [{"name": "Generate VAPID keys", "method": "GET", "path": "/", "expectedStatus": 200, "bodyMatcher": "partial", "expectedBody": {"public_key": "string"}}]}
