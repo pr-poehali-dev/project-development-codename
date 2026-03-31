@@ -108,8 +108,13 @@ def handler(event: dict, context) -> dict:
                 )
                 sent += 1
             except WebPushException as e:
+                status = e.response.status_code if e.response else 'no_response'
+                body_text = e.response.text if e.response else str(e)
+                print(f"[PUSH ERROR] status={status} endpoint={sub['endpoint'][:60]} body={body_text[:300]}")
                 if e.response and e.response.status_code in (404, 410):
                     failed_endpoints.append(sub['endpoint'])
+            except Exception as e:
+                print(f"[PUSH ERROR] unexpected: {e}")
 
         # Удаляем протухшие подписки
         if failed_endpoints:
