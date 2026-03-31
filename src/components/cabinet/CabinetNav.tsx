@@ -4,7 +4,7 @@ import CitySelect from "@/components/ui/city-select";
 import { useState, useEffect } from "react";
 
 const PUSH_URL = "https://functions.poehali.dev/272080b1-1a80-40bd-8201-0951cb380c57";
-const VAPID_PUBLIC_KEY = import.meta.env.VITE_VAPID_PUBLIC_KEY || "BG_Ln-RdvWrg20JsfURtHHgC2BclRonRGl260CyCL3VzbY9yHhJkiBZn7RYUmy62E7FaxAW9vd63kJu3oB8iQPs";
+const VAPID_PUBLIC_KEY = import.meta.env.VITE_VAPID_PUBLIC_KEY || "BDWLtMqUirnG-1n_v3dRwA0o80T918sNw1fU4RGgm-n0Upo4gmQ1OVcTT0VOPgcu4zdzwjMyqWp34jdXTgMVwrk";
 
 function urlBase64ToUint8Array(base64String: string): Uint8Array {
   const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
