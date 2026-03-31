@@ -91,8 +91,11 @@ def handler(event: dict, context) -> dict:
         subs = cur.fetchall()
         cur.close(); conn.close()
 
+        print(f"[PUSH] phone={phone!r} subs={len(subs)} schema={SCHEMA}")
+
         payload = json.dumps({'title': title, 'body': body, 'url': url})
         sent = 0
+        errors = []
         failed_endpoints = []
 
         for sub in subs:
@@ -107,16 +110,18 @@ def handler(event: dict, context) -> dict:
                     vapid_claims={'sub': f'mailto:{vapid_email}'}
                 )
                 sent += 1
+                print(f"[PUSH] sent OK to {sub['endpoint'][:50]}")
             except WebPushException as e:
                 status = e.response.status_code if e.response else 'no_response'
                 body_text = e.response.text if e.response else str(e)
-                print(f"[PUSH ERROR] status={status} endpoint={sub['endpoint'][:60]} body={body_text[:300]}")
+                print(f"[PUSH ERROR] status={status} body={body_text[:500]}")
+                errors.append({'status': status, 'body': body_text[:200]})
                 if e.response and e.response.status_code in (404, 410):
                     failed_endpoints.append(sub['endpoint'])
             except Exception as e:
                 print(f"[PUSH ERROR] unexpected: {e}")
+                errors.append({'error': str(e)})
 
-        # Удаляем протухшие подписки
         if failed_endpoints:
             conn2 = get_conn()
             cur2 = conn2.cursor()
@@ -125,6 +130,6 @@ def handler(event: dict, context) -> dict:
             conn2.commit()
             cur2.close(); conn2.close()
 
-        return {'statusCode': 200, 'headers': HEADERS, 'body': json.dumps({'success': True, 'sent': sent})}
+        return {'statusCode': 200, 'headers': HEADERS, 'body': json.dumps({'success': True, 'sent': sent, 'errors': errors})}
 
     return {'statusCode': 405, 'headers': HEADERS, 'body': json.dumps({'error': 'Method not allowed'})}

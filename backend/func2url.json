@@ -1,4 +1,5 @@
 {
+  "generate-vapid": "https://functions.poehali.dev/1f78e2f6-42a6-4397-9c23-9f07543dee01",
   "push-notifications": "https://functions.poehali.dev/272080b1-1a80-40bd-8201-0951cb380c57",
   "payments": "https://functions.poehali.dev/cad10a69-4b34-4497-960c-f6026044d2f8",
   "master-packages": "https://functions.poehali.dev/a097fcb4-fb63-44d8-9784-e4fa20009cb4",
