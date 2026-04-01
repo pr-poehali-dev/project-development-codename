@@ -260,6 +260,7 @@ export default function Cabinet() {
           onUpdateOrder={orders_.handleUpdateOrder}
           onDeleteOrder={orders_.handleDeleteOrder}
           onCreateOrder={() => orders_.setOrderModalOpen(true)}
+          onSwitchToInquiries={() => setCabinetTab("inquiries")}
         />
       )}
 

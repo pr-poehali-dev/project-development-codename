@@ -54,12 +54,13 @@ interface CabinetOrderListProps {
   onUpdateOrder: (orderId: number, data: { title: string; description: string; category: string; city: string; budget: string }) => Promise<void>;
   onDeleteOrder: (orderId: number) => Promise<void>;
   onCreateOrder: () => void;
+  onSwitchToInquiries?: () => void;
 }
 
 export default function CabinetOrderList({
   orders, customer, reviewSuccess,
   statusLoading, selectMasterLoading,
-  onStatusChange, onSelectMaster, onReviewSubmit, onUpdateOrder, onDeleteOrder, onCreateOrder,
+  onStatusChange, onSelectMaster, onReviewSubmit, onUpdateOrder, onDeleteOrder, onCreateOrder, onSwitchToInquiries,
 }: CabinetOrderListProps) {
   const [expandedOrder, setExpandedOrder] = useState<number | null>(null);
   const [activeTab, setActiveTab] = useState<"active" | "done">("active");
@@ -134,17 +135,35 @@ export default function CabinetOrderList({
 
       {/* Сводка */}
       <div className="grid grid-cols-3 gap-4 mb-8">
-        {[
-          { label: "Заявок", value: orders.length, icon: "ClipboardList", color: "text-violet-400" },
-          { label: "Откликов", value: totalResponses, icon: "MessageCircle", color: "text-emerald-400" },
-          { label: "Активных", value: orders.filter(o => o.status === "new").length, icon: "Clock", color: "text-amber-400" },
-        ].map((stat) => (
-          <div key={stat.label} className="bg-white/4 border border-white/8 rounded-2xl p-4 text-center">
-            <Icon name={stat.icon} size={20} className={`${stat.color} mx-auto mb-2`} />
-            <div className="text-2xl font-bold text-white">{stat.value}</div>
-            <div className="text-gray-500 text-xs mt-0.5">{stat.label}</div>
-          </div>
-        ))}
+        {/* Заявки — переход к вкладке "Активные" */}
+        <button
+          onClick={() => setActiveTab("active")}
+          className="bg-white/4 border border-white/8 rounded-2xl p-4 text-center hover:bg-white/8 hover:border-violet-500/40 transition-all cursor-pointer group"
+        >
+          <Icon name="ClipboardList" size={20} className="text-violet-400 mx-auto mb-2 group-hover:scale-110 transition-transform" />
+          <div className="text-2xl font-bold text-white">{orders.length}</div>
+          <div className="text-gray-500 text-xs mt-0.5 group-hover:text-violet-400 transition-colors">Заявок</div>
+        </button>
+
+        {/* Отклики — переход на вкладку "Обращения" */}
+        <button
+          onClick={() => onSwitchToInquiries?.()}
+          className="bg-white/4 border border-white/8 rounded-2xl p-4 text-center hover:bg-white/8 hover:border-emerald-500/40 transition-all cursor-pointer group"
+        >
+          <Icon name="MessageCircle" size={20} className="text-emerald-400 mx-auto mb-2 group-hover:scale-110 transition-transform" />
+          <div className="text-2xl font-bold text-white">{totalResponses}</div>
+          <div className="text-gray-500 text-xs mt-0.5 group-hover:text-emerald-400 transition-colors">Откликов</div>
+        </button>
+
+        {/* Активные — переход к вкладке "Активные" заявок */}
+        <button
+          onClick={() => setActiveTab("active")}
+          className="bg-white/4 border border-white/8 rounded-2xl p-4 text-center hover:bg-white/8 hover:border-amber-500/40 transition-all cursor-pointer group"
+        >
+          <Icon name="Clock" size={20} className="text-amber-400 mx-auto mb-2 group-hover:scale-110 transition-transform" />
+          <div className="text-2xl font-bold text-white">{orders.filter(o => o.status === "new").length}</div>
+          <div className="text-gray-500 text-xs mt-0.5 group-hover:text-amber-400 transition-colors">Активных</div>
+        </button>
       </div>
 
       {/* Модалки */}

@@ -17,6 +17,7 @@ import Rules from "./pages/Rules";
 import NotFound from "./pages/NotFound";
 import SupportWidget from "./components/support/SupportWidget";
 import ChatFab from "./components/chat/ChatFab";
+import LiveLogs from "./components/LiveLogs";
 import { usePushNotifications } from "./hooks/usePushNotifications";
 
 const queryClient = new QueryClient();
@@ -41,6 +42,7 @@ function AppInner() {
       </Routes>
       <SupportWidget />
       <ChatFab />
+      <LiveLogs />
     </BrowserRouter>
   );
 }
