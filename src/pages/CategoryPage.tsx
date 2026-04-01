@@ -1,9 +1,13 @@
+import React from "react";
 import { useParams } from "react-router-dom";
 import { useState, useEffect } from "react";
 import Icon from "@/components/ui/icon";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { useSeoMeta } from "@/hooks/useSeoMeta";
 
 const ORDERS_URL = "https://functions.poehali.dev/34db9bab-e58a-479e-b1cc-c27fb8e0b728";
+const MASTER_URL = "https://functions.poehali.dev/de274bd5-3f08-42d8-9aac-b373bb34b900";
 
 interface Order {
   id: number;
@@ -15,6 +19,21 @@ interface Order {
   contact_name: string;
   status: string;
   created_at: string;
+}
+
+interface Service {
+  id: number;
+  title: string;
+  description: string;
+  category: string;
+  city: string;
+  price: number | null;
+  master_id: number;
+  master_name: string;
+  avatar_color: string;
+  rating: number | null;
+  reviews_count: number;
+  boosted_until: string | null;
 }
 
 const categories = [
@@ -60,6 +79,20 @@ export default function CategoryPage() {
   const [ordersLoading, setOrdersLoading] = useState(false);
   const [filtersOpen, setFiltersOpen] = useState(false);
 
+  const [services, setServices] = useState<Service[]>([]);
+  const [servicesLoading, setServicesLoading] = useState(false);
+  const [servicesVisible, setServicesVisible] = useState(20);
+
+  // Контакт с мастером
+  const [contactMaster, setContactMaster] = useState<{ id: number; name: string; serviceId?: number } | null>(null);
+  const [contactForm, setContactForm] = useState({ name: "", phone: "", email: "", message: "" });
+  const [contactLoading, setContactLoading] = useState(false);
+  const [contactSent, setContactSent] = useState(false);
+  const [contactError, setContactError] = useState("");
+  const isMaster = typeof window !== "undefined" && !!localStorage.getItem("master_phone");
+  const isCustomer = typeof window !== "undefined" && !!localStorage.getItem("customer_phone");
+
+  // Заявки (для категорий без подкатегорий)
   useEffect(() => {
     if (!cat || hasSubcategories) return;
     setOrdersLoading(true);
@@ -72,6 +105,44 @@ export default function CategoryPage() {
       })
       .finally(() => setOrdersLoading(false));
   }, [cat?.name]);
+
+  // Объявления (услуги мастеров по категории)
+  useEffect(() => {
+    if (!cat) return;
+    setServicesLoading(true);
+    const params = new URLSearchParams({ action: "services", category: cat.name });
+    fetch(`${MASTER_URL}?${params}`)
+      .then(r => r.json())
+      .then(data => {
+        const parsed = typeof data === "string" ? JSON.parse(data) : data;
+        setServices(parsed.services || []);
+      })
+      .finally(() => setServicesLoading(false));
+  }, [cat?.name]);
+
+  const handleContactSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!contactMaster) return;
+    setContactLoading(true); setContactError("");
+    try {
+      const res = await fetch(MASTER_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "contact_master",
+          master_id: contactMaster.id,
+          service_id: contactMaster.serviceId,
+          contact_name: contactForm.name,
+          contact_phone: contactForm.phone,
+          contact_email: contactForm.email,
+          message: contactForm.message,
+        }),
+      });
+      const data = await res.json();
+      if (data.error) { setContactError(data.error); return; }
+      setContactSent(true);
+    } finally { setContactLoading(false); }
+  };
 
   const seoTitle = cat
     ? `${cat.name} — найти мастера | HandyMan`
@@ -130,7 +201,137 @@ export default function CategoryPage() {
             </div>
           </div>
 
-          {/* Подкатегории */}
+          {/* Объявления мастеров */}
+          <div className="mb-10">
+            <h2 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+              <Icon name="Briefcase" size={18} className="text-violet-400" />
+              Объявления мастеров
+              {!servicesLoading && services.length > 0 && (
+                <span className="text-gray-500 text-base font-normal">{services.length}</span>
+              )}
+            </h2>
+            {servicesLoading ? (
+              <div className="flex items-center gap-3 text-gray-500 py-6">
+                <div className="w-5 h-5 border-2 border-violet-500 border-t-transparent rounded-full animate-spin" />
+                Загрузка...
+              </div>
+            ) : services.length === 0 ? (
+              <div className="text-center py-8">
+                <Icon name="Briefcase" size={28} className="mx-auto mb-3 text-gray-600" />
+                <p className="text-gray-500 text-sm">Мастера ещё не опубликовали объявления в этой категории</p>
+                <a href="/master?tab=services">
+                  <Button className="mt-4 bg-gradient-to-r from-violet-600 to-indigo-600 text-white text-xs">
+                    Опубликовать объявление
+                  </Button>
+                </a>
+              </div>
+            ) : (
+              <>
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+                  {services.slice(0, servicesVisible).map((service) => {
+                    const isBoosted = !!service.boosted_until && new Date(service.boosted_until) > new Date();
+                    return (
+                      <div
+                        key={service.id}
+                        className={`group rounded-xl p-3.5 transition-all flex flex-col relative ${
+                          isBoosted
+                            ? "bg-gradient-to-b from-amber-500/8 to-white/4 border border-amber-500/30 hover:border-amber-400/50"
+                            : "bg-white/4 border border-white/8 hover:border-violet-500/40 hover:bg-white/6"
+                        }`}
+                      >
+                        {isBoosted && (
+                          <div className="absolute -top-px left-3 right-3 h-px bg-gradient-to-r from-transparent via-amber-400/60 to-transparent rounded-full" />
+                        )}
+                        <a href={`/master-page?id=${service.master_id}`} className="block flex-1">
+                          <div className="flex items-start justify-between mb-2.5">
+                            <Badge
+                              className="text-[10px] px-2 py-0.5 rounded-md leading-tight"
+                              style={{ backgroundColor: "rgba(99,102,241,0.15)", color: "#a5b4fc", border: "1px solid rgba(99,102,241,0.2)" }}
+                            >
+                              {service.category}
+                            </Badge>
+                            {isBoosted ? (
+                              <span className="flex items-center gap-0.5 text-amber-400 text-[10px] font-medium">
+                                <Icon name="Zap" size={10} />Топ
+                              </span>
+                            ) : service.rating ? (
+                              <div className="flex items-center gap-0.5 text-amber-400 text-xs">
+                                <Icon name="Star" size={11} />
+                                <span>{service.rating}</span>
+                                <span className="text-gray-600 text-[10px]">({service.reviews_count})</span>
+                              </div>
+                            ) : (
+                              <span className="text-gray-600 text-[10px]">Новый</span>
+                            )}
+                          </div>
+                          <h3 className="text-white font-semibold text-sm mb-2.5 leading-snug group-hover:text-violet-200 transition-colors line-clamp-2">
+                            {service.title}
+                          </h3>
+                          <div className="flex items-center gap-2 mb-2.5">
+                            <div
+                              className="w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0"
+                              style={{ backgroundColor: service.avatar_color }}
+                            >
+                              {service.master_name?.[0]?.toUpperCase()}
+                            </div>
+                            <div className="min-w-0">
+                              <div className="text-xs text-gray-300 font-medium truncate">{service.master_name}</div>
+                              {service.city && (
+                                <div className="text-[10px] text-gray-600 flex items-center gap-0.5">
+                                  <Icon name="MapPin" size={9} />{service.city}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                          <div className="flex items-center justify-between pt-2.5 border-t border-white/6 mb-2">
+                            <div>
+                              {service.price ? (
+                                <>
+                                  <span className="text-gray-500 text-[10px]">от</span>
+                                  <span className="text-white font-bold text-sm ml-1">{service.price.toLocaleString("ru-RU")} ₽</span>
+                                </>
+                              ) : (
+                                <span className="text-gray-500 text-xs">По договору</span>
+                              )}
+                            </div>
+                            <span className="text-violet-400 text-[10px] hover:text-violet-300 transition-colors">Профиль →</span>
+                          </div>
+                        </a>
+                        {!isMaster && (
+                          <Button
+                            size="sm"
+                            className="w-full bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white text-xs rounded-lg h-7"
+                            onClick={() => {
+                              if (!isCustomer) { window.location.href = "/cabinet"; return; }
+                              setContactMaster({ id: service.master_id, name: service.master_name, serviceId: service.id });
+                              setContactForm({ name: "", phone: "", email: "", message: "" });
+                              setContactSent(false);
+                              setContactError("");
+                            }}
+                          >
+                            <Icon name="MessageSquare" size={11} className="mr-1" />
+                            Написать мастеру
+                          </Button>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+                {servicesVisible < services.length && (
+                  <div className="text-center mt-6">
+                    <Button
+                      variant="ghost"
+                      className="border border-white/10 text-gray-400 hover:text-white hover:border-white/20 px-8"
+                      onClick={() => setServicesVisible(v => v + 20)}
+                    >
+                      Показать ещё ({services.length - servicesVisible} осталось)
+                    </Button>
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+
           {hasSubcategories ? (
             <>
               <div className="flex items-center gap-3 mb-6">
@@ -213,6 +414,56 @@ export default function CategoryPage() {
           )}
         </div>
       </section>
+
+      {/* Модальное окно: написать мастеру */}
+      {contactMaster && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center px-4" onClick={() => setContactMaster(null)}>
+          <div className="bg-[#0f1117] border border-white/10 rounded-2xl p-6 w-full max-w-md" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-5">
+              <div>
+                <h3 className="text-white font-semibold">Написать {contactMaster.name}</h3>
+                <p className="text-gray-500 text-xs mt-0.5">Мастер получит уведомление и свяжется с вами</p>
+              </div>
+              <button onClick={() => setContactMaster(null)} className="text-gray-500 hover:text-gray-300 transition-colors">
+                <Icon name="X" size={18} />
+              </button>
+            </div>
+            {contactSent ? (
+              <div className="text-center py-6">
+                <div className="w-14 h-14 rounded-full bg-emerald-600/20 flex items-center justify-center mx-auto mb-4">
+                  <Icon name="CheckCircle" size={28} className="text-emerald-400" />
+                </div>
+                <p className="text-white font-semibold mb-1">Сообщение отправлено!</p>
+                <p className="text-gray-400 text-sm">Мастер получил уведомление и свяжется с вами</p>
+                <Button onClick={() => setContactMaster(null)} className="mt-5 bg-violet-600 hover:bg-violet-500 text-white w-full">Закрыть</Button>
+              </div>
+            ) : (
+              <form onSubmit={handleContactSubmit} className="flex flex-col gap-3">
+                <div>
+                  <label className="text-xs text-gray-400 mb-1.5 block">Ваше имя *</label>
+                  <input required value={contactForm.name} onChange={e => setContactForm(f => ({ ...f, name: e.target.value }))} placeholder="Иван Иванов" className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-violet-500 transition-colors" />
+                </div>
+                <div>
+                  <label className="text-xs text-gray-400 mb-1.5 block">Телефон</label>
+                  <input type="tel" value={contactForm.phone} onChange={e => setContactForm(f => ({ ...f, phone: e.target.value }))} placeholder="+7 (999) 000-00-00" className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-violet-500 transition-colors" />
+                </div>
+                <div>
+                  <label className="text-xs text-gray-400 mb-1.5 block">Email</label>
+                  <input type="email" value={contactForm.email} onChange={e => setContactForm(f => ({ ...f, email: e.target.value }))} placeholder="email@example.com" className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-violet-500 transition-colors" />
+                </div>
+                <div>
+                  <label className="text-xs text-gray-400 mb-1.5 block">Сообщение *</label>
+                  <textarea required rows={3} value={contactForm.message} onChange={e => setContactForm(f => ({ ...f, message: e.target.value }))} placeholder="Что нужно сделать?" className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-violet-500 transition-colors resize-none" />
+                </div>
+                {contactError && <p className="text-amber-400 text-sm">{contactError}</p>}
+                <Button type="submit" disabled={contactLoading} className="bg-gradient-to-r from-violet-600 to-indigo-600 text-white w-full mt-1">
+                  {contactLoading ? "Отправка..." : "Отправить"}
+                </Button>
+              </form>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

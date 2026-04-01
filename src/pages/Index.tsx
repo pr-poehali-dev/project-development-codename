@@ -226,20 +226,7 @@ const Index = () => {
 
       <HomeHeroStats onSearch={(query, city) => { setHeroSearchQuery(query); if (city) setSelectedCityFilter(city); }} />
 
-      <HomeCategoriesServices
-        activeCategory={activeCategory}
-        selectedCity={selectedCity}
-        setSelectedCityFilter={setSelectedCityFilter}
-        services={services}
-        availableCities={availableCities}
-        servicesLoading={servicesLoading}
-        setOrderForm={setOrderForm}
-        setOrderModalOpen={openOrderModal}
-        isMaster={isMaster}
-        isCustomer={isCustomer}
-        setLoginModalOpen={setLoginModalOpen}
-        heroSearchQuery={heroSearchQuery}
-      />
+      <HomeCategoriesServices />
 
       {/* Блок пакетов */}
       <section id="pricing" className="py-16 px-4 bg-gradient-to-br from-violet-900/20 to-indigo-900/10 border-y border-white/5">

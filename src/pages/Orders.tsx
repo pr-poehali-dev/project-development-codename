@@ -61,6 +61,7 @@ const Orders = () => {
   const [masterId, setMasterId] = useState<number | null>(null);
   const [masterData, setMasterData] = useState<{ name: string; phone: string; category: string } | null>(null);
   const [authPromptOpen, setAuthPromptOpen] = useState(false);
+  const [authChecked, setAuthChecked] = useState(false);
 
   useEffect(() => {
     const savedPhone = localStorage.getItem("master_phone");
@@ -76,11 +77,15 @@ const Orders = () => {
             setMasterData(md);
             setResponseForm((f) => ({ ...f, master_name: md.name, master_phone: md.phone, master_category: md.category }));
           }
-        });
+        })
+        .finally(() => setAuthChecked(true));
+    } else {
+      setAuthChecked(true);
     }
   }, []);
 
   useEffect(() => {
+    if (!authChecked || masterId === null) return;
     if (mainTab === "all") {
       setLoading(true);
       const savedPhone = localStorage.getItem("master_phone");
@@ -95,7 +100,7 @@ const Orders = () => {
         })
         .finally(() => setLoading(false));
     }
-  }, [selectedCity, mainTab]);
+  }, [selectedCity, mainTab, authChecked, masterId]);
 
   useEffect(() => {
     if ((mainTab === "active" || mainTab === "done") && masterId !== null) {
@@ -154,6 +159,61 @@ const Orders = () => {
     const d = new Date(iso);
     return d.toLocaleDateString("ru-RU", { day: "numeric", month: "long" });
   };
+
+  // Если авторизация проверена и мастер не авторизован — показываем экран входа
+  if (authChecked && masterId === null) {
+    return (
+      <div className="min-h-screen bg-[#0f1117] text-white flex flex-col">
+        {/* Навигация */}
+        <nav className="bg-[#0f1117]/95 backdrop-blur border-b border-white/10 sticky top-0 z-50">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
+            <a href="/" className="flex items-center gap-3">
+              <img src="https://cdn.poehali.dev/projects/b7f56b72-3dfb-49ff-a0ce-cff7b631f477/files/bb517738-7e1e-4e29-bd74-607574a9b222.jpg" alt="HandyMan" className="w-9 h-9 rounded-xl object-cover" />
+              <span className="text-xl font-bold bg-gradient-to-r from-violet-400 to-indigo-400 bg-clip-text text-transparent">HandyMan</span>
+            </a>
+            <a href="/">
+              <Button variant="ghost" className="text-gray-400 hover:text-white text-sm gap-2">
+                <Icon name="ArrowLeft" size={16} />
+                На главную
+              </Button>
+            </a>
+          </div>
+        </nav>
+
+        {/* Экран входа для мастеров */}
+        <div className="flex-1 flex items-center justify-center px-4 py-20">
+          <div className="w-full max-w-md text-center">
+            <div className="w-20 h-20 rounded-2xl bg-violet-600/20 border border-violet-500/30 flex items-center justify-center mx-auto mb-6">
+              <Icon name="ClipboardList" size={36} className="text-violet-400" />
+            </div>
+            <h1 className="text-2xl font-bold text-white mb-3">Лента заявок</h1>
+            <p className="text-gray-400 mb-8">
+              Заявки от заказчиков видны только зарегистрированным мастерам.
+              Войдите в кабинет мастера, чтобы просматривать и откликаться на заказы.
+            </p>
+            <div className="flex flex-col gap-3">
+              <a href="/master" className="block">
+                <div className="flex items-center gap-4 p-4 rounded-2xl border border-violet-500/30 bg-violet-600/10 hover:bg-violet-600/20 hover:border-violet-500/50 transition-all cursor-pointer">
+                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-violet-600 to-indigo-600 flex items-center justify-center flex-shrink-0">
+                    <Icon name="Wrench" size={20} className="text-white" />
+                  </div>
+                  <div className="text-left">
+                    <p className="font-semibold text-white">Войти как мастер</p>
+                    <p className="text-gray-400 text-sm mt-0.5">Откликайся на заявки и зарабатывай</p>
+                  </div>
+                  <Icon name="ChevronRight" size={18} className="text-gray-500 ml-auto" />
+                </div>
+              </a>
+              <p className="text-gray-600 text-sm">
+                Заказчик?{" "}
+                <a href="/cabinet" className="text-violet-400 hover:text-violet-300 transition-colors">Войти в кабинет заказчика →</a>
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#0f1117] text-white">

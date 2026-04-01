@@ -3,6 +3,7 @@ import AdminLogin from "@/pages/admin/AdminLogin";
 import AdminSidebar, { type Tab } from "@/pages/admin/AdminSidebar";
 import AdminTabContent from "@/pages/admin/AdminTabContent";
 import AdminModals from "@/pages/admin/AdminModals";
+import LiveLogs from "@/components/LiveLogs";
 
 const API = "https://functions.poehali.dev/a097fcb4-fb63-44d8-9784-e4fa20009cb4";
 
@@ -309,6 +310,9 @@ export default function AdminPage() {
         setServiceEditForm={setServiceEditForm}
         onSaveServiceEdit={saveServiceEdit} onCloseServiceEdit={() => setServiceEditModal(null)}
       />
+
+      {/* Live Logs — только для администратора */}
+      <LiveLogs />
     </div>
   );
 }
