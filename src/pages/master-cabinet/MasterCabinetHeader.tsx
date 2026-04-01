@@ -149,7 +149,7 @@ export default function MasterCabinetHeader({
         )}
 
         {/* Вкладки */}
-        <div className="grid grid-cols-6 gap-1 bg-white/4 rounded-xl p-1 mb-6">
+        <div className="grid grid-cols-3 gap-1 bg-white/4 rounded-xl p-1 mb-6">
           <button onClick={() => setTab("balance")} className={`py-2 rounded-lg text-xs font-medium transition-all ${tab === "balance" ? "bg-violet-600 text-white" : "text-gray-400 hover:text-white"}`}>
             Баланс
           </button>
