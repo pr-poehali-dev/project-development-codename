@@ -85,13 +85,29 @@ def send_new_order_email(to_email: str, master_name: str, order_title: str, orde
         server.sendmail(user, to_email, msg.as_string())
 
 
+def send_push(phone: str, title: str, body: str, url: str = '/'):
+    """Отправляет push-уведомление пользователю по телефону."""
+    try:
+        import urllib.request as _urllib
+        _push_data = json.dumps({'action': 'send', 'phone': phone, 'title': title, 'body': body, 'url': url}).encode()
+        _req = _urllib.Request(
+            'https://functions.poehali.dev/272080b1-1a80-40bd-8201-0951cb380c57',
+            data=_push_data,
+            headers={'Content-Type': 'application/json'},
+            method='POST'
+        )
+        _urllib.urlopen(_req, timeout=3)
+    except Exception:
+        pass
+
+
 def notify_masters(category: str, city: str, order_title: str, order_description: str, budget, order_id: int):
     """Находит мастеров с совпадающей категорией и городом и рассылает уведомления."""
     try:
         conn = get_conn()
         cur = conn.cursor()
         cur.execute(
-            f"SELECT name, email FROM {SCHEMA}.masters WHERE category = %s AND city = %s AND email IS NOT NULL AND email != ''",
+            f"SELECT name, email, phone FROM {SCHEMA}.masters WHERE category = %s AND city = %s",
             (category, city)
         )
         masters = cur.fetchall()
@@ -99,19 +115,28 @@ def notify_masters(category: str, city: str, order_title: str, order_description
         conn.close()
 
         for master in masters:
-            try:
-                send_new_order_email(
-                    to_email=master['email'],
-                    master_name=master['name'],
-                    order_title=order_title,
-                    order_category=category,
-                    order_city=city,
-                    order_description=order_description,
-                    budget=budget,
-                    order_id=order_id,
+            if master['email']:
+                try:
+                    send_new_order_email(
+                        to_email=master['email'],
+                        master_name=master['name'],
+                        order_title=order_title,
+                        order_category=category,
+                        order_city=city,
+                        order_description=order_description,
+                        budget=budget,
+                        order_id=order_id,
+                    )
+                except Exception:
+                    pass
+            # Push-уведомление мастеру о новой заявке
+            if master['phone']:
+                send_push(
+                    phone=master['phone'],
+                    title='Новая заявка в вашем городе',
+                    body=f'{order_title} — {category}',
+                    url='/orders'
                 )
-            except Exception:
-                pass
     except Exception:
         pass
 

@@ -72,6 +72,23 @@ def send_email(to_email: str, order_title: str, master_name: str, master_phone: 
         server.sendmail(smtp_user, to_email, msg.as_string())
 
 
+def send_push(phone: str, title: str, body: str, url: str = '/'):
+    """Отправляет push-уведомление пользователю по телефону."""
+    try:
+        import json as _json
+        import urllib.request as _urllib
+        _push_data = _json.dumps({'action': 'send', 'phone': phone, 'title': title, 'body': body, 'url': url}).encode()
+        _req = _urllib.Request(
+            'https://functions.poehali.dev/272080b1-1a80-40bd-8201-0951cb380c57',
+            data=_push_data,
+            headers={'Content-Type': 'application/json'},
+            method='POST'
+        )
+        _urllib.urlopen(_req, timeout=3)
+    except Exception:
+        pass
+
+
 def handler(event: dict, context) -> dict:
     """Отклики мастеров на заявки заказчиков с email-уведомлением."""
 
@@ -160,6 +177,15 @@ def handler(event: dict, context) -> dict:
                 )
             except Exception:
                 pass
+
+        # Push-уведомление заказчику об отклике мастера
+        if order and order.get('contact_phone'):
+            send_push(
+                phone=order['contact_phone'],
+                title='Новый отклик на вашу заявку',
+                body=f'{master_name} откликнулся на «{order["title"]}»',
+                url='/cabinet'
+            )
 
         return {
             'statusCode': 200,

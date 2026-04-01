@@ -251,6 +251,22 @@ def send_inquiry_email(to_email: str, master_name: str, from_name: str, from_pho
         server.sendmail(user, to_email, msg.as_string())
 
 
+def send_push(phone: str, title: str, body: str, url: str = '/'):
+    """Отправляет push-уведомление пользователю по телефону."""
+    try:
+        import urllib.request as _urllib
+        _push_data = json.dumps({'action': 'send', 'phone': phone, 'title': title, 'body': body, 'url': url}).encode()
+        _req = _urllib.Request(
+            'https://functions.poehali.dev/272080b1-1a80-40bd-8201-0951cb380c57',
+            data=_push_data,
+            headers={'Content-Type': 'application/json'},
+            method='POST'
+        )
+        _urllib.urlopen(_req, timeout=3)
+    except Exception:
+        pass
+
+
 def master_to_dict(m):
     cats = m['categories'] if m['categories'] else []
     if not cats and m['category']:
@@ -477,6 +493,18 @@ def handler(event: dict, context) -> dict:
                     send_inquiry_email(master_row['email'], master_row['name'], contact_name, '', '', message)
                 except Exception:
                     pass
+            # Push-уведомление мастеру о новом обращении
+            cur2 = get_conn().cursor()
+            cur2.execute(f"SELECT phone FROM {SCHEMA}.masters WHERE id=%s", (int(master_id),))
+            mp = cur2.fetchone()
+            cur2.close()
+            if mp and mp['phone']:
+                send_push(
+                    phone=mp['phone'],
+                    title=f'Новое обращение от {contact_name}',
+                    body=message[:80],
+                    url='/master?tab=inquiries'
+                )
             return {'statusCode': 200, 'headers': HEADERS, 'body': json.dumps({'success': True, 'id': inquiry_id})}
 
         # ── ПОДТВЕРДИТЬ ДОГОВОРЁННОСТЬ (мастер) ──
@@ -530,6 +558,14 @@ def handler(event: dict, context) -> dict:
                         )
                     except Exception:
                         pass
+                # Push заказчику — договорённость подтверждена обеими сторонами
+                if inq['contact_phone']:
+                    send_push(
+                        phone=inq['contact_phone'],
+                        title='Договорённость подтверждена!',
+                        body=f'Вы и мастер {inq["master_name"]} подтвердили договорённость',
+                        url='/cabinet?tab=chats'
+                    )
                 return {'statusCode': 200, 'headers': HEADERS, 'body': json.dumps({
                     'success': True, 'deal_done': True,
                     'contacts': {'phone': inq['contact_phone'], 'email': inq['contact_email'], 'name': inq['contact_name']}
@@ -545,6 +581,14 @@ def handler(event: dict, context) -> dict:
                     )
                 except Exception:
                     pass
+            # Push заказчику — мастер нажал «Договорились», ждём заказчика
+            if inq['contact_phone']:
+                send_push(
+                    phone=inq['contact_phone'],
+                    title=f'Мастер {inq["master_name"]} нажал «Договорились»',
+                    body='Войдите в кабинет и подтвердите договорённость',
+                    url='/cabinet?tab=chats'
+                )
             return {'statusCode': 200, 'headers': HEADERS, 'body': json.dumps({'success': True, 'deal_done': False, 'waiting_customer': True})}
 
         # ── ОТКЛОНИТЬ ДОГОВОРЁННОСТЬ (мастер или заказчик) ──

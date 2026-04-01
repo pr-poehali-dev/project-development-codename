@@ -176,6 +176,22 @@ def send_deal_contacts_master_email(to_email: str, to_name: str, master_name: st
         server.sendmail(user, to_email, msg.as_string())
 
 
+def send_push(phone: str, title: str, body: str, url: str = '/'):
+    """Отправляет push-уведомление пользователю по телефону."""
+    try:
+        import urllib.request as _urllib
+        _push_data = json.dumps({'action': 'send', 'phone': phone, 'title': title, 'body': body, 'url': url}).encode()
+        _req = _urllib.Request(
+            'https://functions.poehali.dev/272080b1-1a80-40bd-8201-0951cb380c57',
+            data=_push_data,
+            headers={'Content-Type': 'application/json'},
+            method='POST'
+        )
+        _urllib.urlopen(_req, timeout=3)
+    except Exception:
+        pass
+
+
 def get_orders(cur, customer_id=None, phone=None):
     if customer_id and phone:
         cur.execute(
@@ -535,8 +551,28 @@ def handler(event: dict, context) -> dict:
                     f"INSERT INTO {SCHEMA}.master_transactions (master_id, type, amount, description, order_id) VALUES (%s, 'spend', 5, %s, %s)",
                     (int(master_id), f"Выбран исполнителем по заявке #{order_id}", int(response_id))
                 )
+            # Получаем данные заявки и телефон мастера для push
+            cur.execute(f"SELECT title FROM {SCHEMA}.orders WHERE id = %s", (int(order_id),))
+            order_row = cur.fetchone()
             conn.commit()
             cur.close(); conn.close()
+            # Push-уведомление мастеру — заказчик выбрал его исполнителем
+            if master_id:
+                try:
+                    cur2 = get_conn().cursor()
+                    cur2.execute(f"SELECT phone FROM {SCHEMA}.masters WHERE id = %s", (int(master_id),))
+                    mp = cur2.fetchone()
+                    cur2.close()
+                    if mp and mp['phone']:
+                        order_title = order_row['title'] if order_row else f'заявка #{order_id}'
+                        send_push(
+                            phone=mp['phone'],
+                            title='Вас выбрали исполнителем!',
+                            body=f'Заказчик принял ваш отклик на «{order_title}»',
+                            url='/master?tab=orders'
+                        )
+                except Exception:
+                    pass
             return {'statusCode': 200, 'headers': HEADERS, 'body': json.dumps({'success': True})}
 
         if action == 'update_profile':
@@ -767,6 +803,21 @@ def handler(event: dict, context) -> dict:
                         )
                     except Exception:
                         pass
+                # Push мастеру — договорённость подтверждена обеими сторонами
+                try:
+                    cur3 = get_conn().cursor()
+                    cur3.execute(f"SELECT phone FROM {SCHEMA}.masters WHERE id=%s", (inq['master_id'],))
+                    mp = cur3.fetchone()
+                    cur3.close()
+                    if mp and mp['phone']:
+                        send_push(
+                            phone=mp['phone'],
+                            title='Договорённость подтверждена!',
+                            body=f'Вы и заказчик {inq["contact_name"]} подтвердили договорённость',
+                            url='/master?tab=inquiries'
+                        )
+                except Exception:
+                    pass
                 return {'statusCode': 200, 'headers': HEADERS, 'body': json.dumps({
                     'success': True, 'deal_done': True,
                     'contacts': {'master_name': inq['master_name'], 'master_email': inq['master_email']}
@@ -782,6 +833,21 @@ def handler(event: dict, context) -> dict:
                     )
                 except Exception:
                     pass
+            # Push мастеру — заказчик нажал «Договорились», ждём мастера
+            try:
+                cur3 = get_conn().cursor()
+                cur3.execute(f"SELECT phone FROM {SCHEMA}.masters WHERE id=%s", (inq['master_id'],))
+                mp = cur3.fetchone()
+                cur3.close()
+                if mp and mp['phone']:
+                    send_push(
+                        phone=mp['phone'],
+                        title=f'Заказчик {inq["contact_name"]} нажал «Договорились»',
+                        body='Войдите в кабинет и подтвердите договорённость',
+                        url='/master?tab=inquiries'
+                    )
+            except Exception:
+                pass
             return {'statusCode': 200, 'headers': HEADERS, 'body': json.dumps({'success': True, 'deal_done': False, 'waiting_master': True})}
 
         # ── ОТКЛОНИТЬ ДОГОВОРЁННОСТЬ ──
