@@ -148,13 +148,6 @@ export default function CabinetNav({
               </a>
             )}
             <PushButton phone={customer?.phone} />
-            {setShowEditProfile && (
-              <button onClick={() => setShowEditProfile(v => !v)}
-                className="text-gray-500 hover:text-gray-300 text-sm flex items-center gap-1.5 transition-colors hidden sm:flex">
-                <Icon name="UserPen" size={15} />
-                Профиль
-              </button>
-            )}
             <button onClick={() => { setShowPwForm(v => !v); setPwError(""); }}
               className="text-gray-500 hover:text-gray-300 text-sm flex items-center gap-1.5 transition-colors hidden sm:flex">
               <Icon name="KeyRound" size={15} />
