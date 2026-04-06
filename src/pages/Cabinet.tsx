@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import CabinetAuth from "@/components/cabinet/CabinetAuth";
 import CabinetNav from "@/components/cabinet/CabinetNav";
 import CabinetOrderList from "@/components/cabinet/CabinetOrderList";
+import CabinetProfile from "@/components/cabinet/CabinetProfile";
 import CustomerInquiries from "@/components/cabinet/CustomerInquiries";
 import OrderModal from "@/components/home/OrderModal";
 import Icon from "@/components/ui/icon";
@@ -53,9 +54,11 @@ export default function Cabinet() {
   const [customer, setCustomer] = useState<Customer | null>(null);
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(false);
-  const [cabinetTab, setCabinetTab] = useState<"orders" | "inquiries">(() => {
+  const [cabinetTab, setCabinetTab] = useState<"orders" | "inquiries" | "profile">(() => {
     const t = new URLSearchParams(window.location.search).get("tab");
-    return t === "chats" || t === "inquiries" ? "inquiries" : "orders";
+    if (t === "chats" || t === "inquiries") return "inquiries";
+    if (t === "profile") return "profile";
+    return "orders";
   });
   const [inquiryCount, setInquiryCount] = useState(0);
   const [unreadMessages, setUnreadMessages] = useState(0);
@@ -222,7 +225,7 @@ export default function Cabinet() {
       />
       {/* Переключатель вкладок */}
       <div className="max-w-4xl mx-auto px-4 pt-6">
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
           <button
             onClick={() => setCabinetTab("orders")}
             className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-colors ${cabinetTab === "orders" ? "bg-violet-600 text-white" : "bg-white/5 text-gray-400 hover:text-white hover:bg-white/8"}`}
@@ -243,6 +246,13 @@ export default function Cabinet() {
             {unreadMessages === 0 && inquiryCount > 0 && (
               <span className={`text-xs px-1.5 py-0.5 rounded-md ${cabinetTab === "inquiries" ? "bg-white/20" : "bg-white/10"}`}>{inquiryCount}</span>
             )}
+          </button>
+          <button
+            onClick={() => setCabinetTab("profile")}
+            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-colors ${cabinetTab === "profile" ? "bg-violet-600 text-white" : "bg-white/5 text-gray-400 hover:text-white hover:bg-white/8"}`}
+          >
+            <Icon name="User" size={15} />
+            Профиль
           </button>
         </div>
       </div>
@@ -270,6 +280,17 @@ export default function Cabinet() {
           customerEmail={customer!.email}
           customerPhone={customer!.phone}
           onUnreadChange={(count) => { setUnreadMessages(count); setInquiryCount(prev => prev); }}
+        />
+      )}
+
+      {cabinetTab === "profile" && (
+        <CabinetProfile
+          customer={customer!}
+          onCustomerUpdate={(updated) => {
+            setCustomer(updated);
+            localStorage.setItem("customer_phone", updated.phone);
+            localStorage.setItem("customer_profile", JSON.stringify({ name: updated.name, phone: updated.phone, email: updated.email }));
+          }}
         />
       )}
     </div>

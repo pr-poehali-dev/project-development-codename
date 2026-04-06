@@ -602,6 +602,133 @@ def handler(event: dict, context) -> dict:
                 'customer': {'id': row['id'], 'name': row['name'], 'phone': row['phone'], 'email': row.get('email') or '', 'city': row.get('city') or ''}
             })}
 
+        # ── Запрос на смену email: отправка кода на новый email ──
+        if action == 'verify_email_change':
+            customer_id = body.get('customer_id')
+            new_email = (body.get('new_email') or '').strip().lower()
+            if not customer_id:
+                return {'statusCode': 400, 'headers': HEADERS, 'body': json.dumps({'error': 'Не авторизован'})}
+            if not new_email:
+                return {'statusCode': 400, 'headers': HEADERS, 'body': json.dumps({'error': 'Укажите новый email'})}
+            conn = get_conn()
+            cur = conn.cursor()
+            # Проверяем что email не занят другим пользователем
+            cur.execute(f"SELECT id FROM {SCHEMA}.customers WHERE email=%s AND id!=%s", (new_email, int(customer_id)))
+            if cur.fetchone():
+                cur.close(); conn.close()
+                return {'statusCode': 400, 'headers': HEADERS, 'body': json.dumps({'error': 'Этот email уже используется другим аккаунтом'})}
+            # Получаем имя пользователя
+            cur.execute(f"SELECT name FROM {SCHEMA}.customers WHERE id=%s", (int(customer_id),))
+            cust = cur.fetchone()
+            if not cust:
+                cur.close(); conn.close()
+                return {'statusCode': 404, 'headers': HEADERS, 'body': json.dumps({'error': 'Пользователь не найден'})}
+            # Генерируем код и сохраняем с префиксом email_change для различия
+            code = str(random.randint(100000, 999999))
+            marker = f'email_change:{customer_id}:{new_email}'
+            cur.execute(f"UPDATE {SCHEMA}.auth_codes SET used=TRUE WHERE email=%s AND used=FALSE", (marker,))
+            cur.execute(f"INSERT INTO {SCHEMA}.auth_codes (email, code) VALUES (%s, %s)", (marker, code))
+            conn.commit()
+            cur.close(); conn.close()
+            send_code_email(new_email, code, cust['name'])
+            return {'statusCode': 200, 'headers': HEADERS, 'body': json.dumps({'success': True})}
+
+        # ── Подтверждение смены email кодом ──
+        if action == 'confirm_email_change':
+            customer_id = body.get('customer_id')
+            new_email = (body.get('new_email') or '').strip().lower()
+            code = (body.get('code') or '').strip()
+            if not customer_id or not new_email or not code:
+                return {'statusCode': 400, 'headers': HEADERS, 'body': json.dumps({'error': 'Не все поля заполнены'})}
+            conn = get_conn()
+            cur = conn.cursor()
+            marker = f'email_change:{customer_id}:{new_email}'
+            cur.execute(
+                f"SELECT id FROM {SCHEMA}.auth_codes WHERE email=%s AND code=%s AND used=FALSE AND created_at > NOW() - INTERVAL '15 minutes'",
+                (marker, code)
+            )
+            row = cur.fetchone()
+            if not row:
+                cur.close(); conn.close()
+                return {'statusCode': 400, 'headers': HEADERS, 'body': json.dumps({'error': 'Неверный или устаревший код'})}
+            cur.execute(f"UPDATE {SCHEMA}.auth_codes SET used=TRUE WHERE email=%s AND code=%s", (marker, code))
+            cur.execute(
+                f"UPDATE {SCHEMA}.customers SET email=%s WHERE id=%s RETURNING id, name, phone, email, city",
+                (new_email, int(customer_id))
+            )
+            cust = cur.fetchone()
+            conn.commit()
+            cur.close(); conn.close()
+            if not cust:
+                return {'statusCode': 404, 'headers': HEADERS, 'body': json.dumps({'error': 'Пользователь не найден'})}
+            return {'statusCode': 200, 'headers': HEADERS, 'body': json.dumps({
+                'success': True,
+                'customer': {'id': cust['id'], 'name': cust['name'], 'phone': cust['phone'], 'email': cust.get('email') or '', 'city': cust.get('city') or ''}
+            })}
+
+        # ── Запрос на смену телефона: отправка кода на текущий email ──
+        if action == 'verify_phone_change':
+            customer_id = body.get('customer_id')
+            new_phone = (body.get('new_phone') or '').strip()
+            if not customer_id:
+                return {'statusCode': 400, 'headers': HEADERS, 'body': json.dumps({'error': 'Не авторизован'})}
+            if not new_phone:
+                return {'statusCode': 400, 'headers': HEADERS, 'body': json.dumps({'error': 'Укажите новый телефон'})}
+            conn = get_conn()
+            cur = conn.cursor()
+            # Проверяем что телефон не занят
+            cur.execute(f"SELECT id FROM {SCHEMA}.customers WHERE phone=%s AND id!=%s", (new_phone, int(customer_id)))
+            if cur.fetchone():
+                cur.close(); conn.close()
+                return {'statusCode': 400, 'headers': HEADERS, 'body': json.dumps({'error': 'Этот телефон уже используется другим аккаунтом'})}
+            cur.execute(f"SELECT name, email FROM {SCHEMA}.customers WHERE id=%s", (int(customer_id),))
+            cust = cur.fetchone()
+            if not cust:
+                cur.close(); conn.close()
+                return {'statusCode': 404, 'headers': HEADERS, 'body': json.dumps({'error': 'Пользователь не найден'})}
+            code = str(random.randint(100000, 999999))
+            marker = f'phone_change:{customer_id}:{new_phone}'
+            cur.execute(f"UPDATE {SCHEMA}.auth_codes SET used=TRUE WHERE email=%s AND used=FALSE", (marker,))
+            cur.execute(f"INSERT INTO {SCHEMA}.auth_codes (email, code) VALUES (%s, %s)", (marker, code))
+            conn.commit()
+            cur.close(); conn.close()
+            # Код отправляем на текущий email
+            send_code_email(cust['email'], code, cust['name'])
+            return {'statusCode': 200, 'headers': HEADERS, 'body': json.dumps({'success': True})}
+
+        # ── Подтверждение смены телефона кодом ──
+        if action == 'confirm_phone_change':
+            customer_id = body.get('customer_id')
+            new_phone = (body.get('new_phone') or '').strip()
+            code = (body.get('code') or '').strip()
+            if not customer_id or not new_phone or not code:
+                return {'statusCode': 400, 'headers': HEADERS, 'body': json.dumps({'error': 'Не все поля заполнены'})}
+            conn = get_conn()
+            cur = conn.cursor()
+            marker = f'phone_change:{customer_id}:{new_phone}'
+            cur.execute(
+                f"SELECT id FROM {SCHEMA}.auth_codes WHERE email=%s AND code=%s AND used=FALSE AND created_at > NOW() - INTERVAL '15 minutes'",
+                (marker, code)
+            )
+            row = cur.fetchone()
+            if not row:
+                cur.close(); conn.close()
+                return {'statusCode': 400, 'headers': HEADERS, 'body': json.dumps({'error': 'Неверный или устаревший код'})}
+            cur.execute(f"UPDATE {SCHEMA}.auth_codes SET used=TRUE WHERE email=%s AND code=%s", (marker, code))
+            cur.execute(
+                f"UPDATE {SCHEMA}.customers SET phone=%s WHERE id=%s RETURNING id, name, phone, email, city",
+                (new_phone, int(customer_id))
+            )
+            cust = cur.fetchone()
+            conn.commit()
+            cur.close(); conn.close()
+            if not cust:
+                return {'statusCode': 404, 'headers': HEADERS, 'body': json.dumps({'error': 'Пользователь не найден'})}
+            return {'statusCode': 200, 'headers': HEADERS, 'body': json.dumps({
+                'success': True,
+                'customer': {'id': cust['id'], 'name': cust['name'], 'phone': cust['phone'], 'email': cust.get('email') or '', 'city': cust.get('city') or ''}
+            })}
+
         if action == 'review':
             customer_id = body.get('customer_id')
             order_id = body.get('order_id')

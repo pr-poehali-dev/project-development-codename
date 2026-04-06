@@ -9,12 +9,22 @@
       "expectedBody": {}
     },
     {
-      "name": "GET непрочитанные сообщения заказчика",
-      "method": "GET",
-      "path": "/?action=unread&customer_phone=%2B79009999999",
-      "expectedStatus": 200,
+      "name": "POST confirm_email_change — неверный код",
+      "method": "POST",
+      "path": "/",
+      "body": {"action": "confirm_email_change", "customer_id": 999999, "new_email": "test@example.com", "code": "000000"},
+      "expectedStatus": 400,
       "bodyMatcher": "partial",
-      "expectedBody": {"unread": 0}
+      "expectedBody": {"error": "Неверный или устаревший код"}
+    },
+    {
+      "name": "POST confirm_phone_change — неверный код",
+      "method": "POST",
+      "path": "/",
+      "body": {"action": "confirm_phone_change", "customer_id": 999999, "new_phone": "+79001234567", "code": "000000"},
+      "expectedStatus": 400,
+      "bodyMatcher": "partial",
+      "expectedBody": {"error": "Неверный или устаревший код"}
     }
   ]
 }
