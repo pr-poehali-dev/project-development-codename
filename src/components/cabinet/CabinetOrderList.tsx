@@ -135,9 +135,12 @@ export default function CabinetOrderList({
 
       {/* Сводка */}
       <div className="grid grid-cols-3 gap-4 mb-8">
-        {/* Заявки — переход к вкладке "Активные" */}
+        {/* Заявки — все заявки */}
         <button
-          onClick={() => setActiveTab("active")}
+          onClick={() => {
+            setActiveTab("active");
+            document.getElementById("cabinet-orders-list")?.scrollIntoView({ behavior: "smooth", block: "start" });
+          }}
           className="bg-white/4 border border-white/8 rounded-2xl p-4 text-center hover:bg-white/8 hover:border-violet-500/40 transition-all cursor-pointer group"
         >
           <Icon name="ClipboardList" size={20} className="text-violet-400 mx-auto mb-2 group-hover:scale-110 transition-transform" />
@@ -145,7 +148,7 @@ export default function CabinetOrderList({
           <div className="text-gray-500 text-xs mt-0.5 group-hover:text-violet-400 transition-colors">Заявок</div>
         </button>
 
-        {/* Отклики — переход на вкладку "Обращения" */}
+        {/* Отклики — переход на вкладку "Мои обращения" */}
         <button
           onClick={() => onSwitchToInquiries?.()}
           className="bg-white/4 border border-white/8 rounded-2xl p-4 text-center hover:bg-white/8 hover:border-emerald-500/40 transition-all cursor-pointer group"
@@ -155,9 +158,12 @@ export default function CabinetOrderList({
           <div className="text-gray-500 text-xs mt-0.5 group-hover:text-emerald-400 transition-colors">Откликов</div>
         </button>
 
-        {/* Активные — переход к вкладке "Активные" заявок */}
+        {/* Активные — фильтр активных заявок */}
         <button
-          onClick={() => setActiveTab("active")}
+          onClick={() => {
+            setActiveTab("active");
+            document.getElementById("cabinet-orders-list")?.scrollIntoView({ behavior: "smooth", block: "start" });
+          }}
           className="bg-white/4 border border-white/8 rounded-2xl p-4 text-center hover:bg-white/8 hover:border-amber-500/40 transition-all cursor-pointer group"
         >
           <Icon name="Clock" size={20} className="text-amber-400 mx-auto mb-2 group-hover:scale-110 transition-transform" />
@@ -193,7 +199,7 @@ export default function CabinetOrderList({
       />
 
       {/* Вкладки */}
-      <div className="flex gap-2 mb-6">
+      <div id="cabinet-orders-list" className="flex gap-2 mb-6">
         <button
           onClick={() => setActiveTab("active")}
           className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-colors ${activeTab === "active" ? "bg-violet-600 text-white" : "bg-white/5 text-gray-400 hover:text-white hover:bg-white/8"}`}
