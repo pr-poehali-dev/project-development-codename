@@ -275,6 +275,7 @@ def master_to_dict(m):
         'id': m['id'],
         'name': m['name'],
         'phone': m['phone'],
+        'email': m.get('email') or '',
         'category': m['category'],
         'categories': list(cats),
         'city': m['city'],
@@ -759,6 +760,125 @@ def handler(event: dict, context) -> dict:
             conn.commit()
             cur.close(); conn.close()
             return {'statusCode': 200, 'headers': HEADERS, 'body': json.dumps({'success': True})}
+
+        # ── Запрос на смену email: код на новый email ──
+        if body_raw.get('action') == 'verify_email_change':
+            master_id = body_raw.get('master_id')
+            new_email = (body_raw.get('new_email') or '').strip().lower()
+            if not master_id:
+                return {'statusCode': 400, 'headers': HEADERS, 'body': json.dumps({'error': 'Не авторизован'})}
+            if not new_email:
+                return {'statusCode': 400, 'headers': HEADERS, 'body': json.dumps({'error': 'Укажите новый email'})}
+            conn = get_conn()
+            cur = conn.cursor()
+            cur.execute(f"SELECT id FROM {SCHEMA}.masters WHERE LOWER(email)=%s AND id!=%s", (new_email, int(master_id)))
+            if cur.fetchone():
+                cur.close(); conn.close()
+                return {'statusCode': 400, 'headers': HEADERS, 'body': json.dumps({'error': 'Этот email уже используется другим аккаунтом'})}
+            cur.execute(f"SELECT name FROM {SCHEMA}.masters WHERE id=%s", (int(master_id),))
+            m = cur.fetchone()
+            if not m:
+                cur.close(); conn.close()
+                return {'statusCode': 404, 'headers': HEADERS, 'body': json.dumps({'error': 'Мастер не найден'})}
+            code = str(random.randint(100000, 999999))
+            marker = f'master_email_change:{master_id}:{new_email}'
+            cur.execute(f"UPDATE {SCHEMA}.auth_codes SET used=TRUE WHERE email=%s AND used=FALSE", (marker,))
+            cur.execute(f"INSERT INTO {SCHEMA}.auth_codes (email, code) VALUES (%s, %s)", (marker, code))
+            conn.commit()
+            cur.close(); conn.close()
+            send_code_email_master(new_email, code, m['name'])
+            return {'statusCode': 200, 'headers': HEADERS, 'body': json.dumps({'success': True})}
+
+        # ── Подтверждение смены email ──
+        if body_raw.get('action') == 'confirm_email_change':
+            master_id = body_raw.get('master_id')
+            new_email = (body_raw.get('new_email') or '').strip().lower()
+            code = (body_raw.get('code') or '').strip()
+            if not master_id or not new_email or not code:
+                return {'statusCode': 400, 'headers': HEADERS, 'body': json.dumps({'error': 'Не все поля заполнены'})}
+            conn = get_conn()
+            cur = conn.cursor()
+            marker = f'master_email_change:{master_id}:{new_email}'
+            cur.execute(
+                f"SELECT id FROM {SCHEMA}.auth_codes WHERE email=%s AND code=%s AND used=FALSE AND created_at > NOW() - INTERVAL '15 minutes'",
+                (marker, code)
+            )
+            row = cur.fetchone()
+            if not row:
+                cur.close(); conn.close()
+                return {'statusCode': 400, 'headers': HEADERS, 'body': json.dumps({'error': 'Неверный или устаревший код'})}
+            cur.execute(f"UPDATE {SCHEMA}.auth_codes SET used=TRUE WHERE email=%s AND code=%s", (marker, code))
+            cur.execute(
+                f"UPDATE {SCHEMA}.masters SET email=%s WHERE id=%s RETURNING id, name, phone, email, city, about, category, categories, balance, avatar_color, responses_count, created_at",
+                (new_email, int(master_id))
+            )
+            updated = cur.fetchone()
+            conn.commit()
+            cur.close(); conn.close()
+            if not updated:
+                return {'statusCode': 404, 'headers': HEADERS, 'body': json.dumps({'error': 'Мастер не найден'})}
+            return {'statusCode': 200, 'headers': HEADERS, 'body': json.dumps({'success': True, 'master': master_to_dict(updated)})}
+
+        # ── Запрос на смену телефона: код на текущий email ──
+        if body_raw.get('action') == 'verify_phone_change':
+            master_id = body_raw.get('master_id')
+            new_phone = (body_raw.get('new_phone') or '').strip()
+            if not master_id:
+                return {'statusCode': 400, 'headers': HEADERS, 'body': json.dumps({'error': 'Не авторизован'})}
+            if not new_phone:
+                return {'statusCode': 400, 'headers': HEADERS, 'body': json.dumps({'error': 'Укажите новый телефон'})}
+            conn = get_conn()
+            cur = conn.cursor()
+            cur.execute(f"SELECT id FROM {SCHEMA}.masters WHERE phone=%s AND id!=%s", (new_phone, int(master_id)))
+            if cur.fetchone():
+                cur.close(); conn.close()
+                return {'statusCode': 400, 'headers': HEADERS, 'body': json.dumps({'error': 'Этот телефон уже используется другим аккаунтом'})}
+            cur.execute(f"SELECT name, email FROM {SCHEMA}.masters WHERE id=%s", (int(master_id),))
+            m = cur.fetchone()
+            if not m:
+                cur.close(); conn.close()
+                return {'statusCode': 404, 'headers': HEADERS, 'body': json.dumps({'error': 'Мастер не найден'})}
+            if not m.get('email'):
+                cur.close(); conn.close()
+                return {'statusCode': 400, 'headers': HEADERS, 'body': json.dumps({'error': 'Для смены телефона необходимо указать email в профиле'})}
+            code = str(random.randint(100000, 999999))
+            marker = f'master_phone_change:{master_id}:{new_phone}'
+            cur.execute(f"UPDATE {SCHEMA}.auth_codes SET used=TRUE WHERE email=%s AND used=FALSE", (marker,))
+            cur.execute(f"INSERT INTO {SCHEMA}.auth_codes (email, code) VALUES (%s, %s)", (marker, code))
+            conn.commit()
+            cur.close(); conn.close()
+            send_code_email_master(m['email'], code, m['name'])
+            return {'statusCode': 200, 'headers': HEADERS, 'body': json.dumps({'success': True})}
+
+        # ── Подтверждение смены телефона ──
+        if body_raw.get('action') == 'confirm_phone_change':
+            master_id = body_raw.get('master_id')
+            new_phone = (body_raw.get('new_phone') or '').strip()
+            code = (body_raw.get('code') or '').strip()
+            if not master_id or not new_phone or not code:
+                return {'statusCode': 400, 'headers': HEADERS, 'body': json.dumps({'error': 'Не все поля заполнены'})}
+            conn = get_conn()
+            cur = conn.cursor()
+            marker = f'master_phone_change:{master_id}:{new_phone}'
+            cur.execute(
+                f"SELECT id FROM {SCHEMA}.auth_codes WHERE email=%s AND code=%s AND used=FALSE AND created_at > NOW() - INTERVAL '15 minutes'",
+                (marker, code)
+            )
+            row = cur.fetchone()
+            if not row:
+                cur.close(); conn.close()
+                return {'statusCode': 400, 'headers': HEADERS, 'body': json.dumps({'error': 'Неверный или устаревший код'})}
+            cur.execute(f"UPDATE {SCHEMA}.auth_codes SET used=TRUE WHERE email=%s AND code=%s", (marker, code))
+            cur.execute(
+                f"UPDATE {SCHEMA}.masters SET phone=%s WHERE id=%s RETURNING id, name, phone, email, city, about, category, categories, balance, avatar_color, responses_count, created_at",
+                (new_phone, int(master_id))
+            )
+            updated = cur.fetchone()
+            conn.commit()
+            cur.close(); conn.close()
+            if not updated:
+                return {'statusCode': 404, 'headers': HEADERS, 'body': json.dumps({'error': 'Мастер не найден'})}
+            return {'statusCode': 200, 'headers': HEADERS, 'body': json.dumps({'success': True, 'master': master_to_dict(updated)})}
 
         # ── ОТПРАВИТЬ КОД ВХОДА (для существующих мастеров без пароля) ──
         if body_raw.get('action') == 'send_code':
