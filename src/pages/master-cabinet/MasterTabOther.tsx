@@ -1,8 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import Icon from "@/components/ui/icon";
-import { categories } from "@/components/home/categories";
-import CitySelect from "@/components/ui/city-select";
+import MasterProfile from "@/pages/master-cabinet/MasterProfile";
 
 function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString("ru-RU", { day: "numeric", month: "short", year: "numeric" });
@@ -12,9 +11,11 @@ interface Master {
   id: number;
   name: string;
   phone: string;
+  email?: string;
   category: string;
   categories: string[];
   city: string;
+  about?: string;
   balance: number;
   created_at: string;
 }
@@ -61,6 +62,7 @@ interface MasterTabOtherProps {
   profileLoading: boolean;
   profileSuccess: string;
   onSaveProfile: (e: React.FormEvent) => void;
+  onMasterUpdate: (m: Master) => void;
 
   // Password change
   pwOld: string;
@@ -86,6 +88,7 @@ export default function MasterTabOther({
   editCategories, setEditCategories,
   profileLoading, profileSuccess,
   onSaveProfile,
+  onMasterUpdate,
   pwOld, setPwOld,
   pwNew, setPwNew,
   pwConfirm, setPwConfirm,
@@ -183,96 +186,20 @@ export default function MasterTabOther({
 
   // tab === "profile"
   return (
-    <div className="flex flex-col gap-6 max-w-md">
-      {/* Редактирование профиля */}
-      <div className="bg-white/4 border border-white/8 rounded-2xl p-5">
-        <h3 className="text-white font-semibold text-sm mb-4">Данные профиля</h3>
-        {profileSuccess && (
-          <div className="bg-emerald-600/15 border border-emerald-500/30 rounded-xl px-4 py-2.5 mb-4 flex items-center gap-2 text-emerald-400 text-sm">
-            <Icon name="CheckCircle" size={15} />{profileSuccess}
-          </div>
-        )}
-        <form onSubmit={onSaveProfile} className="flex flex-col gap-3">
-          <div>
-            <label className="text-xs text-gray-400 mb-1.5 block">Имя</label>
-            <input value={editName} onChange={e => setEditName(e.target.value)} placeholder="Ваше имя"
-              className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-violet-500 transition-colors" />
-          </div>
-          <div>
-            <label className="text-xs text-gray-400 mb-2 block">Категории услуг</label>
-            <div className="flex flex-wrap gap-2">
-              {categories.map((c) => {
-                const selected = editCategories.includes(c.name);
-                return (
-                  <button
-                    key={c.name}
-                    type="button"
-                    onClick={() => {
-                      if (selected) {
-                        setEditCategories(editCategories.filter((x) => x !== c.name));
-                      } else {
-                        setEditCategories([...editCategories, c.name]);
-                      }
-                    }}
-                    className={`px-3 py-1.5 rounded-lg text-xs border transition-all ${
-                      selected
-                        ? "bg-violet-600/20 border-violet-500/50 text-violet-300"
-                        : "bg-white/5 border-white/10 text-gray-400 hover:border-violet-500/30 hover:text-gray-200"
-                    }`}
-                  >
-                    {selected && <span className="mr-1">✓</span>}
-                    {c.name}
-                  </button>
-                );
-              })}
-            </div>
-            {editCategories.length === 0 && (
-              <p className="text-amber-400/70 text-xs mt-2">Выберите хотя бы одну категорию</p>
-            )}
-          </div>
-          <div>
-            <label className="text-xs text-gray-400 mb-1.5 block">Город</label>
-            <CitySelect value={editCity} onChange={setEditCity} placeholder="Ваш город" />
-          </div>
-          <div>
-            <label className="text-xs text-gray-400 mb-1.5 block">О себе</label>
-            <textarea value={editAbout} onChange={e => setEditAbout(e.target.value)} rows={4}
-              placeholder="Расскажите о своём опыте, специализации, достижениях..."
-              className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-violet-500 transition-colors resize-none" />
-          </div>
-          <Button type="submit" disabled={profileLoading} className="bg-violet-600 hover:bg-violet-500 text-white w-full">
-            {profileLoading ? "Сохранение..." : "Сохранить"}
-          </Button>
-        </form>
-      </div>
-
-      {/* Смена пароля */}
-      <div className="bg-white/4 border border-white/8 rounded-2xl p-5">
-        <h3 className="text-white font-semibold text-sm mb-4">Изменить пароль</h3>
-        {pwSuccess && (
-          <div className="bg-emerald-600/15 border border-emerald-500/30 rounded-xl px-4 py-2.5 mb-4 flex items-center gap-2 text-emerald-400 text-sm">
-            <Icon name="CheckCircle" size={15} />{pwSuccess}
-          </div>
-        )}
-        <form onSubmit={onChangePassword} className="flex flex-col gap-3">
-          {["Текущий пароль", "Новый пароль", "Повторите новый"].map((label, i) => {
-            const vals = [pwOld, pwNew, pwConfirm];
-            const setters = [setPwOld, setPwNew, setPwConfirm];
-            return (
-              <div key={label}>
-                <label className="text-xs text-gray-400 mb-1.5 block">{label}</label>
-                <input type="password" required value={vals[i]} onChange={e => setters[i](e.target.value)}
-                  placeholder="••••••••"
-                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-violet-500 transition-colors" />
-              </div>
-            );
-          })}
-          {pwError && <p className="text-amber-400 text-sm">{pwError}</p>}
-          <Button type="submit" disabled={pwLoading} className="bg-violet-600 hover:bg-violet-500 text-white w-full mt-1">
-            {pwLoading ? "Сохранение..." : "Изменить пароль"}
-          </Button>
-        </form>
-      </div>
-    </div>
+    <MasterProfile
+      master={master}
+      editName={editName} setEditName={setEditName}
+      editCity={editCity} setEditCity={setEditCity}
+      editAbout={editAbout} setEditAbout={setEditAbout}
+      editCategories={editCategories} setEditCategories={setEditCategories}
+      profileLoading={profileLoading} profileSuccess={profileSuccess}
+      onSaveProfile={onSaveProfile}
+      onMasterUpdate={onMasterUpdate}
+      pwOld={pwOld} setPwOld={setPwOld}
+      pwNew={pwNew} setPwNew={setPwNew}
+      pwConfirm={pwConfirm} setPwConfirm={setPwConfirm}
+      pwLoading={pwLoading} pwError={pwError} pwSuccess={pwSuccess}
+      onChangePassword={onChangePassword}
+    />
   );
 }

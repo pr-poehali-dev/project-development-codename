@@ -143,6 +143,7 @@ export default function MasterCabinet() {
             editCategories={profile.editCategories} setEditCategories={profile.setEditCategories}
             profileLoading={edit.profileLoading} profileSuccess={edit.profileSuccess}
             onSaveProfile={edit.handleSaveProfile}
+            onMasterUpdate={profile.setMaster}
             pwOld={edit.pwOld} setPwOld={edit.setPwOld}
             pwNew={edit.pwNew} setPwNew={edit.setPwNew}
             pwConfirm={edit.pwConfirm} setPwConfirm={edit.setPwConfirm}
