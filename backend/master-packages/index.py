@@ -586,9 +586,13 @@ def handler(event: dict, context) -> dict:
         cur.execute(f"DELETE FROM {SCHEMA}.master_inquiries WHERE master_id=%s", (master_id,))
         cur.execute(f"DELETE FROM {SCHEMA}.master_services WHERE master_id=%s", (master_id,))
         cur.execute(f"DELETE FROM {SCHEMA}.master_transactions WHERE master_id=%s", (master_id,))
-        cur.execute(f"DELETE FROM {SCHEMA}.responses WHERE master_id=%s", (master_id,))
         cur.execute(f"DELETE FROM {SCHEMA}.reviews WHERE master_id=%s", (master_id,))
+        cur.execute(f"DELETE FROM {SCHEMA}.responses WHERE master_id=%s", (master_id,))
         cur.execute(f"DELETE FROM {SCHEMA}.payments WHERE master_id=%s", (master_id,))
+        cur.execute(f"SELECT phone FROM {SCHEMA}.masters WHERE id=%s", (master_id,))
+        row = cur.fetchone()
+        if row:
+            cur.execute(f"DELETE FROM {SCHEMA}.push_subscriptions WHERE user_phone=%s", (row['phone'],))
         cur.execute(f"DELETE FROM {SCHEMA}.masters WHERE id=%s", (master_id,))
         conn.commit()
         conn.close()
@@ -599,7 +603,18 @@ def handler(event: dict, context) -> dict:
         customer_id = body.get('customer_id')
         conn = get_conn()
         cur = conn.cursor()
+        cur.execute(f"SELECT id FROM {SCHEMA}.orders WHERE customer_id=%s", (customer_id,))
+        order_ids = [r['id'] for r in cur.fetchall()]
+        if order_ids:
+            ids_str = ','.join(str(i) for i in order_ids)
+            cur.execute(f"DELETE FROM {SCHEMA}.reviews WHERE order_id IN ({ids_str})")
+            cur.execute(f"DELETE FROM {SCHEMA}.responses WHERE order_id IN ({ids_str})")
+        cur.execute(f"DELETE FROM {SCHEMA}.reviews WHERE customer_id=%s", (customer_id,))
         cur.execute(f"DELETE FROM {SCHEMA}.orders WHERE customer_id=%s", (customer_id,))
+        cur.execute(f"SELECT phone FROM {SCHEMA}.customers WHERE id=%s", (customer_id,))
+        row = cur.fetchone()
+        if row:
+            cur.execute(f"DELETE FROM {SCHEMA}.push_subscriptions WHERE user_phone=%s", (row['phone'],))
         cur.execute(f"DELETE FROM {SCHEMA}.customers WHERE id=%s", (customer_id,))
         conn.commit()
         conn.close()
