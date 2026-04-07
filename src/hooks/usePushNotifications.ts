@@ -1,9 +1,17 @@
 import { useEffect } from "react";
 
 const PUSH_URL = "https://functions.poehali.dev/272080b1-1a80-40bd-8201-0951cb380c57";
-const VAPID_PUBLIC_KEY = import.meta.env.VITE_VAPID_PUBLIC_KEY || "";
-// При смене ключа меняй эту версию — сбросит старые подписки
-const VAPID_VERSION = "v6";
+const VAPID_VERSION = "v7";
+
+let vapidPublicKeyCache: string | null = null;
+
+async function getVapidPublicKey(): Promise<string> {
+  if (vapidPublicKeyCache) return vapidPublicKeyCache;
+  const res = await fetch(PUSH_URL);
+  const data = await res.json();
+  vapidPublicKeyCache = data.vapid_public_key || "";
+  return vapidPublicKeyCache;
+}
 
 function urlBase64ToUint8Array(base64String: string): Uint8Array {
   const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
@@ -14,18 +22,19 @@ function urlBase64ToUint8Array(base64String: string): Uint8Array {
 
 async function subscribeAll(phones: { phone: string; role: "customer" | "master" }[]) {
   if (!("serviceWorker" in navigator) || !("PushManager" in window)) return;
-  if (!VAPID_PUBLIC_KEY) return;
+
+  const vapidKey = await getVapidPublicKey();
+  if (!vapidKey) return;
 
   try {
     const reg = await navigator.serviceWorker.ready;
 
-    // Если есть старая подписка — отписываемся, чтобы подписаться с новым ключом
     const existing = await reg.pushManager.getSubscription();
     if (existing) await existing.unsubscribe();
 
     const sub = await reg.pushManager.subscribe({
       userVisibleOnly: true,
-      applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
+      applicationServerKey: urlBase64ToUint8Array(vapidKey),
     });
 
     await Promise.all(phones.map(({ phone, role }) =>
@@ -36,7 +45,7 @@ async function subscribeAll(phones: { phone: string; role: "customer" | "master"
       })
     ));
   } catch (_e) {
-    // ignore — push может не поддерживаться
+    // ignore
   }
 }
 
@@ -48,7 +57,6 @@ export function usePushNotifications() {
     const masterPhone = localStorage.getItem("master_phone");
     if (!customerPhone && !masterPhone) return;
 
-    // Ключ кэша включает версию VAPID — при смене версии подписка обновится
     const cacheKey = `push_asked_${VAPID_VERSION}_${masterPhone || ""}_${customerPhone || ""}`;
     if (sessionStorage.getItem(cacheKey)) return;
     sessionStorage.setItem(cacheKey, "1");
@@ -66,7 +74,6 @@ export function usePushNotifications() {
 
     if (Notification.permission === "denied") return;
 
-    // Запрашиваем разрешение с небольшой задержкой
     setTimeout(async () => {
       const permission = await Notification.requestPermission();
       if (permission === "granted") {

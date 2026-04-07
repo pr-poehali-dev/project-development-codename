@@ -2,7 +2,7 @@ import json
 import os
 import base64
 import psycopg2
-# v4
+# v5
 from psycopg2.extras import RealDictCursor
 from pywebpush import webpush, WebPushException
 
@@ -153,5 +153,10 @@ def handler(event: dict, context) -> dict:
             cur2.close(); conn2.close()
 
         return {'statusCode': 200, 'headers': HEADERS, 'body': json.dumps({'success': True, 'sent': sent, 'errors': errors})}
+
+    # ── ПОЛУЧИТЬ ПУБЛИЧНЫЙ КЛЮЧ ──
+    if method == 'GET':
+        vapid_public = os.environ.get('VAPID_PUBLIC_KEY', '')
+        return {'statusCode': 200, 'headers': HEADERS, 'body': json.dumps({'vapid_public_key': vapid_public})}
 
     return {'statusCode': 405, 'headers': HEADERS, 'body': json.dumps({'error': 'Method not allowed'})}
