@@ -163,6 +163,24 @@ def handler(event: dict, context) -> dict:
 
         return {'statusCode': 200, 'headers': HEADERS, 'body': json.dumps({'success': True, 'sent': sent, 'errors': errors})}
 
+    # ── СГЕНЕРИРОВАТЬ НОВУЮ ПАРУ VAPID-КЛЮЧЕЙ ──
+    if method == 'POST' and body_raw.get('action') == 'generate_vapid':
+        from cryptography.hazmat.primitives.asymmetric import ec
+        from cryptography.hazmat.primitives import serialization
+        private_key = ec.generate_private_key(ec.SECP256R1())
+        pem = private_key.private_bytes(serialization.Encoding.PEM, serialization.PrivateFormat.PKCS8, serialization.NoEncryption())
+        priv_b64 = base64.b64encode(pem).decode('utf-8')
+        pub_numbers = private_key.public_key().public_numbers()
+        x = pub_numbers.x.to_bytes(32, 'big')
+        y = pub_numbers.y.to_bytes(32, 'big')
+        pub_raw = b'\x04' + x + y
+        pub_b64 = base64.urlsafe_b64encode(pub_raw).rstrip(b'=').decode('utf-8')
+        return {'statusCode': 200, 'headers': HEADERS, 'body': json.dumps({
+            'vapid_public_key': pub_b64,
+            'vapid_private_key_base64': priv_b64,
+            'instruction': 'Обновите секреты: VAPID_PUBLIC_KEY = vapid_public_key, VAPID_PRIVATE_KEY = vapid_private_key_base64'
+        })}
+
     # ── ПОЛУЧИТЬ ПУБЛИЧНЫЙ КЛЮЧ ──
     if method == 'GET':
         vapid_public = os.environ.get('VAPID_PUBLIC_KEY', '')
