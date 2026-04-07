@@ -72,6 +72,15 @@ def handler(event: dict, context) -> dict:
         cur.close(); conn.close()
         return {'statusCode': 200, 'headers': HEADERS, 'body': json.dumps({'success': True})}
 
+    # ── ОЧИСТИТЬ ВСЕ ПОДПИСКИ ──
+    if method == 'POST' and body_raw.get('action') == 'clear_all':
+        conn = get_conn()
+        cur = conn.cursor()
+        cur.execute(f"DELETE FROM {SCHEMA}.push_subscriptions")
+        conn.commit()
+        cur.close(); conn.close()
+        return {'statusCode': 200, 'headers': HEADERS, 'body': json.dumps({'success': True})}
+
     # ── УДАЛИТЬ ПОДПИСКУ ──
     if method == 'POST' and body_raw.get('action') == 'unsubscribe':
         endpoint = body_raw.get('endpoint', '')
