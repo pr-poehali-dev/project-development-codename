@@ -2,7 +2,7 @@ import json
 import os
 import base64
 import psycopg2
-# v6
+# v7
 from psycopg2.extras import RealDictCursor
 from pywebpush import webpush, WebPushException
 
@@ -110,6 +110,7 @@ def handler(event: dict, context) -> dict:
         if not vapid_private_raw or not vapid_public:
             return {'statusCode': 500, 'headers': HEADERS, 'body': json.dumps({'error': 'VAPID ключи не настроены'})}
 
+        print(f"[PUSH] pub_key starts={vapid_public[:20]!r} priv_key starts={vapid_private_raw[:20]!r}")
         vapid_private = write_pem_file(vapid_private_raw)
 
         conn = get_conn()
@@ -181,9 +182,26 @@ def handler(event: dict, context) -> dict:
             'instruction': 'Обновите секреты: VAPID_PUBLIC_KEY = vapid_public_key, VAPID_PRIVATE_KEY = vapid_private_key_base64'
         })}
 
-    # ── ПОЛУЧИТЬ ПУБЛИЧНЫЙ КЛЮЧ ──
+    # ── ПОЛУЧИТЬ ПУБЛИЧНЫЙ КЛЮЧ (вычисляем из приватного для гарантии совпадения) ──
     if method == 'GET':
+        vapid_private_raw = os.environ.get('VAPID_PRIVATE_KEY', '')
         vapid_public = os.environ.get('VAPID_PUBLIC_KEY', '')
+        if vapid_private_raw:
+            try:
+                from cryptography.hazmat.primitives.serialization import load_pem_private_key
+                raw = vapid_private_raw.strip()
+                if '-----' not in raw:
+                    pem_bytes = base64.b64decode(raw)
+                else:
+                    pem_bytes = raw.replace('\\n', '\n').encode('utf-8')
+                priv_key = load_pem_private_key(pem_bytes, password=None)
+                pub_numbers = priv_key.public_key().public_numbers()
+                x = pub_numbers.x.to_bytes(32, 'big')
+                y = pub_numbers.y.to_bytes(32, 'big')
+                pub_raw = b'\x04' + x + y
+                vapid_public = base64.urlsafe_b64encode(pub_raw).rstrip(b'=').decode('utf-8')
+            except Exception:
+                pass
         return {'statusCode': 200, 'headers': HEADERS, 'body': json.dumps({'vapid_public_key': vapid_public})}
 
     return {'statusCode': 405, 'headers': HEADERS, 'body': json.dumps({'error': 'Method not allowed'})}
