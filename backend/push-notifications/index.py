@@ -2,7 +2,7 @@ import json
 import os
 import base64
 import psycopg2
-# v7
+# v8
 from psycopg2.extras import RealDictCursor
 from pywebpush import webpush, WebPushException
 
