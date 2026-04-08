@@ -104,13 +104,12 @@ def handler(event: dict, context) -> dict:
             return {'statusCode': 400, 'headers': HEADERS, 'body': json.dumps({'error': 'phone обязателен'})}
 
         vapid_private_raw = os.environ.get('VAPID_PRIVATE_KEY', '')
-        vapid_public = os.environ.get('VAPID_PUBLIC_KEY', '')
         vapid_email = os.environ.get('SMTP_USER', 'noreply@handyman.ru')
 
-        if not vapid_private_raw or not vapid_public:
+        if not vapid_private_raw:
             return {'statusCode': 500, 'headers': HEADERS, 'body': json.dumps({'error': 'VAPID ключи не настроены'})}
 
-        print(f"[PUSH] pub_key starts={vapid_public[:20]!r} priv_key starts={vapid_private_raw[:20]!r}")
+        print(f"[PUSH] priv_key starts={vapid_private_raw[:20]!r}")
         vapid_private = write_pem_file(vapid_private_raw)
 
         conn = get_conn()
