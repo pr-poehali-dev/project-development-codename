@@ -21,18 +21,17 @@ def get_conn():
     return psycopg2.connect(os.environ['DATABASE_URL'], cursor_factory=RealDictCursor)
 
 
-def write_pem_file(raw: str) -> str:
-    """Декодирует ключ из base64 и записывает в /tmp/vapid.pem, возвращает путь"""
-    raw = raw.strip()
+def get_raw_vapid_key(env_value: str) -> str:
+    """Извлекает 32-byte raw EC private key из PEM/base64 и возвращает url-safe base64"""
+    from cryptography.hazmat.primitives.serialization import load_pem_private_key
+    raw = env_value.strip()
     if '-----' not in raw:
-        pem = base64.b64decode(raw).decode('utf-8')
+        pem_bytes = base64.b64decode(raw)
     else:
-        pem = raw.replace('\\n', '\n')
-    print(f"[PUSH] pem len={len(pem)} starts={pem[:30]!r}")
-    path = '/tmp/vapid.pem'
-    with open(path, 'w') as f:
-        f.write(pem)
-    return path
+        pem_bytes = raw.replace('\\n', '\n').encode('utf-8')
+    priv_key = load_pem_private_key(pem_bytes, password=None)
+    raw_d = priv_key.private_numbers().private_value.to_bytes(32, 'big')
+    return base64.urlsafe_b64encode(raw_d).rstrip(b'=').decode('utf-8')
 
 
 def handler(event: dict, context) -> dict:
@@ -111,7 +110,7 @@ def handler(event: dict, context) -> dict:
             return {'statusCode': 500, 'headers': HEADERS, 'body': json.dumps({'error': 'VAPID ключи не настроены'})}
 
         print(f"[PUSH] priv_key starts={vapid_private_raw[:20]!r}")
-        vapid_private = write_pem_file(vapid_private_raw)
+        vapid_private = get_raw_vapid_key(vapid_private_raw)
 
         conn = get_conn()
         cur = conn.cursor()
@@ -162,7 +161,16 @@ def handler(event: dict, context) -> dict:
             conn2.commit()
             cur2.close(); conn2.close()
 
-        return {'statusCode': 200, 'headers': HEADERS, 'body': json.dumps({'success': True, 'sent': sent, 'errors': errors, '_debug': 'ok'})}
+        from py_vapid import Vapid
+        v = Vapid.from_file(vapid_private)
+        pub_key_from_pem = base64.urlsafe_b64encode(
+            v.public_key.public_numbers().x.to_bytes(32, 'big') +
+            v.public_key.public_numbers().y.to_bytes(32, 'big')
+        ).rstrip(b'=').decode('utf-8')
+        return {'statusCode': 200, 'headers': HEADERS, 'body': json.dumps({
+            'success': True, 'sent': sent, 'errors': errors,
+            '_debug_pub_from_pem': pub_key_from_pem
+        })}
 
     # ── СГЕНЕРИРОВАТЬ НОВУЮ ПАРУ VAPID-КЛЮЧЕЙ ──
     if method == 'POST' and body_raw.get('action') == 'generate_vapid':
