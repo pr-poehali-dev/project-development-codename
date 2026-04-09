@@ -1,6 +1,7 @@
 import json
 import os
 import base64
+# redeploy: new VAPID keys v2
 import psycopg2
 # v9
 from psycopg2.extras import RealDictCursor
