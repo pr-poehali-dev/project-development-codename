@@ -262,7 +262,7 @@ def send_push(phone: str, title: str, body: str, url: str = '/'):
             headers={'Content-Type': 'application/json'},
             method='POST'
         )
-        _urllib.urlopen(_req, timeout=3)
+        _urllib.urlopen(_req, timeout=10)
     except Exception:
         pass
 
