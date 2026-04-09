@@ -187,7 +187,7 @@ def send_push(phone: str, title: str, body: str, url: str = '/'):
             headers={'Content-Type': 'application/json'},
             method='POST'
         )
-        _urllib.urlopen(_req, timeout=3)
+        _urllib.urlopen(_req, timeout=10)
     except Exception:
         pass
 
@@ -799,17 +799,28 @@ def handler(event: dict, context) -> dict:
                         )
                     except Exception:
                         pass
-                # Push мастеру
                 try:
-                    import urllib.request as _urllib
-                    cur2 = get_conn().cursor()
-                    cur2.execute(f"SELECT phone FROM {SCHEMA}.masters WHERE id=(SELECT master_id FROM {SCHEMA}.master_inquiries WHERE id=%s)", (int(inquiry_id),))
-                    mp = cur2.fetchone()
-                    cur2.close()
+                    conn3 = get_conn()
+                    cur3 = conn3.cursor()
+                    cur3.execute(f"SELECT phone FROM {SCHEMA}.masters WHERE id=(SELECT master_id FROM {SCHEMA}.master_inquiries WHERE id=%s)", (int(inquiry_id),))
+                    mp = cur3.fetchone()
+                    cur3.close(); conn3.close()
                     if mp:
-                        _push_data = json.dumps({'action': 'send', 'phone': mp['phone'], 'title': f'Новое сообщение от {sender_name}', 'body': text[:80], 'url': '/master?tab=inquiries'}).encode()
-                        _req = _urllib.Request('https://functions.poehali.dev/272080b1-1a80-40bd-8201-0951cb380c57', data=_push_data, headers={'Content-Type': 'application/json'}, method='POST')
-                        _urllib.urlopen(_req, timeout=3)
+                        send_push(mp['phone'], f'Сообщение от {sender_name}', text[:80], '/master?tab=inquiries')
+                except Exception:
+                    pass
+            if inq and sender_role == 'master':
+                try:
+                    conn3 = get_conn()
+                    cur3 = conn3.cursor()
+                    cur3.execute(
+                        f"SELECT contact_phone FROM {SCHEMA}.master_inquiries WHERE id = %s",
+                        (int(inquiry_id),)
+                    )
+                    cp = cur3.fetchone()
+                    cur3.close(); conn3.close()
+                    if cp and cp['contact_phone']:
+                        send_push(cp['contact_phone'], f'Сообщение от {sender_name}', text[:80], '/cabinet?tab=inquiries')
                 except Exception:
                     pass
             return {'statusCode': 200, 'headers': HEADERS, 'body': json.dumps({
