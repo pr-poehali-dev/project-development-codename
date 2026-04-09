@@ -162,7 +162,7 @@ def handler(event: dict, context) -> dict:
             conn2.commit()
             cur2.close(); conn2.close()
 
-        return {'statusCode': 200, 'headers': HEADERS, 'body': json.dumps({'success': True, 'sent': sent, 'errors': errors})}
+        return {'statusCode': 200, 'headers': HEADERS, 'body': json.dumps({'success': True, 'sent': sent, 'errors': errors, '_debug': 'ok'})}
 
     # ── СГЕНЕРИРОВАТЬ НОВУЮ ПАРУ VAPID-КЛЮЧЕЙ ──
     if method == 'POST' and body_raw.get('action') == 'generate_vapid':
