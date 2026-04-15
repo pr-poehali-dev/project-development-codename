@@ -207,6 +207,16 @@ def handler(event: dict, context) -> dict:
     if method == 'GET':
         params = event.get('queryStringParameters') or {}
         order_id = params.get('order_id')
+        master_id_param = params.get('master_id')
+        SCHEMA = os.environ.get("MAIN_DB_SCHEMA", "public")
+
+        if master_id_param and not order_id:
+            conn = get_conn()
+            cur = conn.cursor()
+            cur.execute(f"SELECT order_id FROM {SCHEMA}.responses WHERE master_id = %s", (int(master_id_param),))
+            rows = cur.fetchall()
+            cur.close(); conn.close()
+            return {'statusCode': 200, 'headers': HEADERS, 'body': json.dumps({'responded_order_ids': [r['order_id'] for r in rows]})}
 
         conn = get_conn()
         cur = conn.cursor()

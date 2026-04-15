@@ -62,6 +62,7 @@ const Orders = () => {
   const [masterData, setMasterData] = useState<{ name: string; phone: string; category: string } | null>(null);
   const [authPromptOpen, setAuthPromptOpen] = useState(false);
   const [authChecked, setAuthChecked] = useState(false);
+  const [respondedIds, setRespondedIds] = useState<Set<number>>(new Set());
 
   useEffect(() => {
     const savedPhone = localStorage.getItem("master_phone");
@@ -83,6 +84,17 @@ const Orders = () => {
       setAuthChecked(true);
     }
   }, []);
+
+  useEffect(() => {
+    if (masterId === null) return;
+    fetch(`${RESPONSES_URL}?master_id=${masterId}`)
+      .then(r => r.json())
+      .then(data => {
+        const parsed = typeof data === "string" ? JSON.parse(data) : data;
+        if (parsed.responded_order_ids) setRespondedIds(new Set(parsed.responded_order_ids));
+      })
+      .catch(() => {});
+  }, [masterId]);
 
   useEffect(() => {
     if (!authChecked || masterId === null) return;
@@ -145,6 +157,7 @@ const Orders = () => {
       const parsed = typeof data === "string" ? JSON.parse(data) : data;
       if (parsed.success) {
         setResponseSent(true);
+        setRespondedIds(prev => new Set([...prev, selectedOrder.id]));
       } else {
         setResponseError(parsed.error || "Ошибка при отправке");
       }
@@ -307,8 +320,10 @@ const Orders = () => {
                   key={order.id}
                   order={order}
                   formatDate={formatDate}
+                  responded={respondedIds.has(order.id)}
                   onClick={(o) => {
                     if (masterId === null) { setAuthPromptOpen(true); return; }
+                    if (respondedIds.has(o.id)) return;
                     setSelectedOrder(o);
                     setResponseSent(false);
                     setResponseError("");

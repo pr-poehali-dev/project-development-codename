@@ -14,6 +14,14 @@
       "expectedStatus": 403,
       "bodyMatcher": "partial",
       "expectedBody": {"error": "Необходимо войти в кабинет мастера"}
+    },
+    {
+      "name": "GET responded order ids for master",
+      "method": "GET",
+      "path": "/?master_id=999999",
+      "expectedStatus": 200,
+      "bodyMatcher": "partial",
+      "expectedBody": {"responded_order_ids": []}
     }
   ]
 }
