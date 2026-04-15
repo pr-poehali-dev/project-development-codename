@@ -144,7 +144,7 @@ export default function Masters() {
     } finally { setContactLoading(false); }
   };
 
-  const shown = masters.filter(m => m.name && m.name !== "HandyMan");
+  const shown = masters.filter(m => m.name);
   const filteredServices = search
     ? services.filter(s => s.title.toLowerCase().includes(search.toLowerCase()) || s.master_name.toLowerCase().includes(search.toLowerCase()))
     : services;
