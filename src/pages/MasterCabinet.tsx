@@ -5,6 +5,7 @@ import MasterTabBalance from "@/pages/master-cabinet/MasterTabBalance";
 import MasterTabServices from "@/pages/master-cabinet/MasterTabServices";
 import MasterTabOther from "@/pages/master-cabinet/MasterTabOther";
 import MasterTabInquiries from "@/pages/master-cabinet/MasterTabInquiries";
+import MasterTabReferral from "@/pages/master-cabinet/MasterTabReferral";
 import { useMasterProfile } from "@/pages/master-cabinet/useMasterProfile";
 import { useMasterServices } from "@/pages/master-cabinet/useMasterServices";
 import { useMasterProfileEdit } from "@/pages/master-cabinet/useMasterProfileEdit";
@@ -14,9 +15,9 @@ const initialTab = new URLSearchParams(window.location.search).get("tab");
 const initialPaymentId = new URLSearchParams(window.location.search).get("payment_id");
 
 export default function MasterCabinet() {
-  const [tab, setTab] = useState<"balance" | "history" | "responses" | "services" | "profile" | "inquiries">(
-    initialTab === "services" || initialTab === "responses" || initialTab === "history" || initialTab === "profile" || initialTab === "inquiries"
-      ? initialTab as "services" | "responses" | "history" | "profile" | "inquiries"
+  const [tab, setTab] = useState<"balance" | "history" | "responses" | "services" | "profile" | "inquiries" | "referral">(
+    initialTab === "services" || initialTab === "responses" || initialTab === "history" || initialTab === "profile" || initialTab === "inquiries" || initialTab === "referral"
+      ? initialTab as "services" | "responses" | "history" | "profile" | "inquiries" | "referral"
       : "balance"
   );
 
@@ -129,6 +130,10 @@ export default function MasterCabinet() {
 
         {tab === "inquiries" && (
           <MasterTabInquiries inquiries={profile.inquiries} masterName={profile.master!.name} masterId={profile.master!.id} onRefresh={() => profile.loadProfile(profile.phone)} />
+        )}
+
+        {tab === "referral" && (
+          <MasterTabReferral masterId={profile.master!.id} />
         )}
 
         {(tab === "responses" || tab === "history" || tab === "profile") && (

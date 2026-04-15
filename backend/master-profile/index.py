@@ -267,6 +267,34 @@ def send_push(phone: str, title: str, body: str, url: str = '/'):
         pass
 
 
+REFERRAL_BONUS = 3
+
+
+def generate_referral_code():
+    return secrets.token_hex(4).upper()
+
+
+def ensure_referral_code(master_id):
+    conn = get_conn()
+    cur = conn.cursor()
+    cur.execute(f"SELECT referral_code FROM {SCHEMA}.masters WHERE id=%s", (master_id,))
+    row = cur.fetchone()
+    if row and row['referral_code']:
+        cur.close(); conn.close()
+        return row['referral_code']
+    for _ in range(5):
+        code = generate_referral_code()
+        try:
+            cur.execute(f"UPDATE {SCHEMA}.masters SET referral_code=%s WHERE id=%s", (code, master_id))
+            conn.commit()
+            cur.close(); conn.close()
+            return code
+        except Exception:
+            conn.rollback()
+    cur.close(); conn.close()
+    return None
+
+
 def master_to_dict(m):
     cats = m['categories'] if m['categories'] else []
     if not cats and m['category']:
@@ -284,6 +312,7 @@ def master_to_dict(m):
         'balance': m['balance'],
         'responses_count': m['responses_count'] or 0,
         'created_at': m['created_at'].isoformat() if m['created_at'] else None,
+        'referral_code': m.get('referral_code') or '',
     }
 
 
@@ -305,6 +334,7 @@ def handler(event: dict, context) -> dict:
             email = (body_raw.get('email') or '').strip().lower()
             phone = (body_raw.get('phone') or '').strip()
             name = (body_raw.get('name') or '').strip()
+            ref_code = (body_raw.get('ref') or '').strip().upper()
             if not email:
                 return {'statusCode': 400, 'headers': HEADERS, 'body': json.dumps({'error': 'Укажите email'})}
             if not name:
@@ -319,13 +349,19 @@ def handler(event: dict, context) -> dict:
                 cur.close(); conn.close()
                 return {'statusCode': 400, 'headers': HEADERS,
                         'body': json.dumps({'error': 'Этот email уже зарегистрирован. Войдите с паролем.', 'already_exists': True})}
+            referrer_id = None
+            if ref_code:
+                cur.execute(f"SELECT id FROM {SCHEMA}.masters WHERE referral_code=%s", (ref_code,))
+                ref_row = cur.fetchone()
+                if ref_row:
+                    referrer_id = ref_row['id']
             if not row:
                 cur.execute(
-                    f"INSERT INTO {SCHEMA}.masters (name, phone, email, email_verified) VALUES (%s,%s,%s,FALSE) RETURNING id",
-                    (name, phone, email)
+                    f"INSERT INTO {SCHEMA}.masters (name, phone, email, email_verified, referred_by) VALUES (%s,%s,%s,FALSE,%s) RETURNING id",
+                    (name, phone, email, referrer_id)
                 )
             else:
-                cur.execute(f"UPDATE {SCHEMA}.masters SET name=%s, phone=%s WHERE email=%s", (name, phone, email))
+                cur.execute(f"UPDATE {SCHEMA}.masters SET name=%s, phone=%s, referred_by=COALESCE(referred_by,%s) WHERE email=%s", (name, phone, referrer_id, email))
             code = str(random.randint(100000, 999999))
             cur.execute(f"UPDATE {SCHEMA}.auth_codes SET used=TRUE WHERE email=%s AND used=FALSE", (email,))
             cur.execute(f"INSERT INTO {SCHEMA}.auth_codes (email, code) VALUES (%s,%s)", (email, code))
@@ -375,12 +411,59 @@ def handler(event: dict, context) -> dict:
             if not user_row:
                 cur.close(); conn.close()
                 return {'statusCode': 400, 'headers': HEADERS, 'body': json.dumps({'error': 'Пользователь не найден'})}
+            new_master_id = user_row['id']
+            ref_code = ensure_referral_code(new_master_id)
+            cur.execute(f"SELECT referred_by, referral_bonus_paid FROM {SCHEMA}.masters WHERE id=%s", (new_master_id,))
+            ref_info = cur.fetchone()
+            if ref_info and ref_info['referred_by'] and not ref_info['referral_bonus_paid']:
+                referrer_id = ref_info['referred_by']
+                cur.execute(f"UPDATE {SCHEMA}.masters SET balance=balance+%s WHERE id=%s", (REFERRAL_BONUS, referrer_id))
+                cur.execute(
+                    f"INSERT INTO {SCHEMA}.master_transactions (master_id, type, amount, description) VALUES (%s,'referral',%s,%s)",
+                    (referrer_id, REFERRAL_BONUS, f'Бонус за приглашённого мастера #{new_master_id}')
+                )
+                cur.execute(f"UPDATE {SCHEMA}.masters SET balance=balance+%s WHERE id=%s", (REFERRAL_BONUS, new_master_id))
+                cur.execute(
+                    f"INSERT INTO {SCHEMA}.master_transactions (master_id, type, amount, description) VALUES (%s,'referral',%s,'Бонус за регистрацию по приглашению')",
+                    (new_master_id, REFERRAL_BONUS)
+                )
+                cur.execute(f"UPDATE {SCHEMA}.masters SET referral_bonus_paid=TRUE WHERE id=%s", (new_master_id,))
+                cur.execute(f"SELECT phone FROM {SCHEMA}.masters WHERE id=%s", (referrer_id,))
+                rp = cur.fetchone()
+                if rp and rp['phone']:
+                    try:
+                        send_push(rp['phone'], 'Реферальный бонус!', f'+{REFERRAL_BONUS} токенов за приглашённого мастера', '/master?tab=balance')
+                    except Exception:
+                        pass
             conn.commit()
             cur.close(); conn.close()
             return {'statusCode': 200, 'headers': HEADERS,
                     'body': json.dumps({'success': True,
                                         'user': {'id': user_row['id'], 'name': user_row['name'],
                                                  'phone': user_row['phone'], 'email': user_row['email'] or ''}})}
+
+        # ── РЕФЕРАЛЬНАЯ ИНФОРМАЦИЯ ──
+        if body_raw.get('action') == 'get_referral_info':
+            master_id = body_raw.get('master_id')
+            if not master_id:
+                return {'statusCode': 400, 'headers': HEADERS, 'body': json.dumps({'error': 'master_id обязателен'})}
+            code = ensure_referral_code(int(master_id))
+            conn = get_conn()
+            cur = conn.cursor()
+            cur.execute(f"SELECT COUNT(*) as cnt FROM {SCHEMA}.masters WHERE referred_by=%s AND email_verified=TRUE", (int(master_id),))
+            invited = cur.fetchone()['cnt']
+            cur.execute(
+                f"SELECT COALESCE(SUM(amount),0) as total FROM {SCHEMA}.master_transactions WHERE master_id=%s AND type='referral'",
+                (int(master_id),)
+            )
+            earned = cur.fetchone()['total']
+            cur.close(); conn.close()
+            return {'statusCode': 200, 'headers': HEADERS, 'body': json.dumps({
+                'referral_code': code or '',
+                'invited_count': invited,
+                'earned_tokens': earned,
+                'bonus_per_invite': REFERRAL_BONUS,
+            })}
 
         # ── ВХОД МАСТЕРА ──
         if body_raw.get('action') == 'auth_login':

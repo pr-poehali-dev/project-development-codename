@@ -59,7 +59,7 @@ interface Master {
   created_at: string;
 }
 
-type Tab = "balance" | "history" | "responses" | "services" | "profile" | "inquiries";
+type Tab = "balance" | "history" | "responses" | "services" | "profile" | "inquiries" | "referral";
 
 interface MasterCabinetHeaderProps {
   master: Master;
@@ -149,7 +149,7 @@ export default function MasterCabinetHeader({
         )}
 
         {/* Вкладки */}
-        <div className="grid grid-cols-3 gap-1 bg-white/4 rounded-xl p-1 mb-6">
+        <div className="grid grid-cols-4 gap-1 bg-white/4 rounded-xl p-1 mb-6">
           <button onClick={() => setTab("balance")} className={`py-2 rounded-lg text-xs font-medium transition-all ${tab === "balance" ? "bg-violet-600 text-white" : "text-gray-400 hover:text-white"}`}>
             Баланс
           </button>
@@ -164,6 +164,9 @@ export default function MasterCabinetHeader({
           <button onClick={() => setTab("inquiries")} className={`py-2 rounded-lg text-xs font-medium transition-all flex items-center justify-center gap-1 ${tab === "inquiries" ? "bg-violet-600 text-white" : "text-gray-400 hover:text-white"}`}>
             Клиенты
             {unreadInquiries > 0 && <span className="text-[10px] px-1 py-0.5 rounded bg-amber-500 text-white">{unreadInquiries}</span>}
+          </button>
+          <button onClick={() => setTab("referral")} className={`py-2 rounded-lg text-xs font-medium transition-all ${tab === "referral" ? "bg-violet-600 text-white" : "text-gray-400 hover:text-white"}`}>
+            Друзья
           </button>
           <button onClick={() => setTab("history")} className={`py-2 rounded-lg text-xs font-medium transition-all ${tab === "history" ? "bg-violet-600 text-white" : "text-gray-400 hover:text-white"}`}>
             История

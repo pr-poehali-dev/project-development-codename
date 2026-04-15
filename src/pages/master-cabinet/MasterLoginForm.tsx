@@ -64,7 +64,8 @@ export default function MasterLoginForm({ onLogin }: MasterLoginFormProps) {
     if (regPassword.length < 6) { setError("Пароль минимум 6 символов"); return; }
     setError(""); setLoading(true);
     try {
-      const d = await post({ action: "register", email: regEmail, phone: regPhone, name: regName });
+      const refCode = new URLSearchParams(window.location.search).get("ref") || "";
+      const d = await post({ action: "register", email: regEmail, phone: regPhone, name: regName, ref: refCode });
       if (d.error) {
         if (d.already_exists) setMode("login");
         setError(d.error); return;
