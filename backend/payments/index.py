@@ -42,6 +42,18 @@ def yookassa_request(method, path, body=None):
         raise Exception(f"YooKassa error {e.code}: {error_body}")
 
 
+def send_push(phone: str, title: str, body: str, url: str = '/'):
+    try:
+        _push_data = json.dumps({'action': 'send', 'phone': phone, 'title': title, 'body': body, 'url': url}).encode()
+        _req = urllib.request.Request(
+            'https://functions.poehali.dev/272080b1-1a80-40bd-8201-0951cb380c57',
+            data=_push_data, headers={'Content-Type': 'application/json'}, method='POST'
+        )
+        urllib.request.urlopen(_req, timeout=10)
+    except Exception:
+        pass
+
+
 def handler(event: dict, context) -> dict:
     """Создание и проверка платежей через ЮKassa"""
     if event.get('httpMethod') == 'OPTIONS':
@@ -97,8 +109,12 @@ def handler(event: dict, context) -> dict:
                 f"VALUES (%s, 'purchase', %s, %s)",
                 (payment['master_id'], tokens, f"Покупка {tokens} токенов через ЮKassa")
             )
+            cur.execute(f"SELECT phone FROM {SCHEMA}.masters WHERE id = %s", (payment['master_id'],))
+            mp = cur.fetchone()
             conn.commit()
             conn.close()
+            if mp and mp['phone']:
+                send_push(mp['phone'], 'Баланс пополнен!', f'+{tokens} токенов зачислено на ваш счёт', '/master?tab=balance')
             return {'statusCode': 200, 'headers': CORS, 'body': json.dumps({'ok': True})}
 
         if action == 'create':
@@ -210,8 +226,12 @@ def handler(event: dict, context) -> dict:
                     f"VALUES (%s, 'purchase', %s, %s)",
                     (payment['master_id'], tokens, f"Покупка {tokens} токенов через ЮKassa")
                 )
+                cur.execute(f"SELECT phone FROM {SCHEMA}.masters WHERE id = %s", (payment['master_id'],))
+                mp = cur.fetchone()
                 conn.commit()
                 conn.close()
+                if mp and mp['phone']:
+                    send_push(mp['phone'], 'Баланс пополнен!', f'+{tokens} токенов зачислено на ваш счёт', '/master?tab=balance')
                 return {'statusCode': 200, 'headers': CORS,
                         'body': json.dumps({'status': 'succeeded', 'tokens': tokens})}
 

@@ -41,6 +41,19 @@ def verify_password(password: str, stored_hash: str) -> bool:
     return hashlib.sha256((salt + password).encode()).hexdigest() == h
 
 
+def send_push(phone: str, title: str, body: str, url: str = '/'):
+    try:
+        import urllib.request as _urllib
+        _push_data = json.dumps({'action': 'send', 'phone': phone, 'title': title, 'body': body, 'url': url}).encode()
+        _req = _urllib.Request(
+            'https://functions.poehali.dev/272080b1-1a80-40bd-8201-0951cb380c57',
+            data=_push_data, headers={'Content-Type': 'application/json'}, method='POST'
+        )
+        _urllib.urlopen(_req, timeout=10)
+    except Exception:
+        pass
+
+
 def ok(data: dict, status: int = 200) -> dict:
     return {'statusCode': status, 'headers': HEADERS, 'body': json.dumps(data, default=str, ensure_ascii=False)}
 
@@ -117,9 +130,12 @@ def handler(event: dict, context) -> dict:
             (int(master_id), package['responses_count'], f"Куплен пакет «{package['name']}» — {package['responses_count']} откликов")
         )
         conn.commit()
-        cur.execute(f"SELECT balance FROM {SCHEMA}.masters WHERE id = %s", (int(master_id),))
-        new_balance = cur.fetchone()['balance']
+        cur.execute(f"SELECT balance, phone FROM {SCHEMA}.masters WHERE id = %s", (int(master_id),))
+        mr = cur.fetchone()
+        new_balance = mr['balance']
         conn.close()
+        if mr and mr['phone']:
+            send_push(mr['phone'], 'Баланс пополнен!', f'+{package["responses_count"]} токенов зачислено на ваш счёт', '/master?tab=balance')
         return ok({'success': True, 'added': package['responses_count'], 'new_balance': new_balance, 'payment_id': payment_id})
 
     # ========== АДМИНИСТРАТИВНАЯ ПАНЕЛЬ ==========
@@ -385,6 +401,11 @@ def handler(event: dict, context) -> dict:
         cur.execute(f"UPDATE {SCHEMA}.masters SET balance = balance + %s WHERE id=%s", (amount, master_id))
         cur.execute(f"INSERT INTO {SCHEMA}.master_transactions (master_id, amount, type, description) VALUES (%s, %s, 'admin_adjust', %s)",
                     (master_id, amount, comment))
+        if amount > 0:
+            cur.execute(f"SELECT phone FROM {SCHEMA}.masters WHERE id=%s", (master_id,))
+            mp = cur.fetchone()
+            if mp and mp['phone']:
+                send_push(mp['phone'], 'Баланс пополнен!', f'+{amount} токенов зачислено на ваш счёт', '/master?tab=balance')
         conn.commit()
         conn.close()
         return ok({'success': True})
