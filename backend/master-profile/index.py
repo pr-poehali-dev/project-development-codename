@@ -592,7 +592,7 @@ def handler(event: dict, context) -> dict:
                 )
             return {'statusCode': 200, 'headers': HEADERS, 'body': json.dumps({'success': True, 'deal_done': False, 'waiting_customer': True})}
 
-        # ── ОТКЛОНИТЬ ДОГОВОРЁННОСТЬ (мастер или заказчик) ──
+        # ── ОТКЛОНИТЬ ДОГОВОРЁННОСТЬ (мастер) ──
         if body_raw.get('action') == 'reject_deal':
             inquiry_id = body_raw.get('inquiry_id')
             if not inquiry_id:
@@ -600,10 +600,22 @@ def handler(event: dict, context) -> dict:
             conn = get_conn()
             cur = conn.cursor()
             cur.execute(
+                f"SELECT i.contact_phone, i.contact_name, m.name as master_name "
+                f"FROM {SCHEMA}.master_inquiries i JOIN {SCHEMA}.masters m ON m.id = i.master_id "
+                f"WHERE i.id=%s",
+                (int(inquiry_id),)
+            )
+            inq = cur.fetchone()
+            cur.execute(
                 f"UPDATE {SCHEMA}.master_inquiries SET deal_status='no_deal', master_deal_confirmed=FALSE, customer_deal_confirmed=FALSE WHERE id=%s",
                 (int(inquiry_id),)
             )
             conn.commit(); cur.close(); conn.close()
+            if inq and inq['contact_phone']:
+                try:
+                    send_push(inq['contact_phone'], 'Сделка отклонена', f'Мастер {inq["master_name"]} отклонил договорённость', '/cabinet?tab=inquiries')
+                except Exception:
+                    pass
             return {'statusCode': 200, 'headers': HEADERS, 'body': json.dumps({'success': True})}
 
         # ── УДАЛИТЬ ЧАТ (мастер) ──
