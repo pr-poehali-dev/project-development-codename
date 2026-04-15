@@ -42,7 +42,7 @@ const HomeCategoriesServices = () => {
           <h2 className="text-2xl font-bold mb-8 text-center">Категории услуг</h2>
           <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-3">
             <a
-              href="/orders"
+              href="/masters"
               className="flex flex-col items-center justify-center gap-2 p-4 min-h-[90px] rounded-xl border transition-all bg-white/3 border-white/8 text-gray-400 hover:border-white/20 hover:text-white active:bg-white/10"
             >
               <Icon name="LayoutGrid" size={22} />
