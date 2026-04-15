@@ -84,7 +84,7 @@ def send_push(phone: str, title: str, body: str, url: str = '/'):
             headers={'Content-Type': 'application/json'},
             method='POST'
         )
-        _urllib.urlopen(_req, timeout=10)
+        _urllib.urlopen(_req, timeout=3)
     except Exception:
         pass
 
@@ -146,10 +146,17 @@ def handler(event: dict, context) -> dict:
 
         order = dict(order)
 
-        # Запрет самоотклика
         if normalize(master_row['phone']) == normalize(order.get('contact_phone', '')):
             cur.close(); conn.close()
             return {'statusCode': 403, 'headers': HEADERS, 'body': json.dumps({'error': 'Нельзя откликаться на собственную заявку'})}
+
+        cur.execute(
+            f"SELECT id FROM {SCHEMA}.responses WHERE order_id = %s AND master_id = %s",
+            (int(order_id), int(master_id))
+        )
+        if cur.fetchone():
+            cur.close(); conn.close()
+            return {'statusCode': 400, 'headers': HEADERS, 'body': json.dumps({'error': 'Вы уже откликнулись на эту заявку'})}
 
         order['contact_email'] = order.get('customer_email') or order.get('contact_email') or ''
 
@@ -164,8 +171,14 @@ def handler(event: dict, context) -> dict:
         cur.close()
         conn.close()
 
-        if order and order['contact_email']:
-            try:
+        result = {
+            'statusCode': 200,
+            'headers': HEADERS,
+            'body': json.dumps({'success': True, 'response_id': response_id})
+        }
+
+        try:
+            if order and order['contact_email']:
                 send_email(
                     to_email=order['contact_email'],
                     order_title=order['title'],
@@ -175,23 +188,21 @@ def handler(event: dict, context) -> dict:
                     message=message,
                     order_id=int(order_id)
                 )
-            except Exception:
-                pass
+        except Exception:
+            pass
 
-        # Push-уведомление заказчику об отклике мастера
-        if order and order.get('contact_phone'):
-            send_push(
-                phone=order['contact_phone'],
-                title='Новый отклик на вашу заявку',
-                body=f'{master_name} откликнулся на «{order["title"]}»',
-                url='/cabinet'
-            )
+        try:
+            if order and order.get('contact_phone'):
+                send_push(
+                    phone=order['contact_phone'],
+                    title='Новый отклик на вашу заявку',
+                    body=f'{master_name} откликнулся на «{order["title"]}»',
+                    url='/cabinet'
+                )
+        except Exception:
+            pass
 
-        return {
-            'statusCode': 200,
-            'headers': HEADERS,
-            'body': json.dumps({'success': True, 'response_id': response_id})
-        }
+        return result
 
     if method == 'GET':
         params = event.get('queryStringParameters') or {}
