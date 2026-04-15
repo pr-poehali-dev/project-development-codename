@@ -122,7 +122,7 @@ export default function MasterLoginForm({ onLogin }: MasterLoginFormProps) {
   };
 
   return (
-    <div className="min-h-screen bg-[#080b12] flex items-center justify-center px-4">
+    <div className="min-h-screen bg-[#080b12] flex items-center justify-center px-4 py-20">
       <a href="/" className="absolute top-5 left-5 flex items-center gap-2 text-gray-400 hover:text-white text-sm transition-colors">
         <Icon name="ArrowLeft" size={16} />
         На главную
