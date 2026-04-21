@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import CitySelect from "@/components/ui/city-select";
 import { useSeoMeta } from "@/hooks/useSeoMeta";
+import { categories as ALL_CATEGORIES } from "@/components/home/categories";
 
 const MASTER_URL = "https://functions.poehali.dev/de274bd5-3f08-42d8-9aac-b373bb34b900";
 
@@ -70,7 +71,6 @@ export default function Masters() {
   const [city, setCity] = useState("");
   const [category, setCategory] = useState("");
   const [search, setSearch] = useState("");
-  const [categories, setCategories] = useState<string[]>([]);
   const [servicesVisible, setServicesVisible] = useState(20);
 
   const isMaster = typeof window !== "undefined" && !!localStorage.getItem("master_phone");
@@ -104,7 +104,6 @@ export default function Masters() {
       const sParsed = typeof sData === "string" ? JSON.parse(sData) : sData;
       setMasters(mParsed.masters || []);
       setServices(sParsed.services || []);
-      if (mParsed.categories?.length) setCategories(mParsed.categories);
     } finally {
       setLoading(false);
     }
@@ -231,7 +230,7 @@ export default function Masters() {
               style={{ colorScheme: "dark" }}
             >
               <option value="">Все категории</option>
-              {categories.map(c => <option key={c} value={c}>{c}</option>)}
+              {ALL_CATEGORIES.map(c => <option key={c.name} value={c.name}>{c.name}</option>)}
             </select>
 
             {(city || category || search) && (
