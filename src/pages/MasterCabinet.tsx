@@ -1,25 +1,17 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import MasterLoginForm from "@/pages/master-cabinet/MasterLoginForm";
 import MasterCabinetHeader from "@/pages/master-cabinet/MasterCabinetHeader";
-import MasterTabBalance from "@/pages/master-cabinet/MasterTabBalance";
-import MasterTabServices from "@/pages/master-cabinet/MasterTabServices";
-import MasterTabOther from "@/pages/master-cabinet/MasterTabOther";
-import MasterTabInquiries from "@/pages/master-cabinet/MasterTabInquiries";
-import MasterTabReferral from "@/pages/master-cabinet/MasterTabReferral";
+import MasterCabinetContent from "@/pages/master-cabinet/MasterCabinetContent";
+import MasterCabinetLoader from "@/pages/master-cabinet/MasterCabinetLoader";
 import { useMasterProfile } from "@/pages/master-cabinet/useMasterProfile";
 import { useMasterServices } from "@/pages/master-cabinet/useMasterServices";
 import { useMasterProfileEdit } from "@/pages/master-cabinet/useMasterProfileEdit";
 import { useMasterPayments } from "@/pages/master-cabinet/useMasterPayments";
-
-const initialTab = new URLSearchParams(window.location.search).get("tab");
-const initialPaymentId = new URLSearchParams(window.location.search).get("payment_id");
+import { useMasterCabinetInit } from "@/pages/master-cabinet/useMasterCabinetInit";
+import { MasterTab, getInitialTab } from "@/pages/master-cabinet/masterCabinetTypes";
 
 export default function MasterCabinet() {
-  const [tab, setTab] = useState<"balance" | "history" | "responses" | "services" | "profile" | "inquiries" | "referral">(
-    initialTab === "services" || initialTab === "responses" || initialTab === "history" || initialTab === "profile" || initialTab === "inquiries" || initialTab === "referral"
-      ? initialTab as "services" | "responses" | "history" | "profile" | "inquiries" | "referral"
-      : "balance"
-  );
+  const [tab, setTab] = useState<MasterTab>(getInitialTab());
 
   const profile = useMasterProfile();
 
@@ -46,17 +38,13 @@ export default function MasterCabinet() {
     loadProfile: profile.loadProfile,
   });
 
-  useEffect(() => {
-    const saved = localStorage.getItem("master_phone");
-    if (saved) {
-      profile.setPhone(saved);
-      profile.setInputPhone(saved);
-      profile.loadProfile(saved).then(() => {
-        if (initialPaymentId) payments.checkPayment(initialPaymentId, saved);
-      });
-    }
-    payments.loadPackages();
-  }, []);
+  useMasterCabinetInit({
+    setPhone: profile.setPhone,
+    setInputPhone: profile.setInputPhone,
+    loadProfile: profile.loadProfile,
+    loadPackages: payments.loadPackages,
+    checkPayment: payments.checkPayment,
+  });
 
   if (!profile.master && !profile.loading) {
     return (
@@ -67,14 +55,7 @@ export default function MasterCabinet() {
   }
 
   if (profile.loading) {
-    return (
-      <div className="min-h-screen bg-[#080b12] flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-10 h-10 border-2 border-violet-500 border-t-transparent rounded-full animate-spin mx-auto mb-3" />
-          <p className="text-gray-400 text-sm">Загрузка...</p>
-        </div>
-      </div>
-    );
+    return <MasterCabinetLoader />;
   }
 
   return (
@@ -97,66 +78,13 @@ export default function MasterCabinet() {
         onLogout={profile.handleLogout}
       />
 
-      <div className="max-w-3xl mx-auto px-4 pb-8">
-        {tab === "balance" && (
-          <MasterTabBalance
-            packages={payments.packages}
-            buyingId={payments.buyingId}
-            onBuy={payments.handleBuy}
-            paymentChecking={payments.paymentChecking}
-            checkoutToken={payments.checkoutToken}
-            onCheckoutSuccess={payments.handleCheckoutSuccess}
-            onCheckoutClose={() => payments.setCheckoutToken(null)}
-          />
-        )}
-
-        {tab === "services" && (
-          <MasterTabServices
-            master={profile.master!}
-            myServices={profile.myServices}
-            showServiceForm={services.showServiceForm}
-            setShowServiceForm={services.setShowServiceForm}
-            serviceForm={services.serviceForm}
-            setServiceForm={services.setServiceForm}
-            serviceLoading={services.serviceLoading}
-            onAddService={services.handleAddService}
-            onToggleService={services.handleToggleService}
-            onBoostService={services.handleBoostService}
-            onRenewService={services.handleRenewService}
-            onUpdateService={services.handleUpdateService}
-            onDeleteService={services.handleDeleteService}
-          />
-        )}
-
-        {tab === "inquiries" && (
-          <MasterTabInquiries inquiries={profile.inquiries} masterName={profile.master!.name} masterId={profile.master!.id} onRefresh={() => profile.loadProfile(profile.phone)} />
-        )}
-
-        {tab === "referral" && (
-          <MasterTabReferral masterId={profile.master!.id} />
-        )}
-
-        {(tab === "responses" || tab === "history" || tab === "profile") && (
-          <MasterTabOther
-            tab={tab}
-            master={profile.master!}
-            transactions={profile.transactions}
-            myResponses={profile.myResponses}
-            editName={profile.editName} setEditName={profile.setEditName}
-            editCity={profile.editCity} setEditCity={profile.setEditCity}
-            editAbout={profile.editAbout} setEditAbout={profile.setEditAbout}
-            editCategories={profile.editCategories} setEditCategories={profile.setEditCategories}
-            profileLoading={edit.profileLoading} profileSuccess={edit.profileSuccess}
-            onSaveProfile={edit.handleSaveProfile}
-            onMasterUpdate={profile.setMaster}
-            pwOld={edit.pwOld} setPwOld={edit.setPwOld}
-            pwNew={edit.pwNew} setPwNew={edit.setPwNew}
-            pwConfirm={edit.pwConfirm} setPwConfirm={edit.setPwConfirm}
-            pwLoading={edit.pwLoading} pwError={edit.pwError} pwSuccess={edit.pwSuccess}
-            onChangePassword={edit.handleChangePassword}
-          />
-        )}
-      </div>
+      <MasterCabinetContent
+        tab={tab}
+        profile={profile}
+        services={services}
+        edit={edit}
+        payments={payments}
+      />
     </div>
   );
 }
