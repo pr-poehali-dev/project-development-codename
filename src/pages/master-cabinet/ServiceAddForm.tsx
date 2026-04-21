@@ -1,6 +1,8 @@
+import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { categories as CATEGORIES } from "@/components/home/categories";
 import CitySelect from "@/components/ui/city-select";
+import Icon from "@/components/ui/icon";
 
 interface ServiceForm {
   title: string;
@@ -47,6 +49,17 @@ export default function ServiceAddForm({
   const tokenCost = servicesCount === 0 ? 10 : servicesCount === 1 ? 8 : 6;
   const addSubcategories = CATEGORIES.find(c => c.name === addMainCat)?.subcategories ?? [];
   const selectedSubs = serviceForm.subcategories || [];
+  const selectedCat = CATEGORIES.find(c => c.name === addMainCat);
+  const [catOpen, setCatOpen] = useState(false);
+  const catRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const onClick = (e: MouseEvent) => {
+      if (catRef.current && !catRef.current.contains(e.target as Node)) setCatOpen(false);
+    };
+    document.addEventListener("mousedown", onClick);
+    return () => document.removeEventListener("mousedown", onClick);
+  }, []);
 
   const toggleSub = (sub: string) => {
     const next = selectedSubs.includes(sub)
@@ -78,18 +91,54 @@ export default function ServiceAddForm({
         className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-violet-500 resize-none"
       />
       <div className="grid grid-cols-2 gap-3">
-        <select
-          value={addMainCat}
-          onChange={e => {
-            setAddMainCat(e.target.value);
-            setServiceForm(f => ({ ...f, category: e.target.value, subcategories: [] }));
-          }}
-          className="bg-[#0f1117] border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-violet-500"
-          style={{ colorScheme: "dark" }}
-        >
-          <option value="" disabled>Категория *</option>
-          {CATEGORIES.map(c => <option key={c.name} value={c.name}>{c.name}</option>)}
-        </select>
+        <div ref={catRef} className="relative">
+          <button
+            type="button"
+            onClick={() => setCatOpen(o => !o)}
+            className={`w-full flex items-center gap-2 bg-[#0f1117] border rounded-xl pl-3 pr-8 py-2.5 text-sm text-white transition-colors ${catOpen ? "border-violet-500" : "border-white/10 hover:border-white/20"}`}
+          >
+            {selectedCat ? (
+              <>
+                <Icon name={selectedCat.icon} size={14} className="text-violet-400 flex-shrink-0" />
+                <span className="truncate">{selectedCat.name}</span>
+              </>
+            ) : (
+              <>
+                <Icon name="LayoutGrid" size={14} className="text-gray-500 flex-shrink-0" />
+                <span className="text-gray-500">Категория *</span>
+              </>
+            )}
+            <Icon
+              name={catOpen ? "ChevronUp" : "ChevronDown"}
+              size={14}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none"
+            />
+          </button>
+          {catOpen && (
+            <div className="absolute z-50 mt-1 w-full min-w-[200px] bg-[#0f1117] border border-white/10 rounded-xl shadow-xl overflow-hidden">
+              <ul className="max-h-64 overflow-y-auto py-1" role="listbox">
+                {CATEGORIES.map(c => (
+                  <li
+                    key={c.name}
+                    role="option"
+                    aria-selected={addMainCat === c.name}
+                    onClick={() => {
+                      setAddMainCat(c.name);
+                      setServiceForm(f => ({ ...f, category: c.name, subcategories: [] }));
+                      setCatOpen(false);
+                    }}
+                    className={`flex items-center gap-2.5 px-3 py-2 text-sm cursor-pointer transition-colors ${
+                      addMainCat === c.name ? "bg-violet-600/20 text-violet-300" : "text-gray-400 hover:bg-white/8 hover:text-white"
+                    }`}
+                  >
+                    <Icon name={c.icon} size={14} />
+                    {c.name}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </div>
         <CitySelect
           value={serviceForm.city || master?.city || ""}
           onChange={c => setServiceForm(f => ({ ...f, city: c }))}

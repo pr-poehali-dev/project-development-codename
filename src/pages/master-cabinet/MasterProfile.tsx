@@ -339,7 +339,8 @@ export default function MasterProfile({
                 const sel = editCategories.includes(c.name);
                 return (
                   <button key={c.name} type="button" onClick={() => toggleCategory(c.name)}
-                    className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-all ${sel ? "bg-violet-600 text-white" : "bg-white/6 text-gray-400 hover:bg-white/10 hover:text-white"}`}>
+                    className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium transition-all ${sel ? "bg-violet-600 text-white" : "bg-white/6 text-gray-400 hover:bg-white/10 hover:text-white"}`}>
+                    <Icon name={c.icon} size={12} />
                     {c.name}
                   </button>
                 );
