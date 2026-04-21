@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Icon from "@/components/ui/icon";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -72,6 +72,18 @@ export default function Masters() {
   const [category, setCategory] = useState("");
   const [search, setSearch] = useState("");
   const [servicesVisible, setServicesVisible] = useState(20);
+  const [catOpen, setCatOpen] = useState(false);
+  const catRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const onClick = (e: MouseEvent) => {
+      if (catRef.current && !catRef.current.contains(e.target as Node)) setCatOpen(false);
+    };
+    document.addEventListener("mousedown", onClick);
+    return () => document.removeEventListener("mousedown", onClick);
+  }, []);
+
+  const selectedCat = ALL_CATEGORIES.find(c => c.name === category);
 
   const isMaster = typeof window !== "undefined" && !!localStorage.getItem("master_phone");
   const isCustomer = typeof window !== "undefined" && !!localStorage.getItem("customer_phone");
@@ -223,15 +235,62 @@ export default function Masters() {
               className="w-44"
             />
 
-            <select
-              value={category}
-              onChange={e => setCategory(e.target.value)}
-              className="bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-sm text-gray-300 focus:outline-none focus:border-violet-500 transition-colors"
-              style={{ colorScheme: "dark" }}
-            >
-              <option value="">Все категории</option>
-              {ALL_CATEGORIES.map(c => <option key={c.name} value={c.name}>{c.name}</option>)}
-            </select>
+            <div ref={catRef} className="relative">
+              <button
+                type="button"
+                onClick={() => setCatOpen(o => !o)}
+                className={`flex items-center gap-2 bg-white/5 border rounded-xl pl-3 pr-8 py-2 text-sm text-white transition-colors min-w-[180px] ${catOpen ? "border-violet-500" : "border-white/10 hover:border-white/20"}`}
+              >
+                {selectedCat ? (
+                  <>
+                    <Icon name={selectedCat.icon} size={14} className="text-violet-400 flex-shrink-0" />
+                    <span className="truncate">{selectedCat.name}</span>
+                  </>
+                ) : (
+                  <>
+                    <Icon name="LayoutGrid" size={14} className="text-gray-500 flex-shrink-0" />
+                    <span className="text-gray-400">Все категории</span>
+                  </>
+                )}
+                <Icon
+                  name={catOpen ? "ChevronUp" : "ChevronDown"}
+                  size={14}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none"
+                />
+              </button>
+
+              {catOpen && (
+                <div className="absolute z-50 mt-1 w-full min-w-[240px] bg-[#0f1117] border border-white/10 rounded-xl shadow-xl overflow-hidden">
+                  <ul className="max-h-80 overflow-y-auto py-1" role="listbox">
+                    <li
+                      role="option"
+                      aria-selected={category === ""}
+                      onClick={() => { setCategory(""); setCatOpen(false); }}
+                      className={`flex items-center gap-2.5 px-3 py-2 text-sm cursor-pointer transition-colors ${
+                        category === "" ? "bg-violet-600/20 text-violet-300" : "text-gray-400 hover:bg-white/8 hover:text-white"
+                      }`}
+                    >
+                      <Icon name="LayoutGrid" size={14} />
+                      Все категории
+                    </li>
+                    {ALL_CATEGORIES.map(c => (
+                      <li
+                        key={c.name}
+                        role="option"
+                        aria-selected={category === c.name}
+                        onClick={() => { setCategory(c.name); setCatOpen(false); }}
+                        className={`flex items-center gap-2.5 px-3 py-2 text-sm cursor-pointer transition-colors ${
+                          category === c.name ? "bg-violet-600/20 text-violet-300" : "text-gray-400 hover:bg-white/8 hover:text-white"
+                        }`}
+                      >
+                        <Icon name={c.icon} size={14} />
+                        {c.name}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
 
             {(city || category || search) && (
               <button
