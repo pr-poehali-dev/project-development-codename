@@ -2,6 +2,13 @@
 @tailwind components;
 @tailwind utilities;
 
+@media (max-width: 767px) {
+  body.chat-modal-open .support-widget-btn,
+  body.chat-modal-open .support-widget-panel {
+    display: none !important;
+  }
+}
+
 @layer base {
   :root {
     --background: 0 0% 100%;

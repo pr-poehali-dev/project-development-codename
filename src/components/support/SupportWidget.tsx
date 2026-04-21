@@ -54,7 +54,7 @@ export default function SupportWidget() {
       {/* Фиксированная кнопка */}
       <button
         onClick={open ? () => setOpen(false) : handleOpen}
-        className="fixed bottom-6 left-6 z-50 flex items-center gap-2 bg-violet-600 hover:bg-violet-500 text-white px-4 py-2.5 rounded-full shadow-lg shadow-violet-900/40 transition-all duration-200 hover:scale-105 text-sm font-medium"
+        className="support-widget-btn fixed bottom-6 left-6 z-50 flex items-center gap-2 bg-violet-600 hover:bg-violet-500 text-white px-4 py-2.5 rounded-full shadow-lg shadow-violet-900/40 transition-all duration-200 hover:scale-105 text-sm font-medium"
         aria-label="Чат с поддержкой"
       >
         <Icon name={open ? "X" : "MessageCircleQuestion"} size={16} />
@@ -63,7 +63,7 @@ export default function SupportWidget() {
 
       {/* Всплывающее окно */}
       {open && (
-        <div className="fixed bottom-20 left-6 z-50 w-80 bg-[#0f1117] border border-white/10 rounded-2xl shadow-2xl shadow-black/60 flex flex-col overflow-hidden">
+        <div className="support-widget-panel fixed bottom-20 left-6 z-50 w-80 bg-[#0f1117] border border-white/10 rounded-2xl shadow-2xl shadow-black/60 flex flex-col overflow-hidden">
           {/* Шапка */}
           <div className="bg-gradient-to-r from-violet-600/20 to-indigo-600/10 border-b border-white/8 px-5 py-4 flex items-center justify-between">
             <div className="flex items-center gap-2.5">

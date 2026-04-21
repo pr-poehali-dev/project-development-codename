@@ -91,6 +91,11 @@ export default function ChatModal({
   }, [inquiryId]);
 
   useEffect(() => {
+    document.body.classList.add("chat-modal-open");
+    return () => { document.body.classList.remove("chat-modal-open"); };
+  }, []);
+
+  useEffect(() => {
     if (!initialLoadDone.current) {
       initialLoadDone.current = true;
       return;
