@@ -2,7 +2,7 @@
 @tailwind components;
 @tailwind utilities;
 
-@media (max-width: 767px) {
+@media (max-width: 1023px) {
   body.chat-modal-open .support-widget-btn,
   body.chat-modal-open .support-widget-panel,
   body.chat-modal-open .chat-fab-btn,
