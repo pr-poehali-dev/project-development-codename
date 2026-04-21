@@ -267,7 +267,8 @@ def send_push(phone: str, title: str, body: str, url: str = '/'):
         pass
 
 
-REFERRAL_BONUS = 3
+REFERRAL_BONUS = 5
+WELCOME_BONUS = 5
 
 
 def generate_referral_code():
@@ -413,6 +414,17 @@ def handler(event: dict, context) -> dict:
                 return {'statusCode': 400, 'headers': HEADERS, 'body': json.dumps({'error': 'Пользователь не найден'})}
             new_master_id = user_row['id']
             ref_code = ensure_referral_code(new_master_id)
+            cur.execute(
+                f"SELECT COUNT(*) as cnt FROM {SCHEMA}.master_transactions WHERE master_id=%s AND type='welcome'",
+                (new_master_id,)
+            )
+            already_welcomed = cur.fetchone()['cnt'] > 0
+            if not already_welcomed:
+                cur.execute(f"UPDATE {SCHEMA}.masters SET balance=balance+%s WHERE id=%s", (WELCOME_BONUS, new_master_id))
+                cur.execute(
+                    f"INSERT INTO {SCHEMA}.master_transactions (master_id, type, amount, description) VALUES (%s,'welcome',%s,'Приветственный бонус за регистрацию')",
+                    (new_master_id, WELCOME_BONUS)
+                )
             cur.execute(f"SELECT referred_by, referral_bonus_paid FROM {SCHEMA}.masters WHERE id=%s", (new_master_id,))
             ref_info = cur.fetchone()
             if ref_info and ref_info['referred_by'] and not ref_info['referral_bonus_paid']:
