@@ -2,12 +2,24 @@
 @tailwind components;
 @tailwind utilities;
 
+.support-widget-btn,
+.support-widget-panel,
+.chat-fab-btn {
+  transition:
+    opacity 0.25s ease,
+    transform 0.25s ease,
+    visibility 0.25s ease;
+}
+
 @media (max-width: 1023px) {
   body.chat-modal-open .support-widget-btn,
   body.chat-modal-open .support-widget-panel,
   body.chat-modal-open .chat-fab-btn,
   body.support-panel-open .chat-fab-btn {
-    display: none !important;
+    opacity: 0;
+    transform: translateY(20px) scale(0.9);
+    visibility: hidden;
+    pointer-events: none;
   }
 }
 
