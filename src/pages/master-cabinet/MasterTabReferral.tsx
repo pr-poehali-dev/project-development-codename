@@ -15,6 +15,7 @@ export default function MasterTabReferral({ masterId }: Props) {
   const [earned, setEarned] = useState(0);
   const [bonus, setBonus] = useState(3);
   const [copied, setCopied] = useState(false);
+  const [shareOpen, setShareOpen] = useState(false);
 
   useEffect(() => {
     fetch(API_URL, {
@@ -52,12 +53,69 @@ export default function MasterTabReferral({ masterId }: Props) {
     }
   };
 
+  const shareMessage = `Присоединяйся к HandyMan — маркетплейсу бытовых услуг! Зарегистрируйся по моей ссылке и получи ${bonus} бонусных токенов: ${referralLink}`;
+  const shortText = `Присоединяйся к HandyMan! +${bonus} токенов за регистрацию`;
+
+  const shareOptions: { name: string; icon: string; color: string; url: string }[] = [
+    {
+      name: "Telegram",
+      icon: "Send",
+      color: "bg-[#229ED9] hover:bg-[#1b8dc1]",
+      url: `https://t.me/share/url?url=${encodeURIComponent(referralLink)}&text=${encodeURIComponent(shortText)}`,
+    },
+    {
+      name: "WhatsApp",
+      icon: "MessageCircle",
+      color: "bg-[#25D366] hover:bg-[#1fb855]",
+      url: `https://wa.me/?text=${encodeURIComponent(shareMessage)}`,
+    },
+    {
+      name: "Viber",
+      icon: "Phone",
+      color: "bg-[#7360F2] hover:bg-[#5e4dd6]",
+      url: `viber://forward?text=${encodeURIComponent(shareMessage)}`,
+    },
+    {
+      name: "ВКонтакте",
+      icon: "Share2",
+      color: "bg-[#0077FF] hover:bg-[#0066dd]",
+      url: `https://vk.com/share.php?url=${encodeURIComponent(referralLink)}&title=${encodeURIComponent(shortText)}`,
+    },
+    {
+      name: "Одноклассники",
+      icon: "Users",
+      color: "bg-[#EE8208] hover:bg-[#d67307]",
+      url: `https://connect.ok.ru/offer?url=${encodeURIComponent(referralLink)}&title=${encodeURIComponent(shortText)}`,
+    },
+    {
+      name: "SMS",
+      icon: "MessageSquare",
+      color: "bg-emerald-600 hover:bg-emerald-500",
+      url: `sms:?body=${encodeURIComponent(shareMessage)}`,
+    },
+    {
+      name: "Email",
+      icon: "Mail",
+      color: "bg-slate-600 hover:bg-slate-500",
+      url: `mailto:?subject=${encodeURIComponent("Приглашение в HandyMan")}&body=${encodeURIComponent(shareMessage)}`,
+    },
+  ];
+
   const handleShare = () => {
-    const text = `Присоединяйся к HandyMan — маркетплейсу бытовых услуг! Зарегистрируйся по моей ссылке и получи ${bonus} бонусных токенов: ${referralLink}`;
-    if (navigator.share) {
-      navigator.share({ title: "HandyMan — приглашение", text }).catch(() => {});
-    } else {
-      window.open(`https://t.me/share/url?url=${encodeURIComponent(referralLink)}&text=${encodeURIComponent(`Присоединяйся к HandyMan! +${bonus} токенов за регистрацию`)}`);
+    setShareOpen(true);
+  };
+
+  const handleShareOption = (url: string) => {
+    window.open(url, "_blank", "noopener,noreferrer");
+    setShareOpen(false);
+  };
+
+  const handleNativeShare = async () => {
+    try {
+      await navigator.share({ title: "HandyMan — приглашение", text: shortText, url: referralLink });
+      setShareOpen(false);
+    } catch {
+      // user cancelled
     }
   };
 
@@ -148,6 +206,65 @@ export default function MasterTabReferral({ masterId }: Props) {
           </div>
         </div>
       </div>
+
+      {shareOpen && (
+        <div
+          className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4"
+          onClick={() => setShareOpen(false)}
+        >
+          <div
+            className="w-full sm:max-w-md bg-[#1a1a2e] border border-white/10 rounded-t-2xl sm:rounded-2xl p-5 max-h-[90vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-white font-bold text-lg">Поделиться ссылкой</h3>
+              <button
+                onClick={() => setShareOpen(false)}
+                className="w-8 h-8 rounded-lg bg-white/5 hover:bg-white/10 flex items-center justify-center text-gray-400"
+              >
+                <Icon name="X" size={18} />
+              </button>
+            </div>
+
+            <p className="text-gray-400 text-xs mb-4">Выберите удобный способ отправки</p>
+
+            <div className="grid grid-cols-3 gap-3 mb-4">
+              {shareOptions.map((opt) => (
+                <button
+                  key={opt.name}
+                  onClick={() => handleShareOption(opt.url)}
+                  className="flex flex-col items-center gap-2 p-3 rounded-xl bg-white/4 hover:bg-white/8 border border-white/8 transition-all"
+                >
+                  <div className={`w-12 h-12 rounded-full flex items-center justify-center ${opt.color} transition-colors`}>
+                    <Icon name={opt.icon} size={22} className="text-white" />
+                  </div>
+                  <span className="text-white text-xs font-medium">{opt.name}</span>
+                </button>
+              ))}
+
+              <button
+                onClick={handleCopy}
+                className="flex flex-col items-center gap-2 p-3 rounded-xl bg-white/4 hover:bg-white/8 border border-white/8 transition-all"
+              >
+                <div className="w-12 h-12 rounded-full bg-violet-600 hover:bg-violet-500 flex items-center justify-center transition-colors">
+                  <Icon name={copied ? "Check" : "Copy"} size={22} className="text-white" />
+                </div>
+                <span className="text-white text-xs font-medium">{copied ? "Скопировано" : "Копировать"}</span>
+              </button>
+            </div>
+
+            {typeof navigator !== "undefined" && "share" in navigator && (
+              <button
+                onClick={handleNativeShare}
+                className="w-full py-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-white text-sm font-medium flex items-center justify-center gap-2 transition-all"
+              >
+                <Icon name="MoreHorizontal" size={18} />
+                Другие приложения
+              </button>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
