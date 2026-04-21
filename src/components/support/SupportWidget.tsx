@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import Icon from "@/components/ui/icon";
 
@@ -18,6 +18,13 @@ export default function SupportWidget() {
   const [loading, setLoading] = useState(false);
   const [sent, setSent] = useState(false);
   const [error, setError] = useState("");
+
+  useEffect(() => {
+    if (open) {
+      document.body.classList.add("support-panel-open");
+      return () => { document.body.classList.remove("support-panel-open"); };
+    }
+  }, [open]);
 
   const handleOpen = () => {
     setOpen(true);

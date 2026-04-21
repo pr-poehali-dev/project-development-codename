@@ -4,7 +4,9 @@
 
 @media (max-width: 767px) {
   body.chat-modal-open .support-widget-btn,
-  body.chat-modal-open .support-widget-panel {
+  body.chat-modal-open .support-widget-panel,
+  body.chat-modal-open .chat-fab-btn,
+  body.support-panel-open .chat-fab-btn {
     display: none !important;
   }
 }
