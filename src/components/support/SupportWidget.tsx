@@ -61,11 +61,11 @@ export default function SupportWidget() {
       {/* Фиксированная кнопка */}
       <button
         onClick={open ? () => setOpen(false) : handleOpen}
-        className="support-widget-btn fixed bottom-6 left-6 z-50 flex items-center gap-2 bg-violet-600 hover:bg-violet-500 text-white px-4 py-2.5 rounded-full shadow-lg shadow-violet-900/40 transition-all duration-200 hover:scale-105 text-sm font-medium"
+        className="support-widget-btn fixed bottom-6 left-6 z-50 flex items-center justify-center gap-2 bg-violet-600 hover:bg-violet-500 text-white rounded-full shadow-lg shadow-violet-900/40 hover:scale-105 text-sm font-medium w-12 h-12 md:w-auto md:h-auto md:px-4 md:py-2.5"
         aria-label="Чат с поддержкой"
       >
-        <Icon name={open ? "X" : "MessageCircleQuestion"} size={16} />
-        <span>Поддержка</span>
+        <Icon name={open ? "X" : "MessageCircleQuestion"} size={18} />
+        <span className="hidden md:inline">Поддержка</span>
       </button>
 
       {/* Всплывающее окно */}

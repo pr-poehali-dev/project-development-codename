@@ -96,18 +96,18 @@ export default function ChatFab() {
   return (
     <button
       onClick={handleClick}
-      className="chat-fab-btn fixed bottom-6 right-6 z-50 flex items-center gap-2 bg-violet-600 hover:bg-violet-500 text-white px-4 py-2.5 rounded-full shadow-lg shadow-violet-900/40 transition-all duration-200 hover:scale-105 text-sm font-medium"
+      className="chat-fab-btn fixed bottom-6 right-6 z-50 flex items-center justify-center gap-2 bg-violet-600 hover:bg-violet-500 text-white rounded-full shadow-lg shadow-violet-900/40 hover:scale-105 text-sm font-medium w-12 h-12 md:w-auto md:h-auto md:px-4 md:py-2.5"
       aria-label="Мои чаты"
     >
       <div className="relative">
-        <Icon name="MessageCircle" size={18} />
+        <Icon name="MessageCircle" size={20} />
         {unread > 0 && (
           <span className="absolute -top-2 -right-2 min-w-[18px] h-[18px] bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center px-1 leading-none">
             {unread > 99 ? "99+" : unread}
           </span>
         )}
       </div>
-      <span>Чаты</span>
+      <span className="hidden md:inline">Чаты</span>
     </button>
   );
 }
