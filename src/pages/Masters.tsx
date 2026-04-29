@@ -13,13 +13,15 @@ export default function Masters() {
     "Найдите проверенного мастера или услугу рядом с вами. Фильтр по городу и категории."
   );
 
+  const initialParams = typeof window !== "undefined" ? new URLSearchParams(window.location.search) : null;
+
   const [tab, setTab] = useState<"services" | "masters">("services");
   const [masters, setMasters] = useState<Master[]>([]);
   const [services, setServices] = useState<Service[]>([]);
   const [loading, setLoading] = useState(true);
-  const [city, setCity] = useState("");
-  const [category, setCategory] = useState("");
-  const [search, setSearch] = useState("");
+  const [city, setCity] = useState(initialParams?.get("city") || "");
+  const [category, setCategory] = useState(initialParams?.get("category") || "");
+  const [search, setSearch] = useState(initialParams?.get("search") || "");
   const [servicesVisible, setServicesVisible] = useState(20);
 
   const isMaster = typeof window !== "undefined" && !!localStorage.getItem("master_phone");

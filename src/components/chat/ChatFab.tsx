@@ -96,7 +96,7 @@ export default function ChatFab() {
   return (
     <button
       onClick={handleClick}
-      className="chat-fab-btn fixed bottom-6 right-6 z-50 flex items-center justify-center gap-2 bg-violet-600 hover:bg-violet-500 text-white rounded-full shadow-lg shadow-violet-900/40 hover:scale-105 text-sm font-medium w-12 h-12 md:w-auto md:h-auto md:px-4 md:py-2.5"
+      className="chat-fab-btn fixed bottom-6 right-6 z-50 hidden md:flex items-center justify-center gap-2 bg-violet-600 hover:bg-violet-500 text-white rounded-full shadow-lg shadow-violet-900/40 hover:scale-105 text-sm font-medium md:w-auto md:h-auto md:px-4 md:py-2.5"
       aria-label="Мои чаты"
     >
       <div className="relative">

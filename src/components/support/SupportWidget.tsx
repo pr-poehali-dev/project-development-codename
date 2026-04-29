@@ -61,7 +61,7 @@ export default function SupportWidget() {
       {/* Фиксированная кнопка */}
       <button
         onClick={open ? () => setOpen(false) : handleOpen}
-        className="support-widget-btn fixed bottom-6 left-6 z-50 flex items-center justify-center gap-2 bg-violet-600 hover:bg-violet-500 text-white rounded-full shadow-lg shadow-violet-900/40 hover:scale-105 text-sm font-medium w-12 h-12 md:w-auto md:h-auto md:px-4 md:py-2.5"
+        className="support-widget-btn fixed bottom-6 left-6 z-50 hidden md:flex items-center justify-center gap-2 bg-violet-600 hover:bg-violet-500 text-white rounded-full shadow-lg shadow-violet-900/40 hover:scale-105 text-sm font-medium md:w-auto md:h-auto md:px-4 md:py-2.5"
         aria-label="Чат с поддержкой"
       >
         <Icon name={open ? "X" : "MessageCircleQuestion"} size={18} />
@@ -70,7 +70,7 @@ export default function SupportWidget() {
 
       {/* Всплывающее окно */}
       {open && (
-        <div className="support-widget-panel fixed bottom-20 left-6 z-50 w-80 bg-[#0f1117] border border-white/10 rounded-2xl shadow-2xl shadow-black/60 flex flex-col overflow-hidden">
+        <div className="support-widget-panel fixed bottom-20 left-6 z-50 w-80 bg-[#0f1117] border border-white/10 rounded-2xl shadow-2xl shadow-black/60 hidden md:flex flex-col overflow-hidden">
           {/* Шапка */}
           <div className="bg-gradient-to-r from-violet-600/20 to-indigo-600/10 border-b border-white/8 px-5 py-4 flex items-center justify-between">
             <div className="flex items-center gap-2.5">

@@ -20,9 +20,13 @@ const HomeHeroStats = ({ onSearch }: HomeHeroStatsProps) => {
   const [heroCity, setHeroCity] = useState("");
 
   const handleSearch = () => {
-    if (onSearch) onSearch(heroSearch.trim(), heroCity);
-    const el = document.getElementById("services-section");
-    if (el) el.scrollIntoView({ behavior: "smooth" });
+    const query = heroSearch.trim();
+    if (onSearch) onSearch(query, heroCity);
+    const params = new URLSearchParams();
+    if (query) params.set("search", query);
+    if (heroCity) params.set("city", heroCity);
+    const qs = params.toString();
+    window.location.href = qs ? `/masters?${qs}` : "/masters";
   };
 
   return (
