@@ -14,8 +14,12 @@ export default function Masters() {
   );
 
   const initialParams = typeof window !== "undefined" ? new URLSearchParams(window.location.search) : null;
+  const initialTab = initialParams?.get("tab");
 
-  const [tab, setTab] = useState<"services" | "masters">("services");
+  const [tab, setTab] = useState<"services" | "masters">(
+    initialTab === "masters" ? "masters" : "services"
+  );
+  const [autoSwitchedTab, setAutoSwitchedTab] = useState(false);
   const [masters, setMasters] = useState<Master[]>([]);
   const [services, setServices] = useState<Service[]>([]);
   const [loading, setLoading] = useState(true);
@@ -69,6 +73,21 @@ export default function Masters() {
     const t = setTimeout(() => { loadData(city, category, search); setServicesVisible(20); }, 400);
     return () => clearTimeout(t);
   }, [search]);
+
+  useEffect(() => {
+    if (loading || autoSwitchedTab || !search) return;
+    const filteredServicesCount = services.filter(s =>
+      s.title.toLowerCase().includes(search.toLowerCase()) ||
+      s.master_name.toLowerCase().includes(search.toLowerCase())
+    ).length;
+    const mastersCount = masters.filter(m => m.name).length;
+    if (tab === "services" && filteredServicesCount === 0 && mastersCount > 0) {
+      setTab("masters");
+    } else if (tab === "masters" && mastersCount === 0 && filteredServicesCount > 0) {
+      setTab("services");
+    }
+    setAutoSwitchedTab(true);
+  }, [loading, services, masters, search]);
 
   const handleContactSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
