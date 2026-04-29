@@ -2,6 +2,7 @@ import Icon from "@/components/ui/icon";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Service, ContactMasterTarget, ContactForm } from "./types";
+import { highlightMatch } from "./highlightMatch";
 
 interface ServicesGridProps {
   filteredServices: Service[];
@@ -13,6 +14,7 @@ interface ServicesGridProps {
   setContactForm: (v: ContactForm) => void;
   setContactSent: (v: boolean) => void;
   setContactError: (v: string) => void;
+  search?: string;
 }
 
 export default function ServicesGrid({
@@ -25,6 +27,7 @@ export default function ServicesGrid({
   setContactForm,
   setContactSent,
   setContactError,
+  search = "",
 }: ServicesGridProps) {
   if (filteredServices.length === 0) {
     return (
@@ -61,7 +64,7 @@ export default function ServicesGrid({
                     className="text-[10px] px-2 py-0.5 rounded-md leading-tight"
                     style={{ backgroundColor: "rgba(99,102,241,0.15)", color: "#a5b4fc", border: "1px solid rgba(99,102,241,0.2)" }}
                   >
-                    {service.category}
+                    {highlightMatch(service.category, search)}
                   </Badge>
                   {isBoosted ? (
                     <span className="flex items-center gap-0.5 text-amber-400 text-[10px] font-medium">
@@ -78,7 +81,7 @@ export default function ServicesGrid({
                   )}
                 </div>
                 <h3 className="text-white font-semibold text-sm mb-2.5 leading-snug group-hover:text-violet-200 transition-colors line-clamp-2">
-                  {service.title}
+                  {highlightMatch(service.title, search)}
                 </h3>
                 <div className="flex items-center gap-2 mb-2.5">
                   <div
@@ -88,7 +91,7 @@ export default function ServicesGrid({
                     {service.master_name?.[0]?.toUpperCase()}
                   </div>
                   <div className="min-w-0">
-                    <div className="text-xs text-gray-300 font-medium truncate">{service.master_name}</div>
+                    <div className="text-xs text-gray-300 font-medium truncate">{highlightMatch(service.master_name, search)}</div>
                     {service.city && (
                       <div className="text-[10px] text-gray-600 flex items-center gap-0.5">
                         <Icon name="MapPin" size={8} />{service.city}

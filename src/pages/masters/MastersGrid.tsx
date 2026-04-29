@@ -1,5 +1,6 @@
 import Icon from "@/components/ui/icon";
 import { Master } from "./types";
+import { highlightMatch } from "./highlightMatch";
 
 function Avatar({ name, color, size = 48 }: { name: string; color: string; size?: number }) {
   const initials = name.split(" ").slice(0, 2).map(w => w[0]).join("").toUpperCase();
@@ -25,9 +26,10 @@ function StarRating({ rating }: { rating: number | null }) {
 
 interface MastersGridProps {
   shown: Master[];
+  search?: string;
 }
 
-export default function MastersGrid({ shown }: MastersGridProps) {
+export default function MastersGrid({ shown, search = "" }: MastersGridProps) {
   if (shown.length === 0) {
     return (
       <div className="text-center py-20">
@@ -52,12 +54,12 @@ export default function MastersGrid({ shown }: MastersGridProps) {
             <Avatar name={m.name} color={m.avatar_color} size={48} />
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
-                <span className="font-semibold text-white text-sm truncate">{m.name}</span>
+                <span className="font-semibold text-white text-sm truncate">{highlightMatch(m.name, search)}</span>
                 <StarRating rating={m.rating} />
               </div>
               {(m.categories.length > 0 || m.category) && (
                 <p className="text-violet-400 text-xs mt-0.5 truncate">
-                  {m.categories.length > 0 ? m.categories.slice(0, 2).join(", ") : m.category}
+                  {highlightMatch(m.categories.length > 0 ? m.categories.slice(0, 2).join(", ") : m.category, search)}
                 </p>
               )}
               {m.city && (
@@ -70,7 +72,7 @@ export default function MastersGrid({ shown }: MastersGridProps) {
           </div>
 
           {m.about && (
-            <p className="text-gray-400 text-xs line-clamp-2 leading-relaxed">{m.about}</p>
+            <p className="text-gray-400 text-xs line-clamp-2 leading-relaxed">{highlightMatch(m.about, search)}</p>
           )}
 
           <div className="flex items-center gap-3 mt-auto pt-1 border-t border-white/6 text-xs text-gray-500">

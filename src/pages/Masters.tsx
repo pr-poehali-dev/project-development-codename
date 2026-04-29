@@ -194,9 +194,10 @@ export default function Masters() {
               setContactForm={setContactForm}
               setContactSent={setContactSent}
               setContactError={setContactError}
+              search={search}
             />
           ) : (
-            <MastersGrid shown={shown} />
+            <MastersGrid shown={shown} search={search} />
           )}
         </div>
       </section>
