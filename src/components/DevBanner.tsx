@@ -19,7 +19,7 @@ export default function DevBanner() {
   if (!visible) return null;
 
   return (
-    <div className="relative bg-gradient-to-r from-violet-600/15 via-indigo-600/10 to-violet-600/15 border-b border-violet-500/20 px-4 py-2.5">
+    <div className="relative bg-[#0f1117] border-b border-violet-500/30 px-4 py-2.5">
       <div className="max-w-7xl mx-auto flex items-center justify-center gap-3 pr-8">
         <span className="hidden sm:inline-flex items-center justify-center w-6 h-6 rounded-full bg-violet-500/20 flex-shrink-0">
           <Icon name="Heart" size={12} className="text-violet-300" />
