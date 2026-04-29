@@ -1048,8 +1048,8 @@ def handler(event: dict, context) -> dict:
             conditions.append('(%s = ANY(m.categories) OR m.category ILIKE %s)')
             args.extend([category, category])
         if search:
-            conditions.append("(m.name ILIKE %s OR m.category ILIKE %s OR m.about ILIKE %s)")
-            args.extend([f'%{search}%', f'%{search}%', f'%{search}%'])
+            conditions.append("(m.name ILIKE %s OR m.category ILIKE %s OR m.about ILIKE %s OR array_to_string(COALESCE(m.categories, '{}'::TEXT[]), ',') ILIKE %s)")
+            args.extend([f'%{search}%', f'%{search}%', f'%{search}%', f'%{search}%'])
 
         where = ' AND '.join(conditions)
         cur.execute(
