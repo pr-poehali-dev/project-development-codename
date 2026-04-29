@@ -1,8 +1,28 @@
+User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /cabinet
+Disallow: /master
+Disallow: /api/
+
+User-agent: Yandex
+Allow: /
+Disallow: /admin
+Disallow: /cabinet
+Disallow: /master
+Disallow: /api/
+Clean-param: utm_source&utm_medium&utm_campaign&utm_content&utm_term&payment_id&id&tab&search&city&category
+
 User-agent: Googlebot
 Allow: /
+Disallow: /admin
+Disallow: /cabinet
+Disallow: /master
+Disallow: /api/
 
 User-agent: Bingbot
 Allow: /
+Disallow: /admin
 
 User-agent: Twitterbot
 Allow: /
@@ -10,5 +30,11 @@ Allow: /
 User-agent: facebookexternalhit
 Allow: /
 
-User-agent: *
+User-agent: TelegramBot
 Allow: /
+
+User-agent: WhatsApp
+Allow: /
+
+Sitemap: https://handyman.poehali.dev/sitemap.xml
+Host: handyman.poehali.dev
