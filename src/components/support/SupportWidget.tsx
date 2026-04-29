@@ -26,6 +26,12 @@ export default function SupportWidget() {
     }
   }, [open]);
 
+  useEffect(() => {
+    const onOpen = () => handleOpen();
+    window.addEventListener("open-support", onOpen);
+    return () => window.removeEventListener("open-support", onOpen);
+  }, []);
+
   const handleOpen = () => {
     setOpen(true);
     setSent(false);
@@ -70,7 +76,7 @@ export default function SupportWidget() {
 
       {/* Всплывающее окно */}
       {open && (
-        <div className="support-widget-panel fixed bottom-20 left-6 z-50 w-80 bg-[#0f1117] border border-white/10 rounded-2xl shadow-2xl shadow-black/60 hidden md:flex flex-col overflow-hidden">
+        <div className="support-widget-panel fixed bottom-20 left-4 right-4 md:left-6 md:right-auto z-50 md:w-80 bg-[#0f1117] border border-white/10 rounded-2xl shadow-2xl shadow-black/60 flex flex-col overflow-hidden max-h-[80vh]">
           {/* Шапка */}
           <div className="bg-gradient-to-r from-violet-600/20 to-indigo-600/10 border-b border-white/8 px-5 py-4 flex items-center justify-between">
             <div className="flex items-center gap-2.5">

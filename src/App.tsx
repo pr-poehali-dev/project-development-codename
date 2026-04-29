@@ -17,6 +17,7 @@ import Rules from "./pages/Rules";
 import NotFound from "./pages/NotFound";
 import SupportWidget from "./components/support/SupportWidget";
 import ChatFab from "./components/chat/ChatFab";
+import DevBanner from "./components/DevBanner";
 import { usePushNotifications } from "./hooks/usePushNotifications";
 
 const queryClient = new QueryClient();
@@ -25,6 +26,7 @@ function AppInner() {
   usePushNotifications();
   return (
     <BrowserRouter>
+      <DevBanner />
       <Routes>
         <Route path="/" element={<Index />} />
         <Route path="/orders" element={<Orders />} />
