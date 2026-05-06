@@ -19,15 +19,15 @@ export default function DevBanner() {
   if (!visible) return null;
 
   return (
-    <div className="relative bg-[#0f1117] border-b border-violet-500/30 px-4 py-2.5">
-      <div className="max-w-7xl mx-auto flex items-center justify-center gap-3 pr-8">
-        <span className="hidden sm:inline-flex items-center justify-center w-6 h-6 rounded-full bg-violet-500/20 flex-shrink-0">
-          <Icon name="Heart" size={12} className="text-violet-300" />
+    <div className="relative bg-[#0f1117] border-b border-violet-500/30 px-3 py-1.5">
+      <div className="max-w-7xl mx-auto flex items-center justify-center gap-2 pr-7">
+        <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-violet-500/20 flex-shrink-0">
+          <Icon name="Heart" size={10} className="text-violet-300" />
         </span>
-        <p className="text-xs sm:text-sm text-gray-300 leading-relaxed text-center">
-          <span className="text-white font-medium">Сайт ещё растёт и развивается.</span>{" "}
-          <span className="hidden sm:inline">Если что-то работает не так или есть идея — напишите в </span>
-          <span className="sm:hidden">Есть идея или баг? Напишите в </span>
+        <p className="text-[11px] sm:text-xs text-gray-300 text-center truncate">
+          <span className="text-white font-medium">Сайт развивается.</span>{" "}
+          <span className="hidden sm:inline">Идея или баг? Напишите в </span>
+          <span className="sm:hidden">Есть идея? </span>
           <button
             type="button"
             onClick={() => window.dispatchEvent(new CustomEvent("open-support"))}
@@ -35,15 +35,14 @@ export default function DevBanner() {
           >
             поддержку
           </button>
-          <span className="hidden md:inline">. Каждое сообщение помогает маркетплейсу бытовых услуг HandyMan становиться лучше.</span>
         </p>
       </div>
       <button
         onClick={handleClose}
-        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-white transition-colors p-1 rounded hover:bg-white/5"
+        className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-white transition-colors p-1 rounded hover:bg-white/5"
         aria-label="Закрыть"
       >
-        <Icon name="X" size={14} />
+        <Icon name="X" size={12} />
       </button>
     </div>
   );
