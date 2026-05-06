@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef } from "react";
 import Icon from "@/components/ui/icon";
 
-const STORAGE_KEY = "dev_banner_dismissed_v1";
+const STORAGE_KEY = "dev_banner_dismissed_until_v2";
+const DAY_MS = 24 * 60 * 60 * 1000;
 
 export default function DevBanner() {
   const [visible, setVisible] = useState(false);
@@ -9,8 +10,8 @@ export default function DevBanner() {
   const lastY = useRef(0);
 
   useEffect(() => {
-    const dismissed = sessionStorage.getItem(STORAGE_KEY);
-    if (!dismissed) setVisible(true);
+    const until = Number(localStorage.getItem(STORAGE_KEY) || 0);
+    if (Date.now() > until) setVisible(true);
   }, []);
 
   useEffect(() => {
@@ -31,7 +32,7 @@ export default function DevBanner() {
   }, [visible]);
 
   const handleClose = () => {
-    sessionStorage.setItem(STORAGE_KEY, "1");
+    localStorage.setItem(STORAGE_KEY, String(Date.now() + DAY_MS));
     setVisible(false);
   };
 
