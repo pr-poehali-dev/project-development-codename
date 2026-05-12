@@ -14,6 +14,7 @@ import AdminPage from "./pages/AdminPage";
 import CategoryPage from "./pages/CategoryPage";
 import Masters from "./pages/Masters";
 import Rules from "./pages/Rules";
+import SurgutLanding from "./pages/SurgutLanding";
 import NotFound from "./pages/NotFound";
 import SupportWidget from "./components/support/SupportWidget";
 import ChatFab from "./components/chat/ChatFab";
@@ -38,6 +39,9 @@ function AppInner() {
         <Route path="/category/:name" element={<CategoryPage />} />
         <Route path="/masters" element={<Masters />} />
         <Route path="/rules" element={<Rules />} />
+        <Route path="/surgut" element={<SurgutLanding />} />
+        <Route path="/hmao" element={<SurgutLanding />} />
+        <Route path="/khmao" element={<SurgutLanding />} />
         {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
         <Route path="*" element={<NotFound />} />
       </Routes>
