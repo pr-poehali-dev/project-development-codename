@@ -15,12 +15,12 @@ import { MASTER_URL, Service } from "@/pages/home/homeTypes";
 
 const Index = () => {
   useSeoMeta(
-    "HandyMan — маркетплейс бытовых услуг",
-    "Найдите мастера для ремонта, сантехники, электрики, клининга и других бытовых услуг. Быстро, удобно, надёжно."
+    "HandyMan — мастера Сургута и ХМАО: ремонт, сантехника, бьюти и услуги",
+    "Найдите проверенного мастера в Сургуте, Нижневартовске, Нефтеюганске и других городах ХМАО. Ремонт, сантехника, электрика, клининг, бьюти-услуги."
   );
 
   const [activeCategory, setActiveCategory] = useState("Все");
-  const [selectedCity, setSelectedCityFilter] = useState("");
+  const [selectedCity, setSelectedCityFilter] = useState("Сургут");
   const [heroSearchQuery, setHeroSearchQuery] = useState("");
   const [services, setServices] = useState<Service[]>([]);
   const [availableCities, setAvailableCities] = useState<string[]>([]);

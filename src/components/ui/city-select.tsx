@@ -2,6 +2,29 @@ import { useState, useRef, useEffect } from "react";
 import Icon from "@/components/ui/icon";
 import CITIES from "@/data/cities";
 
+const KHMAO_CITIES = [
+  "Сургут",
+  "Нижневартовск",
+  "Нефтеюганск",
+  "Когалым",
+  "Ханты-Мансийск",
+  "Нягань",
+  "Мегион",
+  "Радужный",
+  "Пыть-Ях",
+  "Лангепас",
+  "Урай",
+  "Югорск",
+  "Лянтор",
+  "Белоярский",
+  "Советский",
+];
+
+const sortedCities = [
+  ...KHMAO_CITIES,
+  ...CITIES.filter((c) => !KHMAO_CITIES.includes(c)),
+];
+
 interface CitySelectProps {
   value: string;
   onChange: (city: string) => void;
@@ -28,7 +51,7 @@ export default function CitySelect({
   const containerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const list = cities ?? CITIES;
+  const list = cities ?? sortedCities;
 
   const filtered = query.trim()
     ? list.filter((c) => c.toLowerCase().includes(query.toLowerCase())).slice(0, 20)

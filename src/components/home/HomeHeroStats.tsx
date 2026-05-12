@@ -17,7 +17,7 @@ interface HomeHeroStatsProps {
 
 const HomeHeroStats = ({ onSearch }: HomeHeroStatsProps) => {
   const [heroSearch, setHeroSearch] = useState("");
-  const [heroCity, setHeroCity] = useState("");
+  const [heroCity, setHeroCity] = useState("Сургут");
 
   const handleSearch = () => {
     const query = heroSearch.trim();
@@ -39,16 +39,16 @@ const HomeHeroStats = ({ onSearch }: HomeHeroStatsProps) => {
 
         <div className="max-w-4xl mx-auto text-center relative">
           <Badge className="mb-6 bg-violet-600/20 text-violet-300 border-violet-500/30 px-4 py-1.5 text-sm">
-            🔧 Маркетплейс бытовых услуг
+            📍 Сургут и ХМАО
           </Badge>
           <h1 className="text-4xl sm:text-6xl font-extrabold mb-6 leading-tight">
-            Найди лучшего
-            <span className="bg-gradient-to-r from-violet-400 to-indigo-400 bg-clip-text text-transparent"> мастера</span>
-            <br />для любой задачи
+            Найди мастера
+            <span className="bg-gradient-to-r from-violet-400 to-indigo-400 bg-clip-text text-transparent"> в Сургуте</span>
+            <br />и по всему ХМАО
           </h1>
           <p className="text-gray-400 text-lg sm:text-xl mb-10 max-w-2xl mx-auto">
-            Более 1 200 проверенных специалистов: мастера по ремонту, сантехники, электрики, бьюти-мастера, грузчики и многое другое.
-            Откликайтесь на заявки бесплатно — платите токенами только когда заказчик выбрал вас исполнителем.
+            Проверенные специалисты Сургута, Нижневартовска, Нефтеюганска, Когалыма и Ханты-Мансийска.
+            Ремонт, сантехника, электрика, клининг, бьюти-услуги. Мастера откликаются бесплатно — платят только за выбранный заказ.
           </p>
 
           <div className="flex flex-col sm:flex-row gap-3 justify-center max-w-2xl mx-auto">
