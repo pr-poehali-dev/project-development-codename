@@ -4,11 +4,62 @@ import uuid
 import urllib.request
 import urllib.error
 import base64
+import smtplib
+import ssl
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
 
 import psycopg2
 from psycopg2.extras import RealDictCursor
 
 SCHEMA = os.environ.get('MAIN_DB_SCHEMA', 'public')
+ADMIN_EMAIL = 'handymanbusiness@yandex.ru'
+
+
+def send_admin_donation_email(amount: int, donor_name: str, donor_email: str, message: str, donation_id: int):
+    try:
+        host = os.environ['SMTP_HOST']
+        port = int(os.environ['SMTP_PORT'])
+        user = os.environ['SMTP_USER']
+        pw = os.environ['SMTP_PASS']
+    except KeyError:
+        return
+    name = donor_name or 'Анонимный донор'
+    msg = MIMEMultipart('alternative')
+    msg['Subject'] = f'Новое пожертвование {amount} ₽ — HandyMan'
+    msg['From'] = f'HandyMan <{user}>'
+    msg['To'] = ADMIN_EMAIL
+    email_line = f'<p style="margin:4px 0;color:#d1d5db;font-size:14px;">Email: <a href="mailto:{donor_email}" style="color:#a78bfa;">{donor_email}</a></p>' if donor_email else ''
+    message_line = f'<div style="background:#0a0d16;border:1px solid #3730a3;border-radius:10px;padding:14px;margin-top:12px;"><p style="color:#9ca3af;font-size:12px;margin:0 0 4px 0;">Пожелание:</p><p style="color:#e5e7eb;font-size:14px;margin:0;font-style:italic;">«{message}»</p></div>' if message else ''
+    html = f"""
+    <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;max-width:480px;margin:0 auto;padding:32px;background:#0a0d16;border-radius:16px;">
+      <h2 style="color:#fff;margin:0 0 4px 0;">💜 HandyMan</h2>
+      <p style="color:#9ca3af;font-size:14px;margin:0 0 20px 0;">Кто-то поддержал проект!</p>
+      <div style="background:#1e1b4b;border:1px solid #4c1d95;border-radius:12px;padding:20px;margin-bottom:16px;">
+        <p style="color:#a78bfa;font-weight:700;font-size:28px;margin:0 0 12px 0;">+{amount:,} ₽</p>
+        <p style="margin:4px 0;color:#d1d5db;font-size:14px;">От: <strong style="color:#fff;">{name}</strong></p>
+        {email_line}
+        {message_line}
+      </div>
+      <a href="https://хандиман.рф/admin" style="display:inline-block;background:#7c3aed;color:#fff;padding:11px 22px;border-radius:10px;text-decoration:none;font-size:14px;font-weight:600;">Открыть админку</a>
+      <p style="color:#6b7280;font-size:11px;margin-top:16px;">ID пожертвования: #{donation_id}</p>
+    </div>
+    """
+    plain = f'Новое пожертвование {amount} ₽ от {name}\n'
+    if donor_email:
+        plain += f'Email: {donor_email}\n'
+    if message:
+        plain += f'\nПожелание: {message}\n'
+    plain += f'\nID: #{donation_id}'
+    msg.attach(MIMEText(plain, 'plain'))
+    msg.attach(MIMEText(html, 'html'))
+    try:
+        ctx = ssl.create_default_context()
+        with smtplib.SMTP_SSL(host, port, context=ctx) as server:
+            server.login(user, pw)
+            server.sendmail(user, ADMIN_EMAIL, msg.as_string())
+    except Exception:
+        pass
 
 CORS = {
     'Access-Control-Allow-Origin': '*',
@@ -131,12 +182,22 @@ def handler(event, context):
             cur = conn.cursor()
             cur.execute(
                 f"UPDATE {SCHEMA}.donations SET status='succeeded', succeeded_at=NOW() "
-                f"WHERE id=%s AND status!='succeeded'",
+                f"WHERE id=%s AND status!='succeeded' "
+                f"RETURNING amount, donor_name, donor_email, message",
                 (donation_id,)
             )
+            updated = cur.fetchone()
             conn.commit()
             cur.close()
             conn.close()
+            if updated:
+                send_admin_donation_email(
+                    amount=updated['amount'],
+                    donor_name=updated['donor_name'] or '',
+                    donor_email=updated['donor_email'] or '',
+                    message=updated['message'] or '',
+                    donation_id=int(donation_id),
+                )
             return {'statusCode': 200, 'headers': CORS, 'body': json.dumps({'ok': True})}
 
         if action == 'check':
@@ -161,13 +222,27 @@ def handler(event, context):
                         'body': json.dumps({'status': 'succeeded'})}
             yk = yookassa_request('GET', f"/payments/{row['yookassa_payment_id']}")
             yk_status = yk.get('status', 'pending')
+            notify_payload = None
             if yk_status == 'succeeded':
                 cur.execute(
-                    f"UPDATE {SCHEMA}.donations SET status='succeeded', succeeded_at=NOW() WHERE id=%s",
+                    f"UPDATE {SCHEMA}.donations SET status='succeeded', succeeded_at=NOW() "
+                    f"WHERE id=%s AND status!='succeeded' "
+                    f"RETURNING amount, donor_name, donor_email, message",
                     (donation_id,)
                 )
+                upd = cur.fetchone()
                 conn.commit()
+                if upd:
+                    notify_payload = upd
             cur.close(); conn.close()
+            if notify_payload:
+                send_admin_donation_email(
+                    amount=notify_payload['amount'],
+                    donor_name=notify_payload['donor_name'] or '',
+                    donor_email=notify_payload['donor_email'] or '',
+                    message=notify_payload['message'] or '',
+                    donation_id=int(donation_id),
+                )
             return {'statusCode': 200, 'headers': CORS,
                     'body': json.dumps({'status': yk_status})}
 
