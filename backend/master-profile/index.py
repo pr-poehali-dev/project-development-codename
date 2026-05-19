@@ -222,28 +222,29 @@ def send_inquiry_email(to_email: str, master_name: str, from_name: str, from_pho
     port = int(os.environ['SMTP_PORT'])
     user = os.environ['SMTP_USER']
     pw = os.environ['SMTP_PASS']
+    cabinet_url = 'https://хандиман.рф/master?tab=inquiries'
+    short_name = (from_name or 'Заказчик').split()[0][:30]
+    preview = (message or '').strip().replace('\n', ' ')
+    if len(preview) > 120:
+        preview = preview[:117] + '...'
     msg = MIMEMultipart('alternative')
-    msg['Subject'] = f'Новое обращение от {from_name} — HandyMan'
+    msg['Subject'] = f'Новое обращение на HandyMan от {short_name}'
     msg['From'] = f'HandyMan <{user}>'
     msg['To'] = to_email
-    contact_lines = ""
-    if from_phone:
-        contact_lines += f'<p style="margin:4px 0;color:#d1d5db;font-size:14px;">📞 Телефон: <a href="tel:{from_phone}" style="color:#a78bfa;">{from_phone}</a></p>'
-    if from_email:
-        contact_lines += f'<p style="margin:4px 0;color:#d1d5db;font-size:14px;">✉️ Email: <a href="mailto:{from_email}" style="color:#a78bfa;">{from_email}</a></p>'
     html = f"""
-    <div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:32px;background:#0a0d16;border-radius:16px;">
-      <h2 style="color:#fff;margin-bottom:4px;">HandyMan</h2>
-      <p style="color:#9ca3af;font-size:14px;margin-bottom:20px;">Привет, {master_name}! Вам написал новый клиент.</p>
+    <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;max-width:480px;margin:0 auto;padding:32px;background:#0a0d16;border-radius:16px;">
+      <h2 style="color:#fff;margin:0 0 4px 0;">HandyMan</h2>
+      <p style="color:#9ca3af;font-size:14px;margin:0 0 20px 0;">Привет, {master_name}! У вас новое обращение от заказчика.</p>
       <div style="background:#1e1b4b;border:1px solid #4c1d95;border-radius:12px;padding:20px;margin-bottom:20px;">
-        <p style="color:#a78bfa;font-weight:600;font-size:16px;margin:0 0 12px 0;">{from_name}</p>
-        {contact_lines}
-        <p style="color:#e5e7eb;font-size:14px;margin:12px 0 0 0;border-top:1px solid #3730a3;padding-top:12px;">«{message}»</p>
+        <p style="color:#a78bfa;font-weight:600;font-size:15px;margin:0 0 10px 0;">{short_name} написал(а):</p>
+        <p style="color:#e5e7eb;font-size:14px;margin:0;line-height:1.5;">«{preview}»</p>
       </div>
-      <p style="color:#6b7280;font-size:12px;">Войдите в кабинет мастера на HandyMan, чтобы ответить клиенту.</p>
+      <a href="{cabinet_url}" style="display:inline-block;background:#7c3aed;color:#fff;padding:13px 28px;border-radius:10px;text-decoration:none;font-size:14px;font-weight:600;">Открыть кабинет</a>
+      <p style="color:#6b7280;font-size:12px;margin-top:20px;">Контакты заказчика и полный текст — внутри кабинета мастера, во вкладке «Обращения».</p>
     </div>
     """
-    msg.attach(MIMEText(f'Новое обращение от {from_name}\nТелефон: {from_phone}\nEmail: {from_email}\n\n{message}', 'plain'))
+    plain = f'Новое обращение от {short_name}:\n\n«{preview}»\n\nОткрыть кабинет: {cabinet_url}'
+    msg.attach(MIMEText(plain, 'plain'))
     msg.attach(MIMEText(html, 'html'))
     ctx = ssl.create_default_context()
     with smtplib.SMTP_SSL(host, port, context=ctx) as server:
