@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import Icon from "@/components/ui/icon";
 import MasterPageHeader from "@/pages/master-page/MasterPageHeader";
@@ -9,12 +9,28 @@ import ContactMasterDialog from "@/pages/master-page/ContactMasterDialog";
 import AuthPromptDialog from "@/pages/master-page/AuthPromptDialog";
 import { useMasterPageData } from "@/pages/master-page/useMasterPageData";
 import { useContactMasterForm } from "@/pages/master-page/useContactMasterForm";
+import { PROFILE_URL } from "@/pages/master-page/masterPageTypes";
 
 export default function MasterPage() {
   const { master, rating, reviewsTotal, reviews, services, loading, notFound } = useMasterPageData();
 
   const isAuth = typeof window !== "undefined" && (!!localStorage.getItem("customer_phone") || !!localStorage.getItem("master_phone"));
   const [authPromptOpen, setAuthPromptOpen] = useState(false);
+  const [myMasterId, setMyMasterId] = useState<number | null>(null);
+
+  useEffect(() => {
+    const myPhone = typeof window !== "undefined" ? localStorage.getItem("master_phone") : null;
+    if (!myPhone) return;
+    fetch(`${PROFILE_URL}?phone=${encodeURIComponent(myPhone)}`)
+      .then(r => r.json())
+      .then(data => {
+        const parsed = typeof data === "string" ? JSON.parse(data) : data;
+        if (parsed?.master?.id) setMyMasterId(parsed.master.id);
+      })
+      .catch(() => {});
+  }, []);
+
+  const isOwnProfile = !!(master && myMasterId && master.id === myMasterId);
 
   const contact = useContactMasterForm(master);
 
@@ -42,23 +58,43 @@ export default function MasterPage() {
 
         <MasterServicesList services={services} />
 
-        {/* Кнопка — написать мастеру */}
-        <div className="bg-gradient-to-r from-violet-600/15 to-indigo-600/10 border border-violet-500/20 rounded-2xl p-5 mb-8 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div>
-            <p className="text-white font-semibold">Нужна помощь {master?.name?.split(" ")[0]}?</p>
-            <p className="text-gray-400 text-sm mt-0.5">Напишите напрямую — мастер получит уведомление</p>
+        {/* Кнопка — написать мастеру (скрыта, если это собственный профиль) */}
+        {isOwnProfile ? (
+          <div className="bg-white/3 border border-white/8 rounded-2xl p-5 mb-8 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div className="flex items-start gap-3">
+              <div className="w-9 h-9 rounded-xl bg-violet-600/20 border border-violet-500/30 flex items-center justify-center flex-shrink-0">
+                <Icon name="User" size={16} className="text-violet-300" />
+              </div>
+              <div>
+                <p className="text-white font-semibold">Это ваш профиль</p>
+                <p className="text-gray-400 text-sm mt-0.5">Так его видят заказчики. Управлять можно в кабинете мастера</p>
+              </div>
+            </div>
+            <a href="/master" className="flex-shrink-0">
+              <Button className="bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white px-5 py-2.5 rounded-xl text-sm font-medium">
+                <Icon name="Briefcase" size={15} className="mr-2" />
+                В кабинет мастера
+              </Button>
+            </a>
           </div>
-          <Button
-            onClick={() => {
-              if (!isAuth) { setAuthPromptOpen(true); return; }
-              contact.setContactOpen(true); contact.setContactSent(false); contact.setContactError("");
-            }}
-            className="flex-shrink-0 bg-violet-600 hover:bg-violet-500 text-white px-5 py-2.5 rounded-xl text-sm font-medium"
-          >
-            <Icon name="MessageSquare" size={15} className="mr-2" />
-            Написать мастеру
-          </Button>
-        </div>
+        ) : (
+          <div className="bg-gradient-to-r from-violet-600/15 to-indigo-600/10 border border-violet-500/20 rounded-2xl p-5 mb-8 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div>
+              <p className="text-white font-semibold">Нужна помощь {master?.name?.split(" ")[0]}?</p>
+              <p className="text-gray-400 text-sm mt-0.5">Напишите напрямую — мастер получит уведомление</p>
+            </div>
+            <Button
+              onClick={() => {
+                if (!isAuth) { setAuthPromptOpen(true); return; }
+                contact.setContactOpen(true); contact.setContactSent(false); contact.setContactError("");
+              }}
+              className="flex-shrink-0 bg-violet-600 hover:bg-violet-500 text-white px-5 py-2.5 rounded-xl text-sm font-medium"
+            >
+              <Icon name="MessageSquare" size={15} className="mr-2" />
+              Написать мастеру
+            </Button>
+          </div>
+        )}
 
         <ContactMasterDialog
           master={master!}
