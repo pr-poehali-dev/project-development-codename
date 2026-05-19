@@ -43,6 +43,12 @@
       "path": "/",
       "body": {"action": "check"},
       "expectedStatus": 400
+    },
+    {
+      "name": "GET list без токена — 401",
+      "method": "GET",
+      "path": "/?action=list",
+      "expectedStatus": 401
     }
   ]
 }

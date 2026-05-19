@@ -9,6 +9,7 @@ export type Tab =
   | "services"
   | "chats"
   | "payments"
+  | "donations"
   | "reviews"
   | "categories"
   | "tickets";
@@ -22,6 +23,7 @@ const tabs: { id: Tab; label: string; icon: string }[] = [
   { id: "services", label: "Объявления", icon: "Briefcase" },
   { id: "chats", label: "Переписки", icon: "MessagesSquare" },
   { id: "payments", label: "Платежи", icon: "CreditCard" },
+  { id: "donations", label: "Пожертвования", icon: "Heart" },
   { id: "reviews", label: "Отзывы", icon: "Star" },
   { id: "categories", label: "Категории", icon: "Tag" },
   { id: "tickets", label: "Поддержка", icon: "LifeBuoy" },

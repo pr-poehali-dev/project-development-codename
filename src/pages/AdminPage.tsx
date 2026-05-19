@@ -286,6 +286,7 @@ export default function AdminPage() {
           responses={responses} payments={payments}
           newCategory={newCategory} setNewCategory={setNewCategory}
           searchQuery={searchQuery} setSearchQuery={setSearchQuery}
+          adminToken={token}
           onOpenEdit={openEdit}
           onOpenBalance={(m) => { setBalanceModal(m); setBalanceAmount(""); setBalanceComment(""); }}
           onBlockMaster={blockMaster} onBlockCustomer={blockCustomer}

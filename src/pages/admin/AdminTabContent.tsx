@@ -4,6 +4,7 @@ import { DashboardTab, MastersTab, CustomersTab } from "./AdminTabUsers";
 import { OrdersTab, ResponsesTab, ServicesTab } from "./AdminTabOrders";
 import { ChatsTab, PaymentsTab } from "./AdminTabChatsPayments";
 import { ReviewsTab, CategoriesTab, TicketsTab } from "./AdminTabMisc";
+import DonationsTab from "./AdminTabDonations";
 import { useDateFilter } from "./adminUtils";
 
 interface AdminTabContentProps {
@@ -25,6 +26,7 @@ interface AdminTabContentProps {
   setNewCategory: (v: string) => void;
   searchQuery: string;
   setSearchQuery: (v: string) => void;
+  adminToken: string;
   onOpenEdit: (type: "master" | "customer", data: Record<string, unknown>) => void;
   onOpenBalance: (m: Record<string, unknown>) => void;
   onBlockMaster: (id: number, block: boolean) => void;
@@ -50,7 +52,7 @@ interface AdminTabContentProps {
 export default function AdminTabContent({
   tab, loading, dashboard, masters, customers, orders, reviews, categories,
   services, chats, chatMessages, activeChatId, responses, payments,
-  newCategory, setNewCategory, searchQuery, setSearchQuery,
+  newCategory, setNewCategory, searchQuery, setSearchQuery, adminToken,
   onOpenEdit, onOpenBalance, onBlockMaster, onBlockCustomer, onDeleteMaster, onDeleteCustomer,
   onUpdateOrderStatus, onDeleteOrder, onDeleteReview, onAddCategory, onDeleteCategory,
   onEditService, onDeleteService, onToggleService, onDeleteChat, onViewChat, onDeleteResponse,
@@ -149,6 +151,10 @@ export default function AdminTabContent({
         dateFrom={dateFrom} setDateFrom={setDateFrom} dateTo={dateTo} setDateTo={setDateTo}
       />
     );
+  }
+
+  if (tab === "donations") {
+    return <DonationsTab token={adminToken} />;
   }
 
   if (tab === "reviews") {

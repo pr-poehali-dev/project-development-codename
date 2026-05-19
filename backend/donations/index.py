@@ -188,4 +188,48 @@ def handler(event, context):
                 'body': json.dumps({'total': int(row['total']), 'count': int(row['count'])})
             }
 
+        if action == 'list':
+            # Админский список — требует ADMIN_SECRET_TOKEN в заголовке X-Admin-Token
+            headers_in = event.get('headers') or {}
+            token = headers_in.get('x-admin-token') or headers_in.get('X-Admin-Token') or params.get('token')
+            if token != os.environ.get('ADMIN_SECRET_TOKEN'):
+                return {'statusCode': 401, 'headers': CORS, 'body': json.dumps({'error': 'unauthorized'})}
+            conn = get_conn()
+            cur = conn.cursor()
+            cur.execute(
+                f"SELECT id, amount, donor_name, donor_email, message, status, "
+                f"yookassa_payment_id, created_at, succeeded_at "
+                f"FROM {SCHEMA}.donations ORDER BY created_at DESC LIMIT 500"
+            )
+            rows = cur.fetchall()
+            cur.execute(
+                f"SELECT COALESCE(SUM(amount),0) AS total, COUNT(*) AS count "
+                f"FROM {SCHEMA}.donations WHERE status='succeeded'"
+            )
+            stats = cur.fetchone()
+            cur.close()
+            conn.close()
+            donations_list = []
+            for r in rows:
+                donations_list.append({
+                    'id': r['id'],
+                    'amount': r['amount'],
+                    'donor_name': r['donor_name'],
+                    'donor_email': r['donor_email'],
+                    'message': r['message'],
+                    'status': r['status'],
+                    'yookassa_payment_id': r['yookassa_payment_id'],
+                    'created_at': r['created_at'].isoformat() if r['created_at'] else None,
+                    'succeeded_at': r['succeeded_at'].isoformat() if r['succeeded_at'] else None,
+                })
+            return {
+                'statusCode': 200,
+                'headers': CORS,
+                'body': json.dumps({
+                    'donations': donations_list,
+                    'total': int(stats['total']),
+                    'count': int(stats['count']),
+                })
+            }
+
     return {'statusCode': 400, 'headers': CORS, 'body': json.dumps({'error': 'unknown action'})}
