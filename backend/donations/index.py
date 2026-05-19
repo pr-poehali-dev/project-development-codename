@@ -57,6 +57,10 @@ def handler(event, context):
         body = json.loads(event.get('body') or '{}')
         action = body.get('action', action)
 
+        # Автодетект webhook от ЮKassa: они шлют {type:'notification', event:..., object:...}
+        if not action and (body.get('type') == 'notification' or 'event' in body):
+            action = 'webhook'
+
         if action == 'create':
             try:
                 amount = int(body.get('amount') or 0)
@@ -134,6 +138,38 @@ def handler(event, context):
             cur.close()
             conn.close()
             return {'statusCode': 200, 'headers': CORS, 'body': json.dumps({'ok': True})}
+
+        if action == 'check':
+            donation_id = body.get('donation_id')
+            if not donation_id:
+                return {'statusCode': 400, 'headers': CORS,
+                        'body': json.dumps({'error': 'donation_id обязателен'})}
+            conn = get_conn()
+            cur = conn.cursor()
+            cur.execute(
+                f"SELECT id, yookassa_payment_id, status FROM {SCHEMA}.donations WHERE id=%s",
+                (donation_id,)
+            )
+            row = cur.fetchone()
+            if not row:
+                cur.close(); conn.close()
+                return {'statusCode': 404, 'headers': CORS,
+                        'body': json.dumps({'error': 'Пожертвование не найдено'})}
+            if row['status'] == 'succeeded':
+                cur.close(); conn.close()
+                return {'statusCode': 200, 'headers': CORS,
+                        'body': json.dumps({'status': 'succeeded'})}
+            yk = yookassa_request('GET', f"/payments/{row['yookassa_payment_id']}")
+            yk_status = yk.get('status', 'pending')
+            if yk_status == 'succeeded':
+                cur.execute(
+                    f"UPDATE {SCHEMA}.donations SET status='succeeded', succeeded_at=NOW() WHERE id=%s",
+                    (donation_id,)
+                )
+                conn.commit()
+            cur.close(); conn.close()
+            return {'statusCode': 200, 'headers': CORS,
+                    'body': json.dumps({'status': yk_status})}
 
     if method == 'GET':
         if action == 'stats':

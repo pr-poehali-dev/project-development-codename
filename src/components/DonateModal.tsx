@@ -52,7 +52,8 @@ export default function DonateModal({ open, onClose }: DonateModalProps) {
         setError(data.error);
         return;
       }
-      if (data.confirmation_url) {
+      if (data.confirmation_url && data.donation_id) {
+        try { localStorage.setItem("pending_donation_id", String(data.donation_id)); } catch { /* ignore */ }
         window.location.href = data.confirmation_url;
       }
     } catch {

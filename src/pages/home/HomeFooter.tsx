@@ -1,6 +1,8 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Icon from "@/components/ui/icon";
 import DonateModal from "@/components/DonateModal";
+
+const DONATIONS_URL = "https://functions.poehali.dev/64a0e43a-4d64-4be5-bc69-90e6d3138e97";
 
 interface HomeFooterProps {
   isCustomer: boolean;
@@ -8,6 +10,14 @@ interface HomeFooterProps {
 
 export default function HomeFooter({ isCustomer }: HomeFooterProps) {
   const [donateOpen, setDonateOpen] = useState(false);
+  const [donorsCount, setDonorsCount] = useState(0);
+
+  useEffect(() => {
+    fetch(`${DONATIONS_URL}?action=stats`)
+      .then((r) => r.json())
+      .then((d) => { if (typeof d?.count === "number") setDonorsCount(d.count); })
+      .catch(() => {});
+  }, []);
   return (
     <footer className="border-t border-white/8 py-10 px-4">
       <div className="max-w-7xl mx-auto">
@@ -82,6 +92,9 @@ export default function HomeFooter({ isCustomer }: HomeFooterProps) {
           >
             <Icon name="Heart" size={12} className="group-hover:fill-pink-400 transition-all" />
             Поддержать развитие сайта
+            {donorsCount > 0 && (
+              <span className="text-gray-700">· {donorsCount} {donorsCount === 1 ? "человек поддержал" : "людей поддержали"}</span>
+            )}
           </button>
           <p className="text-gray-700 text-xs text-center">© 2026 HandyMan. Харисов Эрнест Иреко­вич, ИНН 860234992431. Самозанятый (плательщик НПД).</p>
         </div>

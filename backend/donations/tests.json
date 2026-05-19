@@ -29,6 +29,20 @@
       "expectedStatus": 400,
       "expectedBody": {"error": "string"},
       "bodyMatcher": "partial"
+    },
+    {
+      "name": "POST webhook без metadata — ok",
+      "method": "POST",
+      "path": "/",
+      "body": {"type": "notification", "event": "payment.waiting_for_capture", "object": {}},
+      "expectedStatus": 200
+    },
+    {
+      "name": "POST check без id — ошибка",
+      "method": "POST",
+      "path": "/",
+      "body": {"action": "check"},
+      "expectedStatus": 400
     }
   ]
 }

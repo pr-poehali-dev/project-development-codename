@@ -19,6 +19,7 @@ import NotFound from "./pages/NotFound";
 import SupportWidget from "./components/support/SupportWidget";
 import ChatFab from "./components/chat/ChatFab";
 import DevBanner from "./components/DevBanner";
+import DonationThanks from "./components/DonationThanks";
 import { usePushNotifications } from "./hooks/usePushNotifications";
 
 const queryClient = new QueryClient();
@@ -47,6 +48,7 @@ function AppInner() {
       </Routes>
       <SupportWidget />
       <ChatFab />
+      <DonationThanks />
     </BrowserRouter>
   );
 }
