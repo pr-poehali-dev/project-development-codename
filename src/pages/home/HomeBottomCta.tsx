@@ -3,10 +3,10 @@ import Icon from "@/components/ui/icon";
 
 interface HomeBottomCtaProps {
   onBecomeMaster: () => void;
-  onFindMaster: () => void;
+  onCreateOrder: () => void;
 }
 
-export default function HomeBottomCta({ onBecomeMaster, onFindMaster }: HomeBottomCtaProps) {
+export default function HomeBottomCta({ onBecomeMaster, onCreateOrder }: HomeBottomCtaProps) {
   return (
     <section className="py-16 px-4 text-center">
       <div className="max-w-2xl mx-auto">
@@ -16,13 +16,20 @@ export default function HomeBottomCta({ onBecomeMaster, onFindMaster }: HomeBott
         <p className="text-gray-400 mb-8">
           Размещай объявления, откликайся на заявки и находи клиентов в своём городе
         </p>
-        <div className="flex flex-col sm:flex-row gap-3 justify-center">
+        <div className="flex flex-col sm:flex-row gap-3 justify-center flex-wrap">
           <Button onClick={onBecomeMaster} className="bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white px-8 py-3 text-base rounded-xl">
             Стать мастером
             <Icon name="ArrowRight" size={18} className="ml-2" />
           </Button>
-          <Button onClick={onFindMaster} variant="ghost" className="border border-violet-500 text-violet-300 hover:text-violet-200 hover:bg-violet-600/15 px-8 py-3 text-base rounded-xl">
-            Найти мастера
+          <a href="/masters">
+            <Button variant="ghost" className="border border-violet-500 text-violet-300 hover:text-violet-200 hover:bg-violet-600/15 px-8 py-3 text-base rounded-xl w-full sm:w-auto">
+              <Icon name="Search" size={16} className="mr-2" />
+              Найти мастера
+            </Button>
+          </a>
+          <Button onClick={onCreateOrder} variant="ghost" className="border border-white/15 text-gray-300 hover:text-white hover:bg-white/8 px-8 py-3 text-base rounded-xl">
+            <Icon name="FilePlus" size={16} className="mr-2" />
+            Создать заявку
           </Button>
         </div>
       </div>

@@ -83,7 +83,7 @@ const Index = () => {
       {!isMaster && (
         <HomeCtaBanner
           onBecomeMaster={() => masterFormState.setMasterModalOpen(true)}
-          onFindMaster={openOrderModal}
+          onCreateOrder={openOrderModal}
         />
       )}
 
@@ -96,7 +96,7 @@ const Index = () => {
       {!isMaster && (
         <HomeBottomCta
           onBecomeMaster={() => masterFormState.setMasterModalOpen(true)}
-          onFindMaster={openOrderModal}
+          onCreateOrder={openOrderModal}
         />
       )}
 
