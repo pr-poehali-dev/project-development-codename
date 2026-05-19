@@ -2,6 +2,7 @@ import { useState } from "react";
 import Icon from "@/components/ui/icon";
 import { Button } from "@/components/ui/button";
 import CitySelect from "@/components/ui/city-select";
+import DonateModal from "@/components/DonateModal";
 
 const MY_ORDERS_URL = "https://functions.poehali.dev/458454d0-900d-46a1-9bff-15ecce0839e0";
 
@@ -24,6 +25,7 @@ const inputCls = "w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.
 
 export default function CabinetProfile({ customer, onCustomerUpdate }: CabinetProfileProps) {
   const [mode, setMode] = useState<EditMode>("view");
+  const [donateOpen, setDonateOpen] = useState(false);
 
   // Форма редактирования
   const [editName, setEditName] = useState(customer.name);
@@ -243,6 +245,30 @@ export default function CabinetProfile({ customer, onCustomerUpdate }: CabinetPr
         <p className="text-gray-600 text-xs mt-6 text-center">
           При изменении email или телефона потребуется подтверждение кодом на почту
         </p>
+
+        {/* Поддержка проекта — ненавязчивая карточка */}
+        <div className="mt-8 bg-gradient-to-r from-pink-500/8 to-violet-600/8 border border-pink-500/15 rounded-2xl p-5">
+          <div className="flex items-start gap-3">
+            <div className="w-10 h-10 rounded-xl bg-pink-500/15 border border-pink-500/25 flex items-center justify-center flex-shrink-0">
+              <Icon name="Heart" size={18} className="text-pink-400" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-white font-semibold text-sm">Нравится HandyMan?</p>
+              <p className="text-gray-400 text-xs mt-1 leading-relaxed">
+                Сайт развивается на энтузиазме. Любая поддержка помогает оплачивать серверы и добавлять новые функции.
+              </p>
+              <button
+                onClick={() => setDonateOpen(true)}
+                className="inline-flex items-center gap-1.5 mt-3 text-pink-300 hover:text-pink-200 text-xs font-medium transition-colors"
+              >
+                Поддержать проект
+                <Icon name="ArrowRight" size={12} />
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <DonateModal open={donateOpen} onClose={() => setDonateOpen(false)} />
       </div>
     );
   }

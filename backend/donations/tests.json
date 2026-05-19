@@ -1,0 +1,34 @@
+{
+  "tests": [
+    {
+      "name": "OPTIONS CORS",
+      "method": "OPTIONS",
+      "path": "/",
+      "expectedStatus": 200
+    },
+    {
+      "name": "GET stats (публичная статистика)",
+      "method": "GET",
+      "path": "/?action=stats",
+      "expectedStatus": 200
+    },
+    {
+      "name": "POST create без суммы — ошибка",
+      "method": "POST",
+      "path": "/",
+      "body": {"action": "create", "amount": 0},
+      "expectedStatus": 400,
+      "expectedBody": {"error": "string"},
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "POST create — слишком маленькая сумма",
+      "method": "POST",
+      "path": "/",
+      "body": {"action": "create", "amount": 10},
+      "expectedStatus": 400,
+      "expectedBody": {"error": "string"},
+      "bodyMatcher": "partial"
+    }
+  ]
+}

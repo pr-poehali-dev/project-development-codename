@@ -1,10 +1,13 @@
+import { useState } from "react";
 import Icon from "@/components/ui/icon";
+import DonateModal from "@/components/DonateModal";
 
 interface HomeFooterProps {
   isCustomer: boolean;
 }
 
 export default function HomeFooter({ isCustomer }: HomeFooterProps) {
+  const [donateOpen, setDonateOpen] = useState(false);
   return (
     <footer className="border-t border-white/8 py-10 px-4">
       <div className="max-w-7xl mx-auto">
@@ -72,10 +75,18 @@ export default function HomeFooter({ isCustomer }: HomeFooterProps) {
             </div>
           </div>
         </div>
-        <div className="border-t border-white/6 pt-6">
+        <div className="border-t border-white/6 pt-6 flex flex-col items-center gap-3">
+          <button
+            onClick={() => setDonateOpen(true)}
+            className="inline-flex items-center gap-1.5 text-gray-500 hover:text-pink-400 text-xs transition-colors group"
+          >
+            <Icon name="Heart" size={12} className="group-hover:fill-pink-400 transition-all" />
+            Поддержать развитие сайта
+          </button>
           <p className="text-gray-700 text-xs text-center">© 2026 HandyMan. Харисов Эрнест Иреко­вич, ИНН 860234992431. Самозанятый (плательщик НПД).</p>
         </div>
       </div>
+      <DonateModal open={donateOpen} onClose={() => setDonateOpen(false)} />
     </footer>
   );
 }
