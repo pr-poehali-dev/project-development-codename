@@ -30,6 +30,19 @@ export default function Masters() {
 
   const isMaster = typeof window !== "undefined" && !!localStorage.getItem("master_phone");
   const isCustomer = typeof window !== "undefined" && !!localStorage.getItem("customer_phone");
+  const [myMasterId, setMyMasterId] = useState<number | null>(null);
+
+  useEffect(() => {
+    const myPhone = typeof window !== "undefined" ? localStorage.getItem("master_phone") : null;
+    if (!myPhone) return;
+    fetch(`${MASTER_URL}?phone=${encodeURIComponent(myPhone)}`)
+      .then(r => r.json())
+      .then(d => {
+        const p = typeof d === "string" ? JSON.parse(d) : d;
+        if (p?.master?.id) setMyMasterId(p.master.id);
+      })
+      .catch(() => {});
+  }, []);
 
   const [contactMaster, setContactMaster] = useState<ContactMasterTarget | null>(null);
   const [contactForm, setContactForm] = useState<ContactForm>({ name: "", phone: "", email: "", message: "" });
@@ -190,6 +203,7 @@ export default function Masters() {
               setServicesVisible={setServicesVisible}
               isMaster={isMaster}
               isCustomer={isCustomer}
+              myMasterId={myMasterId}
               setContactMaster={setContactMaster}
               setContactForm={setContactForm}
               setContactSent={setContactSent}

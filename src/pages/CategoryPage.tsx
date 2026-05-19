@@ -91,6 +91,19 @@ export default function CategoryPage() {
   const [contactError, setContactError] = useState("");
   const isMaster = typeof window !== "undefined" && !!localStorage.getItem("master_phone");
   const isCustomer = typeof window !== "undefined" && !!localStorage.getItem("customer_phone");
+  const [myMasterId, setMyMasterId] = useState<number | null>(null);
+
+  useEffect(() => {
+    const myPhone = typeof window !== "undefined" ? localStorage.getItem("master_phone") : null;
+    if (!myPhone) return;
+    fetch(`${MASTER_URL}?phone=${encodeURIComponent(myPhone)}`)
+      .then(r => r.json())
+      .then(d => {
+        const p = typeof d === "string" ? JSON.parse(d) : d;
+        if (p?.master?.id) setMyMasterId(p.master.id);
+      })
+      .catch(() => {});
+  }, []);
 
   // Заявки (для категорий без подкатегорий)
   useEffect(() => {
@@ -297,7 +310,7 @@ export default function CategoryPage() {
                             <span className="text-violet-400 text-[10px] hover:text-violet-300 transition-colors">Профиль →</span>
                           </div>
                         </a>
-                        {!isMaster && (
+                        {!isMaster && myMasterId !== service.master_id && (
                           <Button
                             size="sm"
                             className="w-full bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white text-xs rounded-lg h-7"
@@ -312,6 +325,12 @@ export default function CategoryPage() {
                             <Icon name="MessageSquare" size={11} className="mr-1" />
                             Написать мастеру
                           </Button>
+                        )}
+                        {!isMaster && myMasterId === service.master_id && (
+                          <div className="text-[10px] text-violet-400/80 text-center py-1.5 bg-violet-500/10 border border-violet-500/20 rounded-lg flex items-center justify-center gap-1">
+                            <Icon name="User" size={10} />
+                            Ваше объявление
+                          </div>
                         )}
                       </div>
                     );

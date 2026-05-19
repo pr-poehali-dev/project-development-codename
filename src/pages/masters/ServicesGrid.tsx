@@ -10,6 +10,7 @@ interface ServicesGridProps {
   setServicesVisible: (fn: (v: number) => number) => void;
   isMaster: boolean;
   isCustomer: boolean;
+  myMasterId?: number | null;
   setContactMaster: (v: ContactMasterTarget | null) => void;
   setContactForm: (v: ContactForm) => void;
   setContactSent: (v: boolean) => void;
@@ -23,6 +24,7 @@ export default function ServicesGrid({
   setServicesVisible,
   isMaster,
   isCustomer,
+  myMasterId,
   setContactMaster,
   setContactForm,
   setContactSent,
@@ -113,7 +115,7 @@ export default function ServicesGrid({
                   <span className="text-violet-400 text-[10px] hover:text-violet-300 transition-colors">Профиль →</span>
                 </div>
               </a>
-              {!isMaster && (
+              {!isMaster && myMasterId !== service.master_id && (
                 <Button
                   size="sm"
                   className="w-full mt-2.5 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white text-xs rounded-lg h-7"
@@ -128,6 +130,12 @@ export default function ServicesGrid({
                   <Icon name="MessageSquare" size={11} className="mr-1" />
                   Написать мастеру
                 </Button>
+              )}
+              {!isMaster && myMasterId === service.master_id && (
+                <div className="mt-2.5 text-[10px] text-violet-400/80 text-center py-1.5 bg-violet-500/10 border border-violet-500/20 rounded-lg flex items-center justify-center gap-1">
+                  <Icon name="User" size={10} />
+                  Ваше объявление
+                </div>
               )}
             </div>
           );
