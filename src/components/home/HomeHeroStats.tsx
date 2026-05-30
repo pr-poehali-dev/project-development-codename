@@ -1,15 +1,18 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import Icon from "@/components/ui/icon";
 import CitySelect from "@/components/ui/city-select";
 
-const stats = [
-  { label: "Исполнителей", value: "1 200+", icon: "Users" },
-  { label: "Выполнено заказов", value: "8 400+", icon: "CheckCircle" },
-  { label: "Средняя оценка", value: "4.8 ★", icon: "Star" },
-  { label: "Категорий услуг", value: "20+", icon: "Grid3x3" },
-];
+const PROFILE_URL = "https://functions.poehali.dev/de274bd5-3f08-42d8-9aac-b373bb34b900";
+
+interface StatsData {
+  masters: number;
+  categories: number;
+  deals: number;
+  avg_rating: number;
+  reviews_count: number;
+}
 
 interface HomeHeroStatsProps {
   onSearch?: (query: string, city: string) => void;
@@ -18,6 +21,24 @@ interface HomeHeroStatsProps {
 const HomeHeroStats = ({ onSearch }: HomeHeroStatsProps) => {
   const [heroSearch, setHeroSearch] = useState("");
   const [heroCity, setHeroCity] = useState("Сургут");
+  const [stats, setStats] = useState<StatsData | null>(null);
+
+  useEffect(() => {
+    fetch(`${PROFILE_URL}?action=stats`)
+      .then((r) => r.json())
+      .then((d) => {
+        const parsed = typeof d === "string" ? JSON.parse(d) : d;
+        if (parsed && typeof parsed.masters === "number") setStats(parsed);
+      })
+      .catch(() => {});
+  }, []);
+
+  const statItems = [
+    { label: "Мастеров на платформе", value: stats ? `${stats.masters}` : "—", icon: "Users", show: true },
+    { label: "Завершённых сделок", value: stats ? `${stats.deals}` : "—", icon: "CheckCircle", show: !!stats && stats.deals > 0 },
+    { label: "Средняя оценка", value: stats && stats.avg_rating > 0 ? `${stats.avg_rating} ★` : "—", icon: "Star", show: !!stats && stats.avg_rating > 0 },
+    { label: "Категорий услуг", value: stats ? `${stats.categories}` : "—", icon: "Grid3x3", show: true },
+  ].filter((s) => s.show);
 
   const handleSearch = () => {
     const query = heroSearch.trim();
@@ -83,21 +104,23 @@ const HomeHeroStats = ({ onSearch }: HomeHeroStatsProps) => {
       </section>
 
       {/* Статистика */}
-      <section className="py-10 px-4 border-y border-white/5 bg-white/2">
-        <div className="max-w-6xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-6">
-          {stats.map((stat) => (
-            <div key={stat.label} className="text-center">
-              <div className="flex justify-center mb-2">
-                <div className="w-10 h-10 rounded-xl bg-violet-600/15 flex items-center justify-center">
-                  <Icon name={stat.icon} size={18} className="text-violet-400" />
+      {statItems.length > 0 && (
+        <section className="py-10 px-4 border-y border-white/5 bg-white/2">
+          <div className={`max-w-6xl mx-auto grid grid-cols-2 gap-6 ${statItems.length >= 4 ? "md:grid-cols-4" : statItems.length === 3 ? "md:grid-cols-3" : "md:grid-cols-2"}`}>
+            {statItems.map((stat) => (
+              <div key={stat.label} className="text-center">
+                <div className="flex justify-center mb-2">
+                  <div className="w-10 h-10 rounded-xl bg-violet-600/15 flex items-center justify-center">
+                    <Icon name={stat.icon} size={18} className="text-violet-400" />
+                  </div>
                 </div>
+                <div className="text-2xl font-bold text-white">{stat.value}</div>
+                <div className="text-sm text-gray-500 mt-0.5">{stat.label}</div>
               </div>
-              <div className="text-2xl font-bold text-white">{stat.value}</div>
-              <div className="text-sm text-gray-500 mt-0.5">{stat.label}</div>
-            </div>
-          ))}
-        </div>
-      </section>
+            ))}
+          </div>
+        </section>
+      )}
     </>
   );
 };
