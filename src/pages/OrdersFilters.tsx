@@ -55,7 +55,7 @@ export default function OrdersFilters({
         ) : (
           <h1 className="text-3xl sm:text-4xl font-extrabold mb-2">Лента заявок</h1>
         )}
-        <p className="text-gray-400 mb-5">Найди подходящий заказ и откликнись бесплатно — токены списываются только если заказчик выбрал тебя исполнителем</p>
+        <p className="text-gray-400 mb-5">Найди подходящий заказ и откликнись — отклики и сделки полностью бесплатны</p>
         <div className="relative max-w-lg">
           <Icon name="Search" size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500" />
           <input

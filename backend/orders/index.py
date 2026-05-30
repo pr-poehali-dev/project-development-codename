@@ -68,7 +68,7 @@ def send_new_order_email(to_email: str, master_name: str, order_title: str, orde
         <a href="{orders_url}" style="display: inline-block; background: linear-gradient(135deg, #7c3aed, #4f46e5); color: white; text-decoration: none; padding: 14px 28px; border-radius: 10px; font-size: 14px; font-weight: bold;">
           Откликнуться на заявку →
         </a>
-        <p style="margin: 16px 0 0; font-size: 12px; color: #4b5563;">Отклики бесплатные — токены списываются только когда заказчик выбирает вас исполнителем.</p>
+        <p style="margin: 16px 0 0; font-size: 12px; color: #4b5563;">Отклики на заявки полностью бесплатны.</p>
       </div>
       <div style="padding: 16px 32px; border-top: 1px solid #1f2937;">
         <p style="margin: 0; color: #4b5563; font-size: 12px;">Вы получаете это письмо как зарегистрированный мастер HandyMan. Войдите в <a href="https://handyman.poehali.dev/master" style="color: #7c3aed;">кабинет мастера</a> для управления уведомлениями.</p>

@@ -141,7 +141,7 @@ def send_deal_contacts_customer_email(to_email: str, to_name: str, customer_name
         <p style="color:#a78bfa;font-weight:600;margin:0 0 8px;">Контакты заказчика {customer_name}:</p>
         {lines}
       </div>
-      <p style="color:#6b7280;font-size:12px;">С баланса списано 5 токенов.</p>
+      <p style="color:#6b7280;font-size:12px;">Связывайтесь с заказчиком — отклики бесплатны!</p>
     </div>"""
     msg.attach(MIMEText(f'Договорённость подтверждена!\nЗаказчик: {customer_name}\nТел: {customer_phone}\nEmail: {customer_email}', 'plain'))
     msg.attach(MIMEText(html, 'html'))
@@ -532,25 +532,12 @@ def handler(event: dict, context) -> dict:
             cur.execute(f"SELECT master_id FROM {SCHEMA}.responses WHERE id = %s", (int(response_id),))
             resp_row = cur.fetchone()
             master_id = resp_row['master_id'] if resp_row else None
-            # Проверяем баланс мастера (минимум 5 токенов)
-            if master_id:
-                cur.execute(f"SELECT balance FROM {SCHEMA}.masters WHERE id = %s", (int(master_id),))
-                master_row = cur.fetchone()
-                if not master_row or master_row['balance'] < 5:
-                    cur.close(); conn.close()
-                    return {'statusCode': 402, 'headers': HEADERS, 'body': json.dumps({'error': 'У мастера недостаточно токенов для принятия заказа', 'no_balance': True})}
+            # Отклики бесплатны — баланс не проверяется и не списывается
             # Принимаем заявку
             cur.execute(
                 f"UPDATE {SCHEMA}.orders SET accepted_response_id = %s, status = 'in_progress' WHERE id = %s AND customer_id = %s",
                 (int(response_id), int(order_id), int(customer_id))
             )
-            # Списываем 5 токенов с мастера
-            if master_id:
-                cur.execute(f"UPDATE {SCHEMA}.masters SET balance = balance - 5 WHERE id = %s", (int(master_id),))
-                cur.execute(
-                    f"INSERT INTO {SCHEMA}.master_transactions (master_id, type, amount, description, order_id) VALUES (%s, 'spend', 5, %s, %s)",
-                    (int(master_id), f"Выбран исполнителем по заявке #{order_id}", int(response_id))
-                )
             # Получаем данные заявки и телефон мастера для push
             cur.execute(f"SELECT title FROM {SCHEMA}.orders WHERE id = %s", (int(order_id),))
             order_row = cur.fetchone()
@@ -904,20 +891,10 @@ def handler(event: dict, context) -> dict:
             )
             both_confirmed = inq['master_deal_confirmed']
             if both_confirmed:
-                if inq['balance'] < 5:
-                    conn.rollback(); cur.close(); conn.close()
-                    return {'statusCode': 400, 'headers': HEADERS, 'body': json.dumps({'error': 'У мастера недостаточно токенов'})}
+                # Договорённость бесплатна — токены не списываются
                 cur.execute(
                     f"UPDATE {SCHEMA}.master_inquiries SET deal_status='deal', deal_completed_at=NOW() WHERE id=%s",
                     (int(inquiry_id),)
-                )
-                cur.execute(
-                    f"UPDATE {SCHEMA}.masters SET balance=balance-5 WHERE id=%s",
-                    (inq['master_id'],)
-                )
-                cur.execute(
-                    f"INSERT INTO {SCHEMA}.master_transactions (master_id, type, amount, description) VALUES (%s,'spend',5,'Подтверждение договорённости с заказчиком (обращение #{inquiry_id})')",
-                    (inq['master_id'],)
                 )
                 conn.commit(); cur.close(); conn.close()
                 if inq['master_email']:

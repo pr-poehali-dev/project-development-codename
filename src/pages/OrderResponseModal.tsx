@@ -36,7 +36,6 @@ interface OrderResponseModalProps {
   setSelectedOrder: (o: Order | null) => void;
   masterData: MasterData | null;
   masterId: number | null;
-  masterBalance: number | null;
   responseForm: ResponseForm;
   setResponseForm: (f: ResponseForm) => void;
   responseSent: boolean;
@@ -53,7 +52,6 @@ export default function OrderResponseModal({
   setSelectedOrder,
   masterData,
   masterId,
-  masterBalance,
   responseForm,
   setResponseForm,
   responseSent,
@@ -111,18 +109,11 @@ export default function OrderResponseModal({
               </div>
             </div>
 
-            {/* Баланс мастера */}
+            {/* Отклики бесплатны */}
             {masterId !== null && (
-              <div className={`flex items-center justify-between rounded-xl px-4 py-3 ${masterBalance && masterBalance > 0 ? "bg-violet-600/10 border border-violet-500/20" : "bg-red-600/10 border border-red-500/20"}`}>
-                <div className="flex items-center gap-2">
-                  <Icon name="Coins" size={16} className={masterBalance && masterBalance > 0 ? "text-violet-400" : "text-red-400"} />
-                  <span className={`text-sm ${masterBalance && masterBalance > 0 ? "text-violet-300" : "text-red-300"}`}>
-                    {masterBalance && masterBalance > 0
-                      ? `Баланс: ${masterBalance} токенов`
-                      : "Недостаточно токенов для отклика"}
-                  </span>
-                </div>
-                <a href="/master" className="text-xs text-violet-400 hover:text-violet-300 transition-colors">Пополнить →</a>
+              <div className="flex items-center gap-2 rounded-xl px-4 py-3 bg-emerald-600/10 border border-emerald-500/20">
+                <Icon name="Gift" size={16} className="text-emerald-400" />
+                <span className="text-sm text-emerald-300">Отклики на заявки полностью бесплатны</span>
               </div>
             )}
             {masterId === null && (

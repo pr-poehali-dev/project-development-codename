@@ -57,7 +57,6 @@ const Orders = () => {
   const [responseError, setResponseError] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [visibleCount, setVisibleCount] = useState(20);
-  const [masterBalance, setMasterBalance] = useState<number | null>(null);
   const [masterId, setMasterId] = useState<number | null>(null);
   const [masterData, setMasterData] = useState<{ name: string; phone: string; category: string } | null>(null);
   const [authPromptOpen, setAuthPromptOpen] = useState(false);
@@ -72,7 +71,6 @@ const Orders = () => {
         .then((data) => {
           const parsed = typeof data === "string" ? JSON.parse(data) : data;
           if (parsed.master) {
-            setMasterBalance(parsed.master.balance);
             setMasterId(parsed.master.id);
             const md = { name: parsed.master.name, phone: parsed.master.phone, category: parsed.master.category };
             setMasterData(md);
@@ -358,7 +356,6 @@ const Orders = () => {
         setSelectedOrder={setSelectedOrder}
         masterData={masterData}
         masterId={masterId}
-        masterBalance={masterBalance}
         responseForm={responseForm}
         setResponseForm={setResponseForm}
         responseSent={responseSent}
