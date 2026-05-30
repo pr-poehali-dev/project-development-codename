@@ -48,7 +48,7 @@ const HomeHeroStats = ({ onSearch }: HomeHeroStatsProps) => {
           </h1>
           <p className="text-gray-400 text-lg sm:text-xl mb-10 max-w-2xl mx-auto">
             Проверенные специалисты Сургута, Нижневартовска, Нефтеюганска, Когалыма и Ханты-Мансийска.
-            Ремонт, сантехника, электрика, клининг, бьюти-услуги. Мастера откликаются бесплатно — платят только за выбранный заказ.
+            Ремонт, сантехника, электрика, клининг, бьюти-услуги.
           </p>
 
           <div className="flex flex-col sm:flex-row gap-3 justify-center max-w-2xl mx-auto">
