@@ -454,13 +454,21 @@ def handler(event: dict, context) -> dict:
             conn = get_conn()
             cur = conn.cursor()
             if '@' in identifier:
-                cur.execute(f"SELECT id, name, phone, email, city, password_hash, email_verified FROM {SCHEMA}.customers WHERE email=%s", (identifier.lower(),))
+                cur.execute(f"SELECT id, name, phone, email, city, password_hash, email_verified FROM {SCHEMA}.customers WHERE LOWER(email)=%s", (identifier.lower(),))
+                row = cur.fetchone()
             else:
-                cur.execute(f"SELECT id, name, phone, email, city, password_hash, email_verified FROM {SCHEMA}.customers WHERE phone=%s", (identifier,))
-            row = cur.fetchone()
+                # Сравниваем только последние 10 цифр номера — не зависит от формата (+7, 8, скобки, пробелы)
+                digits = ''.join(ch for ch in identifier if ch.isdigit())
+                last10 = digits[-10:] if len(digits) >= 10 else digits
+                cur.execute(
+                    f"SELECT id, name, phone, email, city, password_hash, email_verified FROM {SCHEMA}.customers "
+                    f"WHERE RIGHT(regexp_replace(phone, '[^0-9]', '', 'g'), 10) = %s",
+                    (last10,)
+                )
+                row = cur.fetchone()
             cur.close(); conn.close()
             if not row:
-                return {'statusCode': 401, 'headers': HEADERS, 'body': json.dumps({'error': 'Пользователь не найден'})}
+                return {'statusCode': 401, 'headers': HEADERS, 'body': json.dumps({'error': 'Аккаунт заказчика с такими данными не найден. Проверьте логин или зарегистрируйтесь.'})}
             if not row['email_verified'] or not row['password_hash']:
                 return {'statusCode': 401, 'headers': HEADERS,
                         'body': json.dumps({'error': 'Завершите регистрацию — подтвердите email.'})}
